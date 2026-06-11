@@ -1377,6 +1377,27 @@ def main() -> None:
             for method in args.methods:
                 run_id = f"train_N{train_len}_seed{seed}_{method}"
                 run_dir = args.output_dir / run_id
+                existing_summary = run_dir / "summary.json"
+                if existing_summary.exists():
+                    try:
+                        existing = json.loads(existing_summary.read_text(encoding="utf-8"))
+                        existing_rows = existing.get("results", [])
+                        if (
+                            existing.get("status") == "ok"
+                            and len(existing_rows) >= len(args.eval_lengths)
+                            and all(row.get("status") == "ok" for row in existing_rows)
+                        ):
+                            all_records.extend(existing_rows)
+                            result = existing.get("result")
+                            if result is not None:
+                                method_results.append(result)
+                            metrics_path = run_dir / "metrics.jsonl"
+                            if metrics_path.exists():
+                                metrics_lines.extend(metrics_path.read_text(encoding="utf-8").splitlines())
+                            print(json.dumps({"skipped_completed": run_id}), flush=True)
+                            continue
+                    except Exception:
+                        pass
                 run_dir.mkdir(parents=True, exist_ok=True)
                 run_args = copy.copy(args)
                 run_args.output_dir = run_dir
