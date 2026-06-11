@@ -602,7 +602,7 @@ official LRA benchmark 结果；
 host alias: huiwei
 remote root: /home/huiwei/ysx/zigzag_attention
 conda env: ysx_base
-GPU: NVIDIA A100-SXM4-80GB
+GPU: 4 x NVIDIA A100-SXM4-80GB
 ```
 
 每次远端运行前必须检查 GPU 使用情况：
@@ -612,7 +612,15 @@ ssh huiwei
 nvidia-smi
 ```
 
-只允许使用空闲或用户明确允许使用的 GPU。若目标 GPU 利用率高、显存被他人占用、或有未知训练进程，不启动实验。正式记录中必须写明 `CUDA_VISIBLE_DEVICES` 和实际 GPU 名称。
+4 张 A100 都可以使用。启动任务的规则是：目标 GPU 当前利用率低于 `5%` 时，可以在该 GPU 上启动任务。若目标 GPU 利用率大于等于 `5%`，或显存被未知进程大量占用，或有未知训练进程，不启动实验。正式记录中必须写明 `CUDA_VISIBLE_DEVICES`、启动前 `nvidia-smi` 状态和实际 GPU 名称。
+
+推荐选择 GPU 的检查命令：
+
+```bash
+nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,memory.total --format=csv
+```
+
+若多张 GPU 都低于 `5%`，优先选择显存占用更低的 GPU。单个实验默认只占用一张 GPU；只有后续明确加入多 GPU 训练时，才允许同时设置多个 `CUDA_VISIBLE_DEVICES`。
 
 ### 7.2 本地与远端目录
 
@@ -728,7 +736,7 @@ git status 本地干净或仅含本次明确改动；
 当前 commit hash 已记录；
 本地代码已 rsync 到远端；
 远端 configs/scripts/ref 文件存在；
-nvidia-smi 确认 GPU 可用；
+nvidia-smi 确认目标 GPU 利用率低于 5%；
 输出目录不会覆盖已有有效结果；
 日志路径已设置；
 config snapshot 会写入输出目录。
