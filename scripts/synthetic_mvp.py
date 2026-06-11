@@ -1,16 +1,43 @@
 import argparse
+import copy
 import csv
 import gc
+import hashlib
 import json
+import os
 import random
+import shlex
+import socket
+import subprocess
+import sys
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from graph_structures import (
+    DEFAULT_GRAPH_CONFIG,
+    build_attention_mask,
+    build_cross_mask,
+    build_h_graph,
+    build_local_mask,
+    build_random_cross,
+    build_random_cross_edges,
+    build_zigzag_cross,
+    build_zigzag_cross_edges,
+    expected_raw_k,
+    h_neighbors,
+    mask_metrics,
+    rot_g,
+    rot_g_cyclic,
+    validate_graph_config,
+)
 
 
 def set_seed(seed: int) -> None:
@@ -18,130 +45,6 @@ def set_seed(seed: int) -> None:
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-
-
-def h_neighbors(port: int, block_size: int, degree: int) -> list[int]:
-    if degree >= block_size:
-        raise ValueError("degree must be smaller than block_size")
-    offsets: list[int] = []
-    step = 1
-    while len(offsets) < degree:
-        offsets.append(step)
-        if len(offsets) < degree:
-            offsets.append(-step)
-        step += 1
-    return [int((port + off) % block_size) for off in offsets[:degree]]
-
-
-def rot_g_cyclic(block: int, port: int, num_blocks: int, block_size: int) -> tuple[int, int]:
-    max_offset = max(1, num_blocks // 2)
-    offset = (port // 2) % max_offset + 1
-    if port % 2 == 0:
-        return (block + offset) % num_blocks, port ^ 1
-    return (block - offset) % num_blocks, port ^ 1
-
-
-def build_local_mask(seq_len: int, block_size: int, device: torch.device) -> torch.Tensor:
-    idx = torch.arange(seq_len, device=device)
-    return (idx[:, None] // block_size) == (idx[None, :] // block_size)
-
-
-def build_zigzag_cross(seq_len: int, block_size: int, degree: int, device: torch.device) -> torch.Tensor:
-    if seq_len % block_size != 0:
-        raise ValueError("seq_len must be divisible by block_size")
-    num_blocks = seq_len // block_size
-    mask = torch.zeros((seq_len, seq_len), dtype=torch.bool, device=device)
-    for v in range(num_blocks):
-        for i in range(block_size):
-            src = v * block_size + i
-            for i_prime in h_neighbors(i, block_size, degree):
-                w, j_prime = rot_g_cyclic(v, i_prime, num_blocks, block_size)
-                for j in h_neighbors(j_prime, block_size, degree):
-                    dst = w * block_size + j
-                    mask[src, dst] = True
-    return mask
-
-
-def build_random_cross(
-    seq_len: int,
-    block_size: int,
-    degree: int,
-    device: torch.device,
-    seed: int,
-) -> torch.Tensor:
-    gen = torch.Generator(device="cpu")
-    gen.manual_seed(seed)
-    mask = torch.zeros((seq_len, seq_len), dtype=torch.bool, device=device)
-    k = degree * degree
-    all_idx = torch.arange(seq_len)
-    for src in range(seq_len):
-        block = src // block_size
-        nonlocal_idx = all_idx[all_idx // block_size != block]
-        perm = torch.randperm(len(nonlocal_idx), generator=gen)[:k]
-        mask[src, nonlocal_idx[perm].to(device)] = True
-    return mask
-
-
-def build_attention_mask(
-    method: str,
-    seq_len: int,
-    block_size: int,
-    degree: int,
-    device: torch.device,
-    seed: int,
-) -> torch.Tensor:
-    if method == "dense":
-        return torch.ones((seq_len, seq_len), dtype=torch.bool, device=device)
-    local = build_local_mask(seq_len, block_size, device)
-    if method == "local":
-        return local
-    if method == "random":
-        return local | build_random_cross(seq_len, block_size, degree, device, seed)
-    if method == "zigzag":
-        return local | build_zigzag_cross(seq_len, block_size, degree, device)
-    raise ValueError(f"unknown method: {method}")
-
-
-def build_cross_mask(
-    method: str,
-    seq_len: int,
-    block_size: int,
-    degree: int,
-    device: torch.device,
-    seed: int,
-) -> torch.Tensor:
-    local = build_local_mask(seq_len, block_size, device)
-    if method in {"dense", "local"}:
-        return torch.zeros((seq_len, seq_len), dtype=torch.bool, device=device)
-    if method == "random":
-        return build_random_cross(seq_len, block_size, degree, device, seed) & ~local
-    if method == "zigzag":
-        return build_zigzag_cross(seq_len, block_size, degree, device) & ~local
-    raise ValueError(f"unknown method: {method}")
-
-
-def expected_raw_k(method: str, seq_len: int, block_size: int, degree: int) -> int:
-    if method == "dense":
-        return seq_len
-    if method == "local":
-        return block_size
-    return block_size + degree * degree
-
-
-def mask_metrics(mask: torch.Tensor, method: str, block_size: int, degree: int) -> dict:
-    seq_len = mask.shape[0]
-    raw_k = expected_raw_k(method, seq_len, block_size, degree)
-    effective = mask.sum(dim=-1).float()
-    duplicate_rate = max(0.0, (raw_k - float(effective.mean().item())) / raw_k)
-    return {
-        "raw_k": raw_k,
-        "effective_k_mean": float(effective.mean().item()),
-        "effective_k_min": int(effective.min().item()),
-        "effective_k_max": int(effective.max().item()),
-        "duplicate_rate_estimate": duplicate_rate,
-        "attention_pair_count": int(mask.sum().item()),
-        "self_loop_rate": float(torch.diag(mask).float().mean().item()),
-    }
 
 
 def mask_to_neighbors(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -604,54 +507,176 @@ def make_copy_batch(
     spec: TaskSpec,
     device: torch.device,
     source_pos: int,
+    seed: int | None = None,
+    batch_index: int | None = None,
+    stream: str = "train",
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    x = torch.randint(1, spec.num_values + 1, (batch_size, seq_len), dtype=torch.long, device=device)
+    if seed is None or batch_index is None:
+        x = torch.randint(
+            1,
+            spec.num_values + 1,
+            (batch_size, seq_len),
+            dtype=torch.long,
+            device=device,
+        )
+    else:
+        derived_seed = stable_int_seed(seed, batch_index, seq_len, spec.num_values, stream)
+        gen = torch.Generator(device="cpu")
+        gen.manual_seed(derived_seed)
+        x = torch.randint(
+            1,
+            spec.num_values + 1,
+            (batch_size, seq_len),
+            dtype=torch.long,
+            generator=gen,
+        ).to(device)
     y = x[:, source_pos] - 1
     return x, y
 
 
-def make_batch(args, spec: TaskSpec, device: torch.device) -> tuple[torch.Tensor, torch.Tensor]:
+def stable_int_seed(*parts) -> int:
+    payload = "|".join(str(part) for part in parts).encode("utf-8")
+    digest = hashlib.sha256(payload).hexdigest()
+    return int(digest[:16], 16) % (2**63 - 1)
+
+
+def canonical_task_name(task: str) -> str:
+    if task == "copy":
+        return "copy_first"
+    return task
+
+
+def make_batch(
+    args,
+    spec: TaskSpec,
+    device: torch.device,
+    seq_len: int | None = None,
+    batch_size: int | None = None,
+    batch_index: int | None = None,
+    stream: str = "train",
+) -> tuple[torch.Tensor, torch.Tensor]:
+    task = canonical_task_name(args.task)
+    seq_len = int(seq_len if seq_len is not None else args.seq_len)
+    batch_size = int(batch_size if batch_size is not None else args.batch_size)
     if args.task == "associative_recall":
-        return make_associative_recall_batch(args.batch_size, args.seq_len, spec, device)
-    if args.task == "copy_visible":
-        return make_copy_batch(args.batch_size, args.seq_len, spec, device, source_pos=args.seq_len - 2)
-    if args.task == "copy_first":
-        return make_copy_batch(args.batch_size, args.seq_len, spec, device, source_pos=0)
+        return make_associative_recall_batch(batch_size, seq_len, spec, device)
+    if task == "copy_visible":
+        return make_copy_batch(
+            batch_size,
+            seq_len,
+            spec,
+            device,
+            source_pos=seq_len - 2,
+            seed=getattr(args, "seed", None),
+            batch_index=batch_index,
+            stream=stream,
+        )
+    if task == "copy_first":
+        return make_copy_batch(
+            batch_size,
+            seq_len,
+            spec,
+            device,
+            source_pos=0,
+            seed=getattr(args, "seed", None),
+            batch_index=batch_index,
+            stream=stream,
+        )
     raise ValueError(f"unknown task: {args.task}")
 
 
-def evaluate(model, mask, neighbors, valid_neighbors, block_pair_index, args, spec, device) -> tuple[float, float]:
-    model.eval()
-    total_loss = 0.0
-    total_correct = 0
-    total = 0
-    with torch.no_grad():
-        for _ in range(args.eval_batches):
-            x, y = make_batch(args, spec, device)
-            logits = model(x, mask, neighbors, valid_neighbors, block_pair_index)
-            total_loss += float(F.cross_entropy(logits, y).item())
-            total_correct += int((logits.argmax(dim=-1) == y).sum().item())
-            total += y.numel()
-    model.train()
-    return total_loss / args.eval_batches, total_correct / total
+RESULT_FIELDS = [
+    "run_id",
+    "timestamp",
+    "host",
+    "local_or_remote",
+    "git_commit",
+    "config_path",
+    "config_sha256",
+    "command",
+    "output_dir",
+    "log_path",
+    "CUDA_VISIBLE_DEVICES",
+    "gpu_name",
+    "torch_version",
+    "task",
+    "data_mode",
+    "num_values",
+    "method",
+    "attention_backend",
+    "N_train",
+    "N_eval",
+    "B",
+    "d",
+    "G_type",
+    "H_type",
+    "seed",
+    "architecture",
+    "layers",
+    "d_model",
+    "heads",
+    "ffn_dim",
+    "dropout",
+    "optimizer",
+    "learning_rate",
+    "steps",
+    "batch_size",
+    "eval_batches",
+    "raw_K",
+    "effective_K_mean",
+    "effective_K_min",
+    "effective_K_max",
+    "duplicate_rate",
+    "self_loop_rate",
+    "attention_pair_count",
+    "final_train_loss",
+    "eval_loss",
+    "eval_accuracy",
+    "final_valid_loss",
+    "final_valid_accuracy",
+    "tokens_per_sec",
+    "elapsed_sec",
+    "peak_allocated_gb",
+    "peak_reserved_gb",
+    "artifact_dir",
+    "metrics_path",
+    "neighbor_shape",
+    "block_pair_shape",
+    "status",
+    "failure_reason",
+]
 
 
-def train_method(method: str, args, device: torch.device, output_dir: Path) -> dict:
-    set_seed(args.seed)
-    if torch.cuda.is_available():
-        gc.collect()
-        torch.cuda.empty_cache()
-    spec = TaskSpec(num_keys=args.num_keys, num_values=args.num_values)
-    mask = build_attention_mask(method, args.seq_len, args.block_size, args.degree, device, args.seed)
-    attention_backend = args.attention_backend
-    if attention_backend == "auto":
-        attention_backend = "dense_mask" if method == "dense" else "neighbor"
-    if attention_backend == "auto_split":
-        attention_backend = "dense_mask" if method == "dense" else "split"
-    if attention_backend == "auto_blockpair":
-        attention_backend = "dense_mask" if method == "dense" else "blockpair"
-    if attention_backend in {"neighbor", "split", "blockpair"} and method == "dense":
-        raise ValueError("dense method with sparse backend would use K=N; use dense_mask, auto, auto_split, or auto_blockpair")
+def resolve_attention_backend(requested: str, method: str) -> str:
+    if requested == "auto":
+        return "dense_mask" if method == "dense" else "neighbor"
+    if requested == "auto_split":
+        return "dense_mask" if method == "dense" else "split"
+    if requested == "auto_blockpair":
+        return "dense_mask" if method == "dense" else "blockpair"
+    if requested in {"neighbor", "split", "blockpair"} and method == "dense":
+        raise ValueError(
+            "dense method with sparse backend would use K=N; use dense_mask, auto, auto_split, or auto_blockpair"
+        )
+    return requested
+
+
+def make_attention_artifacts(
+    method: str,
+    seq_len: int,
+    args,
+    device: torch.device,
+    attention_backend: str,
+) -> tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None, torch.Tensor | None, dict]:
+    mask = build_attention_mask(
+        method,
+        seq_len,
+        args.block_size,
+        args.degree,
+        device,
+        args.seed,
+        getattr(args, "graph_config", None),
+    )
     neighbors = None
     valid_neighbors = None
     block_pair_index = None
@@ -659,17 +684,115 @@ def train_method(method: str, args, device: torch.device, output_dir: Path) -> d
         neighbors, valid_neighbors = mask_to_neighbors(mask)
     elif attention_backend in {"split", "blockpair"}:
         cross_mask = build_cross_mask(
-            method, args.seq_len, args.block_size, args.degree, device, args.seed
+            method,
+            seq_len,
+            args.block_size,
+            args.degree,
+            device,
+            args.seed,
+            getattr(args, "graph_config", None),
         )
         neighbors, valid_neighbors = mask_to_neighbors(cross_mask)
         if attention_backend == "blockpair":
             block_pair_index = cross_neighbors_to_block_pair_index(
                 neighbors, valid_neighbors, args.block_size
             )
+    return mask, neighbors, valid_neighbors, block_pair_index, mask_metrics(
+        mask, method, args.block_size, args.degree
+    )
+
+
+def cuda_sync(device: torch.device) -> None:
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+
+
+def evaluate(
+    model,
+    mask,
+    neighbors,
+    valid_neighbors,
+    block_pair_index,
+    args,
+    spec,
+    device,
+    seq_len: int,
+    stream: str,
+) -> tuple[float, float]:
+    model.eval()
+    total_loss = 0.0
+    total_correct = 0
+    total = 0
+    with torch.no_grad():
+        for batch_idx in range(args.eval_batches):
+            x, y = make_batch(
+                args,
+                spec,
+                device,
+                seq_len=seq_len,
+                batch_size=args.batch_size,
+                batch_index=batch_idx,
+                stream=stream,
+            )
+            logits = model(x, mask, neighbors, valid_neighbors, block_pair_index)
+            loss = F.cross_entropy(logits, y)
+            if not torch.isfinite(loss):
+                raise RuntimeError(f"non-finite eval loss for {stream}")
+            total_loss += float(loss.item())
+            total_correct += int((logits.argmax(dim=-1) == y).sum().item())
+            total += y.numel()
+    model.train()
+    return total_loss / args.eval_batches, total_correct / total
+
+
+def write_json(path: Path, payload) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+
+
+def write_csv(path: Path, rows: list[dict], fieldnames: list[str] | None = None) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if fieldnames is None:
+        fieldnames = list(rows[0].keys()) if rows else RESULT_FIELDS
+    with path.open("w", encoding="utf-8", newline="") as fp:
+        writer = csv.DictWriter(fp, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def train_method(
+    method: str,
+    args,
+    device: torch.device,
+    output_dir: Path,
+    train_len: int | None = None,
+    seed: int | None = None,
+    eval_lengths: list[int] | None = None,
+) -> dict:
+    train_len = int(train_len if train_len is not None else args.seq_len)
+    seed = int(seed if seed is not None else args.seed)
+    eval_lengths = [int(v) for v in (eval_lengths if eval_lengths is not None else [train_len])]
+    args = copy.copy(args)
+    args.seq_len = train_len
+    args.seed = seed
+    set_seed(args.seed)
+    if torch.cuda.is_available():
+        gc.collect()
+        torch.cuda.empty_cache()
+    spec = TaskSpec(num_keys=args.num_keys, num_values=args.num_values)
+    attention_backend = resolve_attention_backend(args.attention_backend, method)
+    mask, neighbors, valid_neighbors, block_pair_index, train_mask_metric = make_attention_artifacts(
+        method, train_len, args, device, attention_backend
+    )
     model = TinyTransformer(
         vocab_size=spec.vocab_size,
         num_classes=spec.num_values,
-        seq_len=args.seq_len,
+        seq_len=max([train_len, *eval_lengths]),
         d_model=args.d_model,
         num_layers=args.layers,
         num_heads=args.heads,
@@ -678,17 +801,28 @@ def train_method(method: str, args, device: torch.device, output_dir: Path) -> d
         attention_backend=attention_backend,
         block_size=args.block_size,
     ).to(device)
+    if args.optimizer != "adamw":
+        raise ValueError(f"unsupported optimizer: {args.optimizer}")
     opt = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
 
     if torch.cuda.is_available():
         torch.cuda.reset_peak_memory_stats()
-        torch.cuda.synchronize()
+        cuda_sync(device)
     start = time.perf_counter()
     last_loss = None
-    metrics_path = output_dir / f"{method}_metrics.jsonl"
+    metrics_path = output_dir / "metrics.jsonl"
+    method_metrics_path = output_dir / f"{method}_metrics.jsonl"
     with metrics_path.open("w", encoding="utf-8") as fp:
         for step in range(1, args.steps + 1):
-            x, y = make_batch(args, spec, device)
+            x, y = make_batch(
+                args,
+                spec,
+                device,
+                seq_len=train_len,
+                batch_size=args.batch_size,
+                batch_index=step,
+                stream="train",
+            )
             opt.zero_grad(set_to_none=True)
             logits = model(x, mask, neighbors, valid_neighbors, block_pair_index)
             loss = F.cross_entropy(logits, y)
@@ -699,11 +833,23 @@ def train_method(method: str, args, device: torch.device, output_dir: Path) -> d
             last_loss = float(loss.item())
             if step == 1 or step % args.log_every == 0 or step == args.steps:
                 eval_loss, eval_acc = evaluate(
-                    model, mask, neighbors, valid_neighbors, block_pair_index, args, spec, device
+                    model,
+                    mask,
+                    neighbors,
+                    valid_neighbors,
+                    block_pair_index,
+                    args,
+                    spec,
+                    device,
+                    train_len,
+                    stream=f"valid_N{train_len}",
                 )
                 row = {
                     "step": step,
                     "method": method,
+                    "seed": seed,
+                    "N_train": train_len,
+                    "N_eval": train_len,
                     "train_loss": last_loss,
                     "valid_loss": eval_loss,
                     "valid_accuracy": eval_acc,
@@ -712,23 +858,20 @@ def train_method(method: str, args, device: torch.device, output_dir: Path) -> d
                 fp.flush()
                 print(json.dumps(row), flush=True)
     if torch.cuda.is_available():
-        torch.cuda.synchronize()
+        cuda_sync(device)
     elapsed = time.perf_counter() - start
-    eval_loss, eval_acc = evaluate(
-        model, mask, neighbors, valid_neighbors, block_pair_index, args, spec, device
-    )
-    result = {
+    method_metrics_path.write_text(metrics_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    base_result = {
         "method": method,
         "task": args.task,
         "attention_backend": attention_backend,
-        "seq_len": args.seq_len,
+        "seq_len": train_len,
         "block_size": args.block_size,
         "degree": args.degree,
         "steps": args.steps,
         "batch_size": args.batch_size,
         "final_train_loss": last_loss,
-        "final_valid_loss": eval_loss,
-        "final_valid_accuracy": eval_acc,
         "tokens_per_sec": args.steps * args.batch_size * args.seq_len / elapsed,
         "elapsed_sec": elapsed,
         "device": str(device),
@@ -739,38 +882,381 @@ def train_method(method: str, args, device: torch.device, output_dir: Path) -> d
         "peak_reserved_gb": (
             torch.cuda.max_memory_reserved() / 1024**3 if torch.cuda.is_available() else 0.0
         ),
-        "mask": mask_metrics(mask, method, args.block_size, args.degree),
+        "mask": train_mask_metric,
         "task_spec": asdict(spec),
         "metrics_path": str(metrics_path),
         "neighbor_shape": list(neighbors.shape) if neighbors is not None else None,
         "block_pair_shape": list(block_pair_index.shape) if block_pair_index is not None else None,
     }
-    return result
+    records = []
+    for eval_len in eval_lengths:
+        eval_mask, eval_neighbors, eval_valid_neighbors, eval_block_pair_index, eval_mask_metric = (
+            make_attention_artifacts(method, eval_len, args, device, attention_backend)
+        )
+        eval_loss, eval_acc = evaluate(
+            model,
+            eval_mask,
+            eval_neighbors,
+            eval_valid_neighbors,
+            eval_block_pair_index,
+            args,
+            spec,
+            device,
+            eval_len,
+            stream=f"eval_N{eval_len}",
+        )
+        graph_config = getattr(args, "graph_config", DEFAULT_GRAPH_CONFIG)
+        g_type = graph_config.get("G", {}).get("type")
+        h_type = graph_config.get("H", {}).get("type")
+        run_id = f"train_N{train_len}_seed{seed}_{method}"
+        record = {
+            "run_id": run_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "host": socket.gethostname(),
+            "local_or_remote": getattr(args, "local_or_remote", "unknown"),
+            "git_commit": getattr(args, "git_commit", ""),
+            "config_path": getattr(args, "config_path", ""),
+            "config_sha256": getattr(args, "config_sha256", ""),
+            "command": getattr(args, "command", ""),
+            "output_dir": str(getattr(args, "output_dir", "")),
+            "log_path": getattr(args, "log_path", ""),
+            "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+            "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+            "torch_version": torch.__version__,
+            "task": args.task,
+            "data_mode": getattr(args, "data_mode", "online"),
+            "num_values": args.num_values,
+            "method": method,
+            "attention_backend": attention_backend,
+            "N_train": train_len,
+            "N_eval": eval_len,
+            "B": args.block_size,
+            "d": args.degree,
+            "G_type": g_type,
+            "H_type": h_type,
+            "seed": seed,
+            "architecture": args.architecture,
+            "layers": args.layers,
+            "d_model": args.d_model,
+            "heads": args.heads,
+            "ffn_dim": args.ffn_dim,
+            "dropout": args.dropout,
+            "optimizer": args.optimizer,
+            "learning_rate": args.learning_rate,
+            "steps": args.steps,
+            "batch_size": args.batch_size,
+            "eval_batches": args.eval_batches,
+            "raw_K": eval_mask_metric["raw_k"],
+            "effective_K_mean": eval_mask_metric["effective_k_mean"],
+            "effective_K_min": eval_mask_metric["effective_k_min"],
+            "effective_K_max": eval_mask_metric["effective_k_max"],
+            "duplicate_rate": eval_mask_metric["duplicate_rate"],
+            "self_loop_rate": eval_mask_metric["self_loop_rate"],
+            "attention_pair_count": eval_mask_metric["attention_pair_count"],
+            "final_train_loss": last_loss,
+            "eval_loss": eval_loss,
+            "eval_accuracy": eval_acc,
+            "final_valid_loss": eval_loss,
+            "final_valid_accuracy": eval_acc,
+            "tokens_per_sec": args.steps * args.batch_size * train_len / elapsed,
+            "elapsed_sec": elapsed,
+            "peak_allocated_gb": base_result["peak_allocated_gb"],
+            "peak_reserved_gb": base_result["peak_reserved_gb"],
+            "artifact_dir": str(output_dir),
+            "metrics_path": str(metrics_path),
+            "neighbor_shape": base_result["neighbor_shape"],
+            "block_pair_shape": base_result["block_pair_shape"],
+            "status": "ok",
+            "failure_reason": "",
+        }
+        records.append(record)
+    base_result["evals"] = records
+    if records:
+        base_result["final_valid_loss"] = records[0]["eval_loss"]
+        base_result["final_valid_accuracy"] = records[0]["eval_accuracy"]
+    write_csv(output_dir / "results.csv", records, RESULT_FIELDS)
+    write_jsonl(output_dir / "results.jsonl", records)
+    write_json(
+        output_dir / "summary.json",
+        {
+            "status": "ok",
+            "run_id": f"train_N{train_len}_seed{seed}_{method}",
+            "config": serialize_args(args),
+            "result": base_result,
+            "results": records,
+        },
+    )
+    return base_result
+
+
+DEFAULT_CONFIG = {
+    "task": {
+        "name": "copy",
+        "data": "online",
+        "num_values": 4,
+        "train_lengths": [128],
+        "eval_lengths": [128],
+    },
+    "model": {
+        "architecture": "tiny_transformer",
+        "layers": 2,
+        "d_model": 64,
+        "heads": 4,
+        "ffn_dim": 128,
+        "dropout": 0.1,
+        "attention_backend": "auto_split",
+    },
+    "attention": {
+        "methods": ["dense", "local", "random", "zigzag"],
+        "block_size": 16,
+        "degree": 2,
+        "graph": copy.deepcopy(DEFAULT_GRAPH_CONFIG),
+    },
+    "train": {
+        "steps": 10,
+        "batch_size": 4,
+        "eval_batches": 2,
+        "learning_rate": 1e-3,
+        "seeds": [0],
+        "optimizer": "adamw",
+        "log_every": 5,
+    },
+    "output": {
+        "root": "outputs/synthetic_mvp",
+    },
+}
+
+
+def parse_csv_ints(value: str) -> list[int]:
+    return [int(item.strip()) for item in value.split(",") if item.strip()]
+
+
+def parse_csv_strings(value: str) -> list[str]:
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def deep_merge(base: dict, override: dict) -> dict:
+    out = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = deep_merge(out[key], value)
+        else:
+            out[key] = copy.deepcopy(value)
+    return out
+
+
+def file_sha256(path: Path | None) -> str:
+    if path is None:
+        return ""
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def git_commit() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path.cwd(),
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return ""
+
+
+def detect_location() -> str:
+    cwd = str(Path.cwd())
+    if cwd.startswith("/home/huiwei/ysx/zigzag_attention"):
+        return "remote"
+    if cwd.startswith("/Users/sxye/Documents/expander"):
+        return "local"
+    return "unknown"
+
+
+def jsonable(value):
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, SimpleNamespace):
+        return {key: jsonable(item) for key, item in vars(value).items()}
+    if isinstance(value, dict):
+        return {str(key): jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [jsonable(item) for item in value]
+    return value
+
+
+def serialize_args(args) -> dict:
+    return jsonable(vars(args))
+
+
+def shell_command() -> str:
+    return shlex.join([sys.executable, *sys.argv])
+
+
+def write_command_script(path: Path, command: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    cuda = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    path.write_text(
+        "\n".join(
+            [
+                "#!/usr/bin/env bash",
+                "set -euo pipefail",
+                f"cd {shlex.quote(str(Path.cwd()))}",
+                "conda activate ysx_base 2>/dev/null || true",
+                f"CUDA_VISIBLE_DEVICES={shlex.quote(cuda)} {command}",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    path.chmod(0o755)
+
+
+def load_config(path: Path | None) -> tuple[dict, str, str]:
+    if path is None:
+        return copy.deepcopy(DEFAULT_CONFIG), "", ""
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    return deep_merge(DEFAULT_CONFIG, loaded), str(path), file_sha256(path)
+
+
+def apply_cli_overrides(config: dict, cli) -> dict:
+    config = copy.deepcopy(config)
+    if cli.task is not None:
+        config["task"]["name"] = "copy" if cli.task == "copy_first" else cli.task
+    if cli.seq_len is not None:
+        config["task"]["train_lengths"] = [cli.seq_len]
+        config["task"]["eval_lengths"] = [cli.seq_len]
+    if cli.train_lengths is not None:
+        config["task"]["train_lengths"] = parse_csv_ints(cli.train_lengths)
+    if cli.eval_lengths is not None:
+        config["task"]["eval_lengths"] = parse_csv_ints(cli.eval_lengths)
+    if cli.methods is not None:
+        config["attention"]["methods"] = parse_csv_strings(cli.methods)
+    if cli.block_size is not None:
+        config["attention"]["block_size"] = cli.block_size
+    if cli.degree is not None:
+        config["attention"]["degree"] = cli.degree
+    if cli.steps is not None:
+        config["train"]["steps"] = cli.steps
+    if cli.eval_batches is not None:
+        config["train"]["eval_batches"] = cli.eval_batches
+    if cli.batch_size is not None:
+        config["train"]["batch_size"] = cli.batch_size
+    if cli.learning_rate is not None:
+        config["train"]["learning_rate"] = cli.learning_rate
+    if cli.seed is not None:
+        config["train"]["seeds"] = [cli.seed]
+    if cli.seeds is not None:
+        config["train"]["seeds"] = parse_csv_ints(cli.seeds)
+    if cli.log_every is not None:
+        config["train"]["log_every"] = cli.log_every
+    if cli.d_model is not None:
+        config["model"]["d_model"] = cli.d_model
+    if cli.layers is not None:
+        config["model"]["layers"] = cli.layers
+    if cli.heads is not None:
+        config["model"]["heads"] = cli.heads
+    if cli.ffn_dim is not None:
+        config["model"]["ffn_dim"] = cli.ffn_dim
+    if cli.dropout is not None:
+        config["model"]["dropout"] = cli.dropout
+    if cli.attention_backend is not None:
+        config["model"]["attention_backend"] = cli.attention_backend
+    if cli.num_values is not None:
+        config["task"]["num_values"] = cli.num_values
+    if cli.num_keys is not None:
+        config["task"]["num_keys"] = cli.num_keys
+    if cli.output_dir is not None:
+        config["output"]["root"] = str(cli.output_dir)
+    return config
+
+
+def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> SimpleNamespace:
+    task = config["task"]
+    model = config["model"]
+    attention = config["attention"]
+    train = config["train"]
+    output = config["output"]
+    train_lengths = [int(v) for v in task.get("train_lengths", task.get("sequence_lengths", [128]))]
+    eval_lengths = [int(v) for v in task.get("eval_lengths", train_lengths)]
+    if model.get("architecture") != "tiny_transformer":
+        raise ValueError(f"unsupported architecture: {model.get('architecture')}")
+    graph_config = validate_graph_config(
+        max([*train_lengths, *eval_lengths]),
+        int(attention["block_size"]),
+        int(attention["degree"]),
+        attention.get("graph", DEFAULT_GRAPH_CONFIG),
+    )
+    for seq_len in [*train_lengths, *eval_lengths]:
+        validate_graph_config(
+            seq_len,
+            int(attention["block_size"]),
+            int(attention["degree"]),
+            graph_config,
+        )
+    steps = int(train["steps"])
+    log_every = int(train.get("log_every", max(1, steps // 10)))
+    command = shell_command()
+    return SimpleNamespace(
+        task=canonical_task_name(task.get("name", "copy")),
+        data_mode=task.get("data", "online"),
+        num_values=int(task.get("num_values", 4)),
+        num_keys=int(task.get("num_keys", 64)),
+        train_lengths=train_lengths,
+        eval_lengths=eval_lengths,
+        methods=[str(method) for method in attention["methods"]],
+        block_size=int(attention["block_size"]),
+        degree=int(attention["degree"]),
+        graph_config=graph_config,
+        architecture=model.get("architecture", "tiny_transformer"),
+        layers=int(model["layers"]),
+        d_model=int(model["d_model"]),
+        heads=int(model["heads"]),
+        ffn_dim=int(model["ffn_dim"]),
+        dropout=float(model["dropout"]),
+        attention_backend=model["attention_backend"],
+        steps=steps,
+        batch_size=int(train["batch_size"]),
+        eval_batches=int(train["eval_batches"]),
+        learning_rate=float(train["learning_rate"]),
+        seeds=[int(seed) for seed in train["seeds"]],
+        optimizer=train.get("optimizer", "adamw").lower(),
+        log_every=log_every,
+        output_dir=Path(output["root"]),
+        device=cli.device,
+        skip_tests=bool(cli.skip_tests),
+        config_path=config_path,
+        config_sha256=config_sha,
+        config_snapshot=config,
+        command=command,
+        log_path=cli.log_path or os.environ.get("COPY_V05_LOG_PATH", ""),
+        git_commit=git_commit(),
+        local_or_remote=cli.local_or_remote or detect_location(),
+        seq_len=train_lengths[0],
+        seed=int(train["seeds"][0]),
+    )
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--task",
-        default="associative_recall",
-        choices=["associative_recall", "copy_visible", "copy_first"],
-    )
-    parser.add_argument("--methods", default="dense,local,random,zigzag")
-    parser.add_argument("--seq-len", type=int, default=128)
-    parser.add_argument("--block-size", type=int, default=16)
-    parser.add_argument("--degree", type=int, default=2)
-    parser.add_argument("--steps", type=int, default=120)
-    parser.add_argument("--eval-batches", type=int, default=20)
-    parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--d-model", type=int, default=128)
-    parser.add_argument("--layers", type=int, default=2)
-    parser.add_argument("--heads", type=int, default=4)
-    parser.add_argument("--ffn-dim", type=int, default=256)
-    parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument("--learning-rate", type=float, default=3e-4)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--task", choices=["copy", "copy_first", "copy_visible", "associative_recall"])
+    parser.add_argument("--methods")
+    parser.add_argument("--seq-len", type=int)
+    parser.add_argument("--train-lengths")
+    parser.add_argument("--eval-lengths")
+    parser.add_argument("--block-size", type=int)
+    parser.add_argument("--degree", type=int)
+    parser.add_argument("--steps", type=int)
+    parser.add_argument("--eval-batches", type=int)
+    parser.add_argument("--batch-size", type=int)
+    parser.add_argument("--d-model", type=int)
+    parser.add_argument("--layers", type=int)
+    parser.add_argument("--heads", type=int)
+    parser.add_argument("--ffn-dim", type=int)
+    parser.add_argument("--dropout", type=float)
+    parser.add_argument("--learning-rate", type=float)
     parser.add_argument(
         "--attention-backend",
-        default="dense_mask",
         choices=["dense_mask", "neighbor", "split", "blockpair", "auto", "auto_split", "auto_blockpair"],
         help=(
             "dense_mask keeps the debug N x N score path; auto uses neighbor tables "
@@ -778,87 +1264,168 @@ def parse_args():
             "auto_blockpair groups cross edges by block pair."
         ),
     )
-    parser.add_argument("--num-keys", type=int, default=64)
-    parser.add_argument("--num-values", type=int, default=10)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--log-every", type=int, default=30)
-    parser.add_argument("--output-dir", type=Path, default=Path("outputs/synthetic_mvp"))
+    parser.add_argument("--num-keys", type=int)
+    parser.add_argument("--num-values", type=int)
+    parser.add_argument("--seed", type=int)
+    parser.add_argument("--seeds")
+    parser.add_argument("--log-every", type=int)
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
+    parser.add_argument("--local-or-remote", choices=["local", "remote", "unknown"])
+    parser.add_argument("--log-path")
     parser.add_argument("--skip-tests", action="store_true")
     return parser.parse_args()
 
 
+def failure_record(args, run_id: str, train_len: int, seed: int, method: str, error: Exception, run_dir: Path) -> dict:
+    graph_config = getattr(args, "graph_config", DEFAULT_GRAPH_CONFIG)
+    return {
+        "run_id": run_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "host": socket.gethostname(),
+        "local_or_remote": args.local_or_remote,
+        "git_commit": args.git_commit,
+        "config_path": args.config_path,
+        "config_sha256": args.config_sha256,
+        "command": args.command,
+        "output_dir": str(args.output_dir),
+        "log_path": args.log_path,
+        "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+        "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "torch_version": torch.__version__,
+        "task": args.task,
+        "data_mode": args.data_mode,
+        "num_values": args.num_values,
+        "method": method,
+        "attention_backend": args.attention_backend,
+        "N_train": train_len,
+        "N_eval": "",
+        "B": args.block_size,
+        "d": args.degree,
+        "G_type": graph_config.get("G", {}).get("type"),
+        "H_type": graph_config.get("H", {}).get("type"),
+        "seed": seed,
+        "architecture": args.architecture,
+        "layers": args.layers,
+        "d_model": args.d_model,
+        "heads": args.heads,
+        "ffn_dim": args.ffn_dim,
+        "dropout": args.dropout,
+        "optimizer": args.optimizer,
+        "learning_rate": args.learning_rate,
+        "steps": args.steps,
+        "batch_size": args.batch_size,
+        "eval_batches": args.eval_batches,
+        "raw_K": "",
+        "effective_K_mean": "",
+        "effective_K_min": "",
+        "effective_K_max": "",
+        "duplicate_rate": "",
+        "self_loop_rate": "",
+        "attention_pair_count": "",
+        "final_train_loss": "",
+        "eval_loss": "",
+        "eval_accuracy": "",
+        "final_valid_loss": "",
+        "final_valid_accuracy": "",
+        "tokens_per_sec": "",
+        "elapsed_sec": "",
+        "peak_allocated_gb": torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0,
+        "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1024**3 if torch.cuda.is_available() else 0.0,
+        "artifact_dir": str(run_dir),
+        "metrics_path": "",
+        "neighbor_shape": "",
+        "block_pair_shape": "",
+        "status": "failed",
+        "failure_reason": repr(error),
+    }
+
+
 def main() -> None:
-    args = parse_args()
+    cli = parse_args()
+    config, config_path, config_sha = load_config(cli.config)
+    config = apply_cli_overrides(config, cli)
+    args = build_runtime_args(config, cli, config_path, config_sha)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(
+        "cuda"
+        if (args.device == "cuda" or (args.device == "auto" and torch.cuda.is_available()))
+        else "cpu"
+    )
     set_seed(args.seed)
+    write_json(args.output_dir / "config_snapshot.json", args.config_snapshot)
+    write_command_script(args.output_dir / "command.sh", args.command)
 
     test_results = []
     if not args.skip_tests:
         test_results = run_mask_tests(device)
-        (args.output_dir / "mask_tests.json").write_text(
-            json.dumps(test_results, indent=2) + "\n", encoding="utf-8"
-        )
+        write_json(args.output_dir / "mask_tests.json", test_results)
         print(json.dumps({"mask_tests": "ok", "cases": len(test_results)}), flush=True)
 
-    all_results = []
-    for method in [m.strip() for m in args.methods.split(",") if m.strip()]:
-        result = train_method(method, args, device, args.output_dir)
-        all_results.append(result)
-        print(json.dumps({"completed": method, "result": result}, indent=2), flush=True)
+    all_records: list[dict] = []
+    method_results: list[dict] = []
+    metrics_lines: list[str] = []
+    for train_len in args.train_lengths:
+        for seed in args.seeds:
+            for method in args.methods:
+                run_id = f"train_N{train_len}_seed{seed}_{method}"
+                run_dir = args.output_dir / run_id
+                run_dir.mkdir(parents=True, exist_ok=True)
+                run_args = copy.copy(args)
+                run_args.output_dir = run_dir
+                write_json(run_dir / "config_snapshot.json", args.config_snapshot)
+                write_command_script(run_dir / "command.sh", args.command)
+                try:
+                    result = train_method(
+                        method,
+                        run_args,
+                        device,
+                        run_dir,
+                        train_len=train_len,
+                        seed=seed,
+                        eval_lengths=args.eval_lengths,
+                    )
+                    method_results.append(result)
+                    all_records.extend(result["evals"])
+                    metrics_lines.extend((run_dir / "metrics.jsonl").read_text(encoding="utf-8").splitlines())
+                    print(json.dumps({"completed": run_id, "evals": result["evals"]}, indent=2), flush=True)
+                except Exception as exc:
+                    (run_dir / "error.log").write_text(repr(exc) + "\n", encoding="utf-8")
+                    failed = failure_record(args, run_id, train_len, seed, method, exc, run_dir)
+                    all_records.append(failed)
+                    write_csv(run_dir / "results.csv", [failed], RESULT_FIELDS)
+                    write_jsonl(run_dir / "results.jsonl", [failed])
+                    write_json(
+                        run_dir / "summary.json",
+                        {
+                            "status": "failed",
+                            "run_id": run_id,
+                            "config": serialize_args(args),
+                            "failure_reason": repr(exc),
+                            "results": [failed],
+                        },
+                    )
+                    print(json.dumps({"failed": run_id, "error": repr(exc)}), flush=True)
 
-    summary = {
-        "status": "ok",
-        "config": vars(args) | {"output_dir": str(args.output_dir)},
-        "mask_test_cases": len(test_results),
-        "results": all_results,
-    }
-    (args.output_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
-    results_path = args.output_dir / "results.csv"
-    with results_path.open("w", encoding="utf-8", newline="") as fp:
-        fieldnames = [
-            "task",
-            "method",
-            "attention_backend",
-            "N",
-            "B",
-            "d",
-            "raw_K",
-            "effective_K_mean",
-            "attention_pair_count",
-            "final_valid_loss",
-            "final_valid_accuracy",
-            "tokens_per_sec",
-            "peak_allocated_gb",
-            "peak_reserved_gb",
-            "device",
-            "neighbor_shape",
-            "block_pair_shape",
-        ]
-        writer = csv.DictWriter(fp, fieldnames=fieldnames)
-        writer.writeheader()
-        for result in all_results:
-            writer.writerow(
-                {
-                    "task": result["task"],
-                    "method": result["method"],
-                    "attention_backend": result["attention_backend"],
-                    "N": result["seq_len"],
-                    "B": result["block_size"],
-                    "d": result["degree"],
-                    "raw_K": result["mask"]["raw_k"],
-                    "effective_K_mean": result["mask"]["effective_k_mean"],
-                    "attention_pair_count": result["mask"]["attention_pair_count"],
-                    "final_valid_loss": result["final_valid_loss"],
-                    "final_valid_accuracy": result["final_valid_accuracy"],
-                    "tokens_per_sec": result["tokens_per_sec"],
-                    "peak_allocated_gb": result["peak_allocated_gb"],
-                    "peak_reserved_gb": result["peak_reserved_gb"],
-                    "device": result["device"],
-                    "neighbor_shape": result["neighbor_shape"],
-                    "block_pair_shape": result["block_pair_shape"],
-                }
-            )
+    if metrics_lines:
+        (args.output_dir / "metrics.jsonl").write_text("\n".join(metrics_lines) + "\n", encoding="utf-8")
+    write_csv(args.output_dir / "results.csv", all_records, RESULT_FIELDS)
+    write_jsonl(args.output_dir / "results.jsonl", all_records)
+    write_csv(args.output_dir / "phase3_results.csv", all_records, RESULT_FIELDS)
+    write_jsonl(args.output_dir / "phase3_results.jsonl", all_records)
+    status = "ok" if all(row.get("status") == "ok" for row in all_records) else "failed"
+    write_json(
+        args.output_dir / "summary.json",
+        {
+            "status": status,
+            "config": serialize_args(args),
+            "mask_test_cases": len(test_results),
+            "results": all_records,
+            "method_results": method_results,
+        },
+    )
+    if status != "ok":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
