@@ -1052,6 +1052,9 @@ def file_sha256(path: Path | None) -> str:
 
 
 def git_commit() -> str:
+    env_commit = os.environ.get("COPY_V05_GIT_COMMIT") or os.environ.get("GIT_COMMIT")
+    if env_commit:
+        return env_commit
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
@@ -1095,6 +1098,7 @@ def shell_command() -> str:
 def write_command_script(path: Path, command: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     cuda = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    commit = os.environ.get("COPY_V05_GIT_COMMIT") or os.environ.get("GIT_COMMIT", "")
     path.write_text(
         "\n".join(
             [
@@ -1102,7 +1106,10 @@ def write_command_script(path: Path, command: str) -> None:
                 "set -euo pipefail",
                 f"cd {shlex.quote(str(Path.cwd()))}",
                 "conda activate ysx_base 2>/dev/null || true",
-                f"CUDA_VISIBLE_DEVICES={shlex.quote(cuda)} {command}",
+                (
+                    f"COPY_V05_GIT_COMMIT={shlex.quote(commit)} "
+                    f"CUDA_VISIBLE_DEVICES={shlex.quote(cuda)} {command}"
+                ),
                 "",
             ]
         ),
