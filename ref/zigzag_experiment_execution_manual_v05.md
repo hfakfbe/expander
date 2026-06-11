@@ -476,7 +476,7 @@ attention_backend = auto_split
 主表最小矩阵：
 
 | N_train | method | seeds | eval N |
----|---|---|---|
+|---|---|---|---|
 | 256 | dense/local/random/zigzag | config seeds | 256/512/1024/2048 |
 | 512 | dense/local/random/zigzag | config seeds | 256/512/1024/2048 |
 | 1024 | dense/local/random/zigzag | config seeds | 256/512/1024/2048 |
@@ -592,9 +592,319 @@ official LRA benchmark 结果；
 
 若报告中提到 blockpair 或其它后端，只能写为当前实现细节或 prototype，不得写成最终系统优化结论。
 
-## 7. 推荐执行清单
+## 7. 实验环境与服务器规范
 
-### 7.1 v05-doc
+### 7.1 服务器
+
+远端实验默认在公用 A100 服务器上运行：
+
+```text
+host alias: huiwei
+remote root: /home/huiwei/ysx/zigzag_attention
+conda env: ysx_base
+GPU: NVIDIA A100-SXM4-80GB
+```
+
+每次远端运行前必须检查 GPU 使用情况：
+
+```bash
+ssh huiwei
+nvidia-smi
+```
+
+只允许使用空闲或用户明确允许使用的 GPU。若目标 GPU 利用率高、显存被他人占用、或有未知训练进程，不启动实验。正式记录中必须写明 `CUDA_VISIBLE_DEVICES` 和实际 GPU 名称。
+
+### 7.2 本地与远端目录
+
+本地是唯一的编辑主目录：
+
+```text
+/Users/sxye/Documents/expander
+```
+
+远端是运行主目录：
+
+```text
+/home/huiwei/ysx/zigzag_attention
+```
+
+代码修改优先在本地完成，通过 rsync 同步到远端。远端只用于运行、查看日志和必要的小修复；若远端发生小修复，必须同步回本地并进入 git。
+
+推荐同步命令：
+
+```bash
+rsync -av --delete \
+  --exclude '.git/' \
+  --exclude '__pycache__/' \
+  --exclude '.DS_Store' \
+  --exclude 'outputs/' \
+  --exclude 'logs/' \
+  --exclude 'cached_graphs/' \
+  ./ huiwei:/home/huiwei/ysx/zigzag_attention/
+```
+
+结果同步命令：
+
+```bash
+rsync -av huiwei:/home/huiwei/ysx/zigzag_attention/outputs/ ./outputs/
+rsync -av huiwei:/home/huiwei/ysx/zigzag_attention/logs/ ./logs/
+```
+
+注意：`outputs/`、`logs/` 和 `cached_graphs/` 不纳入 git 主提交，但必须保存在本地磁盘，作为报告数值来源。
+
+### 7.3 Conda 环境
+
+远端默认使用：
+
+```bash
+conda activate ysx_base
+python --version
+python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+```
+
+每个大版本至少保存一次环境快照：
+
+```bash
+python -V
+python -c "import torch; print('torch', torch.__version__); print('cuda', torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')"
+pip freeze > envs/requirements_snapshot.txt
+```
+
+如果环境中缺少包，不直接污染公共环境；优先使用项目内兼容 shim 或新建私有环境，并把原因写入 phase 报告。
+
+### 7.4 运行方式
+
+短 smoke 可以直接运行。超过数分钟的正式实验必须使用 `tmux` 或 `screen`：
+
+```bash
+tmux new -s copy_v05
+cd /home/huiwei/ysx/zigzag_attention
+conda activate ysx_base
+CUDA_VISIBLE_DEVICES=<gpu_id> python scripts/synthetic_mvp.py \
+  --config configs/copy_v05_main.json \
+  --output-dir outputs/copy_v05_main
+```
+
+日志必须同时写入文件：
+
+```bash
+mkdir -p logs
+CUDA_VISIBLE_DEVICES=<gpu_id> python scripts/synthetic_mvp.py \
+  --config configs/copy_v05_main.json \
+  --output-dir outputs/copy_v05_main \
+  2>&1 | tee logs/copy_v05_main_$(date +%Y%m%d_%H%M%S).log
+```
+
+### 7.5 断点与恢复
+
+Phase 1/2 smoke 不要求 checkpoint resume。Phase 3 主实验若单个 run 时间较长，必须支持或至少规划以下恢复策略：
+
+```text
+每个 N_train / seed / method 独立输出目录；
+已完成 run 不重复覆盖；
+失败 run 记录 error.log；
+合并结果时跳过未完成 run 并标记 status=failed；
+重新运行只补缺失项。
+```
+
+如实现 checkpoint，checkpoint 必须包含：
+
+```text
+model state
+optimizer state
+step
+seed / RNG state
+config snapshot
+method
+N_train
+```
+
+### 7.6 远端运行前检查清单
+
+每次正式运行前检查：
+
+```text
+git status 本地干净或仅含本次明确改动；
+当前 commit hash 已记录；
+本地代码已 rsync 到远端；
+远端 configs/scripts/ref 文件存在；
+nvidia-smi 确认 GPU 可用；
+输出目录不会覆盖已有有效结果；
+日志路径已设置；
+config snapshot 会写入输出目录。
+```
+
+## 8. 实验记录规范
+
+### 8.1 文件组织
+
+v0.5 新实验记录放在：
+
+```text
+reports/
+  copy_v05_phase1_report.md
+  copy_v05_phase2_smoke_report.md
+  copy_v05_phase3_main_report.md
+```
+
+运行产物放在：
+
+```text
+outputs/copy_v05_phase1_smoke/
+outputs/copy_v05_smoke_gpu/
+outputs/copy_v05_main/
+logs/
+```
+
+旧 v04 报告只保存在：
+
+```text
+ref/archive_v04_reports/
+```
+
+不得把旧结果复制到 v05 主表中。
+
+### 8.2 每次运行必须记录
+
+每次运行至少记录以下字段：
+
+```text
+run_id
+timestamp
+host
+local_or_remote
+git_commit
+config_path
+config_sha256
+command
+output_dir
+log_path
+CUDA_VISIBLE_DEVICES
+gpu_name
+torch_version
+task
+data_mode
+num_values
+method
+attention_backend
+N_train
+N_eval
+B
+d
+G_type
+H_type
+seed
+architecture
+layers
+d_model
+heads
+ffn_dim
+dropout
+optimizer
+learning_rate
+steps
+batch_size
+eval_batches
+raw_K
+effective_K_mean
+effective_K_min
+effective_K_max
+duplicate_rate
+self_loop_rate
+attention_pair_count
+final_train_loss
+eval_loss
+eval_accuracy
+tokens_per_sec
+elapsed_sec
+peak_allocated_gb
+peak_reserved_gb
+status
+failure_reason
+```
+
+### 8.3 Config Snapshot
+
+每个输出目录必须保存运行时 config：
+
+```text
+config_snapshot.json
+```
+
+如果命令行覆盖了 config 中的字段，必须在 snapshot 中体现最终实际值。报告中引用的参数以 snapshot 为准，不以记忆或命令草稿为准。
+
+### 8.4 Command 记录
+
+每个 run 子目录必须保存：
+
+```text
+command.sh
+```
+
+`command.sh` 必须可以直接复现本次运行，至少包含：
+
+```bash
+cd /home/huiwei/ysx/zigzag_attention
+conda activate ysx_base
+CUDA_VISIBLE_DEVICES=<gpu_id> python scripts/synthetic_mvp.py ...
+```
+
+### 8.5 结果表
+
+Phase 3 必须产出：
+
+```text
+outputs/copy_v05_main/phase3_results.csv
+outputs/copy_v05_main/phase3_results.jsonl
+```
+
+CSV 用于人工检查和报告制表；JSONL 用于后续脚本读取。两者必须来自同一份 run records，不允许手工分别维护。
+
+### 8.6 报告写法
+
+阶段报告必须先写事实，再写解释。推荐结构：
+
+```text
+目标
+配置
+运行环境
+命令
+结果表
+通过/失败项
+解释
+下一步
+```
+
+报告中的结论必须使用限定语：
+
+```text
+在 copy online synthetic task 上
+在当前 B=16,d=2,G=cyclic,H=cycle 配置下
+在 seeds=[...] 内
+在 N_train -> N_eval 的设定下
+```
+
+不得把 smoke test 写成主实验结论，也不得把单 seed 结果写成稳定性结论。
+
+### 8.7 失败记录
+
+失败不是删除重跑。每次失败必须保留：
+
+```text
+error.log
+failed command
+config snapshot
+失败发生的 step
+是否占用 GPU
+初步原因判断
+是否需要改代码
+```
+
+失败结果在总表中保留 `status=failed`，除非确认是启动命令写错且没有进入训练。
+
+## 9. 推荐执行清单
+
+### 9.1 v05-doc
 
 ```text
 归档旧报告到 ref/archive_v04_reports/
@@ -603,7 +913,7 @@ official LRA benchmark 结果；
 提交 git commit
 ```
 
-### 7.2 v05-phase1
+### 9.2 v05-phase1
 
 ```text
 创建 configs/copy_v05_smoke.json
@@ -616,7 +926,7 @@ official LRA benchmark 结果；
 git commit
 ```
 
-### 7.3 v05-phase2
+### 9.3 v05-phase2
 
 ```text
 确认 copy 在线生成只依赖 seed/config
@@ -626,7 +936,7 @@ git commit
 git commit
 ```
 
-### 7.4 v05-phase3
+### 9.4 v05-phase3
 
 ```text
 运行 N_train=256
@@ -640,10 +950,10 @@ git commit
 git commit
 ```
 
-## 8. 当前已知注意事项
+## 10. 当前已知注意事项
 
-1. 当前根目录在检查时不是 git 仓库；开始 v0.5 实验前必须初始化或绑定 git 仓库。
+1. 当前根目录已经初始化为 git 仓库，v05 文档归档版本提交为 `4cbb945`。
 2. 旧 LRA 相关脚本可以暂时保留，但不得作为 v0.5 结果来源。
 3. 旧 `outputs/` 中的结果只能作为历史参考，不得混入 v0.5 主结果表。
-4. `reports/user_experiment_report_1.docx` 是阶段性人工订正报告，不属于旧 phase 报告归档范围，除非用户明确要求移动。
+4. `reports/user_experiment_report_1.docx` 和对应 PDF 已归档到 `ref/archive_v04_reports/user_report/`。
 5. 每个 phase 的实际执行记录应新建独立报告，不要继续覆盖旧 v04 报告。
