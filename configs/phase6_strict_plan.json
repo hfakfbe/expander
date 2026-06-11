@@ -1,0 +1,62 @@
+{
+  "status": "implementation_config",
+  "manual_phase": 6,
+  "gate": {
+    "requires_official_listops": true,
+    "requires_lra_text_imdb": true,
+    "generated_listops_scope": "pipeline_only",
+    "blockpair_scope": "prototype_only"
+  },
+  "data_readiness_command": [
+    "python",
+    "scripts/phase6_data_readiness.py",
+    "--repo-dir",
+    "code/lra-benchmarks",
+    "--output-json",
+    "outputs/phase6_data_readiness/readiness.json"
+  ],
+  "tasks": [
+    {
+      "name": "copy_first",
+      "source": "synthetic",
+      "benchmark_scope": "synthetic_only",
+      "enabled_before_data_gate": true
+    },
+    {
+      "name": "associative_recall",
+      "source": "synthetic",
+      "benchmark_scope": "synthetic_only_after_learning_fix",
+      "enabled_before_data_gate": false
+    },
+    {
+      "name": "listops",
+      "source": "official_lra",
+      "benchmark_scope": "official_lra_only_after_data_ready",
+      "enabled_before_data_gate": false
+    },
+    {
+      "name": "imdb",
+      "source": "lra_text",
+      "benchmark_scope": "lra_text_imdb",
+      "enabled_before_data_gate": false
+    }
+  ],
+  "methods": [
+    {"name": "dense", "attention_backend": "dense_mask"},
+    {"name": "local", "attention_backend": "split"},
+    {"name": "random", "attention_backend": "split"},
+    {"name": "zigzag", "attention_backend": "split"},
+    {"name": "zigzag_blockpair", "attention_backend": "blockpair", "scope": "prototype_only"}
+  ],
+  "initial_sweep": {
+    "layers": 4,
+    "block_size": 16,
+    "degree": [2, 3, 4],
+    "seeds": [0],
+    "final_seeds": [0, 1, 2]
+  },
+  "result_outputs": [
+    "outputs/phase6_runner/phase6_results.csv",
+    "outputs/phase6_runner/phase6_results.jsonl"
+  ]
+}

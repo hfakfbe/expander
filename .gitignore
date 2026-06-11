@@ -1,0 +1,20 @@
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Large or generated experiment artifacts
+outputs/
+logs/
+cached_graphs/
+
+# Archived external LRA checkout is not part of v0.5 copy-only code path.
+code/lra-benchmarks/
+
+# Local editor / office lock files
+.~*
+*.tmp
+
+# Environment snapshots can be regenerated or copied deliberately if needed.
+envs/

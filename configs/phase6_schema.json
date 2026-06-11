@@ -1,0 +1,99 @@
+{
+  "status": "readiness_only",
+  "manual_phase": 6,
+  "description": "Schema and guardrails for Phase 6 full experiments. This file does not claim Phase 6 has started.",
+  "methods": [
+    "dense",
+    "local",
+    "random_same_budget",
+    "bigbird_style_if_available",
+    "zigzag",
+    "tuned_zigzag_split",
+    "tuned_zigzag_blockpair_prototype"
+  ],
+  "tasks": [
+    {
+      "name": "copy_first",
+      "category": "synthetic",
+      "status": "ready",
+      "benchmark_claim_scope": "synthetic_only",
+      "notes": "N=1024 seed 0/1/2 follow-up complete."
+    },
+    {
+      "name": "associative_recall",
+      "category": "synthetic",
+      "status": "inconclusive",
+      "benchmark_claim_scope": "smoke_only",
+      "notes": "Earlier run did not demonstrate meaningful learning."
+    },
+    {
+      "name": "generated_listops_compatible",
+      "category": "symbolic",
+      "status": "pipeline_ready",
+      "benchmark_claim_scope": "pipeline_only_not_official_lra",
+      "notes": "Generated TSV files are available and load through the base repository, but they are not the official LRA split."
+    },
+    {
+      "name": "official_lra_listops",
+      "category": "symbolic",
+      "status": "blocked",
+      "benchmark_claim_scope": "official_lra_only_after_data_available",
+      "notes": "Remote lra_release.gz is empty/corrupt and official source probe timed out."
+    },
+    {
+      "name": "lra_text_or_retrieval_aan",
+      "category": "text",
+      "status": "blocked",
+      "benchmark_claim_scope": "not_started",
+      "notes": "Data and base pipeline not prepared."
+    }
+  ],
+  "fixed_initial_sweep_order": [
+    "Fix B=16 and layers=4; sweep d in [2,3,4].",
+    "Fix best d; sweep B in [8,16,32].",
+    "Fix B,d; sweep G variants.",
+    "Fix G; sweep H variants.",
+    "Fix structure; tune learning rate and dropout.",
+    "Add 3 seeds for final selected model."
+  ],
+  "required_ablations": [
+    "local_only_vs_zigzag",
+    "random_same_budget_vs_zigzag",
+    "cyclic_G_vs_random_permutation_G_vs_random_regular_G",
+    "cycle_H_vs_random_regular_H_vs_complete_H_counterexample",
+    "degree_d_2_3_4",
+    "block_size_B_8_16_32",
+    "fixed_graph_vs_layerwise_resampled_graph",
+    "naive_zigzag_vs_tuned_zigzag"
+  ],
+  "result_schema": [
+    "task",
+    "task_source",
+    "benchmark_scope",
+    "method",
+    "attention_backend",
+    "N",
+    "B",
+    "d",
+    "K_eff",
+    "params",
+    "seed",
+    "valid_metric",
+    "test_metric",
+    "final_valid_loss",
+    "final_valid_accuracy",
+    "memory_gb",
+    "tokens_per_sec",
+    "profile_protocol",
+    "artifact_dir",
+    "command_path",
+    "data_version",
+    "notes"
+  ],
+  "guardrails": [
+    "Do not report generated ListOps as official LRA.",
+    "Do not start scaling-law experiments before Phase 6 main tables and ablations exist.",
+    "Do not use the blockpair prototype as a final block-sparse kernel claim.",
+    "Every GPU run must record GPU id, utilization check policy, command, seed, and output directory."
+  ]
+}
