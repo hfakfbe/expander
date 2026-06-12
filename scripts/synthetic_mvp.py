@@ -1276,6 +1276,13 @@ def write_command_script(path: Path, command: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     cuda = os.environ.get("CUDA_VISIBLE_DEVICES", "")
     commit = os.environ.get("COPY_V05_GIT_COMMIT") or os.environ.get("GIT_COMMIT", "")
+    pythonpath = os.environ.get("PYTHONPATH", "")
+    env_parts = [
+        f"COPY_V05_GIT_COMMIT={shlex.quote(commit)}",
+        f"CUDA_VISIBLE_DEVICES={shlex.quote(cuda)}",
+    ]
+    if pythonpath:
+        env_parts.append(f"PYTHONPATH={shlex.quote(pythonpath)}")
     path.write_text(
         "\n".join(
             [
@@ -1283,10 +1290,7 @@ def write_command_script(path: Path, command: str) -> None:
                 "set -euo pipefail",
                 f"cd {shlex.quote(str(Path.cwd()))}",
                 "conda activate ysx_base 2>/dev/null || true",
-                (
-                    f"COPY_V05_GIT_COMMIT={shlex.quote(commit)} "
-                    f"CUDA_VISIBLE_DEVICES={shlex.quote(cuda)} {command}"
-                ),
+                f"{' '.join(env_parts)} {command}",
                 "",
             ]
         ),
