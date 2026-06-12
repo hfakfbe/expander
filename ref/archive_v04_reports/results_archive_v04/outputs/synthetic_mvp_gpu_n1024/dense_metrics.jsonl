@@ -1,0 +1,4 @@
+{"step": 1, "method": "dense", "train_loss": 2.483614683151245, "valid_loss": 2.5744842290878296, "valid_accuracy": 0.025}
+{"step": 40, "method": "dense", "train_loss": 2.2214651107788086, "valid_loss": 2.431854009628296, "valid_accuracy": 0.0875}
+{"step": 80, "method": "dense", "train_loss": 2.4235408306121826, "valid_loss": 2.3539458990097044, "valid_accuracy": 0.0875}
+{"step": 120, "method": "dense", "train_loss": 2.3527774810791016, "valid_loss": 2.3648072481155396, "valid_accuracy": 0.05}

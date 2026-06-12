@@ -1,0 +1,2 @@
+{"step": 1, "method": "local", "train_loss": 1.861627221107483, "valid_loss": 2.2772388458251953, "valid_accuracy": 0.0}
+{"step": 2, "method": "local", "train_loss": 1.0572693347930908, "valid_loss": 1.0094997882843018, "valid_accuracy": 0.5}

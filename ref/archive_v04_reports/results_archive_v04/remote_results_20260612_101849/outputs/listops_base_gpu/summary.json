@@ -1,0 +1,21 @@
+{
+  "status": "ok",
+  "repo_dir": "/home/huiwei/ysx/zigzag_attention/code/lra-benchmarks",
+  "steps": 100,
+  "batch_size": 4,
+  "max_length": 512,
+  "train_samples": 1024,
+  "eval_samples": 256,
+  "device": "cuda",
+  "cuda_available": true,
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "2.10.0+cu128",
+  "final_train_loss": 2.076991081237793,
+  "mean_train_loss": 2.3054460060596464,
+  "eval_loss": 2.273256778717041,
+  "eval_accuracy": 0.175,
+  "tokens_per_sec": 121409.89522119937,
+  "elapsed_sec": 1.6868476793169975,
+  "peak_allocated_gb": 0.0666646957397461,
+  "peak_reserved_gb": 0.087890625
+}

@@ -1,0 +1,5 @@
+task,method,N,B,d,raw_K,effective_K_mean,attention_pair_count,final_valid_loss,final_valid_accuracy,tokens_per_sec,peak_allocated_gb,peak_reserved_gb,device
+associative_recall,dense,1024,16,2,1024,1024.0,1048576,2.355018,0.0750,173454.807114,1.602577,1.783203,cuda
+associative_recall,local,1024,16,2,16,16.0,16384,2.355216,0.0750,208076.216022,1.602577,1.783203,cuda
+associative_recall,random,1024,16,2,20,20.0,20480,2.355375,0.0750,206008.660303,1.602577,1.783203,cuda
+associative_recall,zigzag,1024,16,2,20,20.0,20480,2.351962,0.0875,208438.076413,1.602577,1.783203,cuda

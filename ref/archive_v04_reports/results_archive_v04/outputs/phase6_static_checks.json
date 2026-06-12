@@ -1,0 +1,24 @@
+{
+  "status": "ok",
+  "checks": {
+    "synthetic_functions": {
+      "build_attention_mask": true,
+      "build_cross_mask": true,
+      "local_cross_attention": true,
+      "local_blockpair_attention": true,
+      "run_mask_tests": true
+    },
+    "base_run_model_functions": {
+      "get_model": true,
+      "transformers_collator": true,
+      "accuracy_score": true
+    },
+    "base_dataset_classes": {
+      "ListOpsDataset": true,
+      "ImdbDataset": true
+    },
+    "base_attention_smoke_classes": {
+      "BertSparseSelfAttention": true
+    }
+  }
+}

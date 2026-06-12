@@ -1,0 +1,15 @@
+{
+  "status": "ok",
+  "repo_dir": "/home/huiwei/ysx/zigzag_attention/code/lra-benchmarks",
+  "steps": 100,
+  "device": "cuda",
+  "cuda_available": true,
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "2.10.0+cu128",
+  "final_loss": 1.0127418041229248,
+  "mean_loss": 1.465013245344162,
+  "tokens_per_sec": 18974.068654582854,
+  "elapsed_sec": 2.698419665917754,
+  "peak_allocated_gb": 0.0232696533203125,
+  "peak_reserved_gb": 0.02734375
+}

@@ -4,19 +4,7 @@ __pycache__/
 *.pyo
 *.log
 
-# Large or generated experiment artifacts
-outputs/
-logs/
-cached_graphs/
-
-# Archived external LRA checkout is not part of v0.5 copy-only code path.
-code/lra-benchmarks/
-ref/archive_v04_reports/code_archive/
-ref/archive_v04_reports/results_archive_v04/
-
 # Local editor / office lock files
 .~*
 *.tmp
 
-# Environment snapshots can be regenerated or copied deliberately if needed.
-envs/

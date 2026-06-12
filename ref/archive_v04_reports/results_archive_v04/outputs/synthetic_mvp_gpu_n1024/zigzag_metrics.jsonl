@@ -1,0 +1,4 @@
+{"step": 1, "method": "zigzag", "train_loss": 2.4695591926574707, "valid_loss": 2.554639768600464, "valid_accuracy": 0.05}
+{"step": 40, "method": "zigzag", "train_loss": 2.2338857650756836, "valid_loss": 2.4424239873886107, "valid_accuracy": 0.075}
+{"step": 80, "method": "zigzag", "train_loss": 2.426010847091675, "valid_loss": 2.3556721687316893, "valid_accuracy": 0.0875}
+{"step": 120, "method": "zigzag", "train_loss": 2.3539602756500244, "valid_loss": 2.3685086965560913, "valid_accuracy": 0.05}

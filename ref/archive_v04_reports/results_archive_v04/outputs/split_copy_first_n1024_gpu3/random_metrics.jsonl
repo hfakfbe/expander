@@ -1,0 +1,5 @@
+{"step": 1, "method": "random", "train_loss": 1.6544363498687744, "valid_loss": 2.0074717700481415, "valid_accuracy": 0.25}
+{"step": 250, "method": "random", "train_loss": 1.3628652095794678, "valid_loss": 1.3941104531288147, "valid_accuracy": 0.234375}
+{"step": 500, "method": "random", "train_loss": 1.3910129070281982, "valid_loss": 1.4032283663749694, "valid_accuracy": 0.24375}
+{"step": 750, "method": "random", "train_loss": 1.370530605316162, "valid_loss": 1.386785727739334, "valid_accuracy": 0.259375}
+{"step": 1000, "method": "random", "train_loss": 1.375022530555725, "valid_loss": 1.3931476533412934, "valid_accuracy": 0.240625}

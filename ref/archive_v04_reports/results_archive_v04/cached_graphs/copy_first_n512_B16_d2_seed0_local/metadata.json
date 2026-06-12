@@ -1,0 +1,49 @@
+{
+  "method": "local",
+  "seq_len": 512,
+  "block_size": 16,
+  "degree": 2,
+  "seed": 0,
+  "num_blocks": 32,
+  "mask": {
+    "raw_k": 16,
+    "effective_k_mean": 16.0,
+    "effective_k_min": 16,
+    "effective_k_max": 16,
+    "duplicate_rate_estimate": 0.0,
+    "attention_pair_count": 8192,
+    "self_loop_rate": 1.0
+  },
+  "cross_pair_count": 0,
+  "neighbors_shape": [
+    512,
+    16
+  ],
+  "cross_neighbors_shape": [
+    512,
+    0
+  ],
+  "edge_index_shape": [
+    8192,
+    2
+  ],
+  "cross_edge_index_shape": [
+    0,
+    2
+  ],
+  "block_pair_index_shape": [
+    0,
+    7
+  ],
+  "block_pair_count": 0,
+  "block_pair_summary": [],
+  "block_pair_columns": [
+    "source_block",
+    "target_block",
+    "source_port",
+    "target_port",
+    "source_token",
+    "target_token",
+    "cross_neighbor_slot"
+  ]
+}

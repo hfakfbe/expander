@@ -1,0 +1,9 @@
+{"step": 1, "method": "zigzag", "train_loss": 1.5724878311157227, "valid_loss": 1.42426640689373, "valid_accuracy": 0.266796875}
+{"step": 250, "method": "zigzag", "train_loss": 0.0007019127951934934, "valid_loss": 0.0006015784849296324, "valid_accuracy": 1.0}
+{"step": 500, "method": "zigzag", "train_loss": 0.0003133730497211218, "valid_loss": 0.00027110647133667955, "valid_accuracy": 1.0}
+{"step": 750, "method": "zigzag", "train_loss": 0.00017704078345559537, "valid_loss": 0.00015358658638433553, "valid_accuracy": 1.0}
+{"step": 1000, "method": "zigzag", "train_loss": 0.00012532327673397958, "valid_loss": 9.89441532510682e-05, "valid_accuracy": 1.0}
+{"step": 1250, "method": "zigzag", "train_loss": 8.852326573105529e-05, "valid_loss": 7.163757727539633e-05, "valid_accuracy": 1.0}
+{"step": 1500, "method": "zigzag", "train_loss": 6.094930722611025e-05, "valid_loss": 4.976323371010949e-05, "valid_accuracy": 1.0}
+{"step": 1750, "method": "zigzag", "train_loss": 4.288832496968098e-05, "valid_loss": 3.798652760451659e-05, "valid_accuracy": 1.0}
+{"step": 2000, "method": "zigzag", "train_loss": 3.54790136043448e-05, "valid_loss": 3.0067948182477265e-05, "valid_accuracy": 1.0}

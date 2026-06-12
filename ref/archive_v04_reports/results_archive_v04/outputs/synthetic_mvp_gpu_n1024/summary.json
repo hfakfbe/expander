@@ -1,0 +1,161 @@
+{
+  "status": "ok",
+  "config": {
+    "methods": "dense,local,random,zigzag",
+    "seq_len": 1024,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 120,
+    "eval_batches": 10,
+    "batch_size": 8,
+    "d_model": 128,
+    "layers": 4,
+    "heads": 4,
+    "ffn_dim": 512,
+    "dropout": 0.1,
+    "learning_rate": 0.0003,
+    "seed": 0,
+    "log_every": 40,
+    "output_dir": "../../outputs/synthetic_mvp_gpu_n1024",
+    "skip_tests": false
+  },
+  "mask_test_cases": 8,
+  "results": [
+    {
+      "method": "dense",
+      "task": "associative_recall",
+      "seq_len": 1024,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 120,
+      "batch_size": 8,
+      "final_train_loss": 2.3527774810791016,
+      "final_valid_loss": 2.355018377304077,
+      "final_valid_accuracy": 0.075,
+      "tokens_per_sec": 173454.8071142026,
+      "elapsed_sec": 5.667412834241986,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 1.6025772094726562,
+      "peak_reserved_gb": 1.783203125,
+      "mask": {
+        "raw_k": 1024,
+        "effective_k_mean": 1024.0,
+        "effective_k_min": 1024,
+        "effective_k_max": 1024,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 1048576,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/synthetic_mvp_gpu_n1024/dense_metrics.jsonl"
+    },
+    {
+      "method": "local",
+      "task": "associative_recall",
+      "seq_len": 1024,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 120,
+      "batch_size": 8,
+      "final_train_loss": 2.3508365154266357,
+      "final_valid_loss": 2.355216407775879,
+      "final_valid_accuracy": 0.075,
+      "tokens_per_sec": 208076.21602178056,
+      "elapsed_sec": 4.724422708153725,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 1.6025772094726562,
+      "peak_reserved_gb": 1.783203125,
+      "mask": {
+        "raw_k": 16,
+        "effective_k_mean": 16.0,
+        "effective_k_min": 16,
+        "effective_k_max": 16,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 16384,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/synthetic_mvp_gpu_n1024/local_metrics.jsonl"
+    },
+    {
+      "method": "random",
+      "task": "associative_recall",
+      "seq_len": 1024,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 120,
+      "batch_size": 8,
+      "final_train_loss": 2.351682186126709,
+      "final_valid_loss": 2.355375146865845,
+      "final_valid_accuracy": 0.075,
+      "tokens_per_sec": 206008.6603025174,
+      "elapsed_sec": 4.77183822542429,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 1.6025772094726562,
+      "peak_reserved_gb": 1.783203125,
+      "mask": {
+        "raw_k": 20,
+        "effective_k_mean": 20.0,
+        "effective_k_min": 20,
+        "effective_k_max": 20,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 20480,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/synthetic_mvp_gpu_n1024/random_metrics.jsonl"
+    },
+    {
+      "method": "zigzag",
+      "task": "associative_recall",
+      "seq_len": 1024,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 120,
+      "batch_size": 8,
+      "final_train_loss": 2.3539602756500244,
+      "final_valid_loss": 2.3519624710083007,
+      "final_valid_accuracy": 0.0875,
+      "tokens_per_sec": 208438.07641348802,
+      "elapsed_sec": 4.716220840811729,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 1.6025772094726562,
+      "peak_reserved_gb": 1.783203125,
+      "mask": {
+        "raw_k": 20,
+        "effective_k_mean": 20.0,
+        "effective_k_min": 20,
+        "effective_k_max": 20,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 20480,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/synthetic_mvp_gpu_n1024/zigzag_metrics.jsonl"
+    }
+  ]
+}

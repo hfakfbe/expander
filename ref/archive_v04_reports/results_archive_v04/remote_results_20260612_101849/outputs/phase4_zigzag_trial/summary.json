@@ -1,0 +1,95 @@
+{
+  "status": "ok",
+  "config": {
+    "methods": "local,zigzag",
+    "seq_len": 512,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 400,
+    "eval_batches": 20,
+    "batch_size": 16,
+    "d_model": 128,
+    "layers": 4,
+    "heads": 4,
+    "ffn_dim": 512,
+    "dropout": 0.1,
+    "learning_rate": 0.001,
+    "num_keys": 32,
+    "num_values": 4,
+    "seed": 0,
+    "log_every": 100,
+    "output_dir": "../../outputs/phase4_zigzag_trial",
+    "skip_tests": false
+  },
+  "mask_test_cases": 8,
+  "results": [
+    {
+      "method": "local",
+      "task": "associative_recall",
+      "seq_len": 512,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 400,
+      "batch_size": 16,
+      "final_train_loss": 1.3975539207458496,
+      "final_valid_loss": 1.386313247680664,
+      "final_valid_accuracy": 0.271875,
+      "tokens_per_sec": 221688.71511334393,
+      "elapsed_sec": 14.781086165457964,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 0.9262924194335938,
+      "peak_reserved_gb": 1.03515625,
+      "mask": {
+        "raw_k": 16,
+        "effective_k_mean": 16.0,
+        "effective_k_min": 16,
+        "effective_k_max": 16,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 8192,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 32,
+        "num_values": 4,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/phase4_zigzag_trial/local_metrics.jsonl"
+    },
+    {
+      "method": "zigzag",
+      "task": "associative_recall",
+      "seq_len": 512,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 400,
+      "batch_size": 16,
+      "final_train_loss": 1.39536714553833,
+      "final_valid_loss": 1.386420875787735,
+      "final_valid_accuracy": 0.26875,
+      "tokens_per_sec": 239583.5214158734,
+      "elapsed_sec": 13.677067523822188,
+      "device": "cuda",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "peak_allocated_gb": 0.9262924194335938,
+      "peak_reserved_gb": 1.03515625,
+      "mask": {
+        "raw_k": 20,
+        "effective_k_mean": 20.0,
+        "effective_k_min": 20,
+        "effective_k_max": 20,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 10240,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 32,
+        "num_values": 4,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/phase4_zigzag_trial/zigzag_metrics.jsonl"
+    }
+  ]
+}

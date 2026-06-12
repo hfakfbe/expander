@@ -1,0 +1,119 @@
+{
+  "status": "ok",
+  "device": "cpu",
+  "gpu_name": null,
+  "config": {
+    "task": "copy_first",
+    "methods": "local,zigzag",
+    "attention_backend": "auto_blockpair",
+    "seq_len": 64,
+    "block_size": 8,
+    "degree": 2,
+    "batch_size": 2,
+    "d_model": 32,
+    "layers": 1,
+    "heads": 2,
+    "ffn_dim": 64,
+    "dropout": 0.1,
+    "learning_rate": 0.001,
+    "num_keys": 64,
+    "num_values": 4,
+    "seed": 0,
+    "warmup_steps": 1,
+    "measure_steps": 2,
+    "repeats": 1,
+    "output_dir": "../../outputs/blockpair_profile_cpu_smoke_vectorized"
+  },
+  "results": [
+    {
+      "method": "local",
+      "attention_backend": "blockpair",
+      "seq_len": 64,
+      "block_size": 8,
+      "degree": 2,
+      "batch_size": 2,
+      "warmup_steps": 1,
+      "measure_steps": 2,
+      "elapsed_sec": 0.01202685758471489,
+      "tokens_per_sec": 21285.693141103973,
+      "mean_loss": 1.9615991115570068,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 8,
+        "effective_k_mean": 8.0,
+        "effective_k_min": 8,
+        "effective_k_max": 8,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 512,
+        "self_loop_rate": 1.0
+      },
+      "neighbor_shape": [
+        64,
+        0
+      ],
+      "block_pair_shape": [
+        0,
+        7
+      ],
+      "repeat": 0
+    },
+    {
+      "method": "zigzag",
+      "attention_backend": "blockpair",
+      "seq_len": 64,
+      "block_size": 8,
+      "degree": 2,
+      "batch_size": 2,
+      "warmup_steps": 1,
+      "measure_steps": 2,
+      "elapsed_sec": 0.018230659887194633,
+      "tokens_per_sec": 14042.278314885163,
+      "mean_loss": 1.5491820573806763,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 12,
+        "effective_k_mean": 12.0,
+        "effective_k_min": 12,
+        "effective_k_max": 12,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 768,
+        "self_loop_rate": 1.0
+      },
+      "neighbor_shape": [
+        64,
+        4
+      ],
+      "block_pair_shape": [
+        256,
+        7
+      ],
+      "repeat": 0
+    }
+  ],
+  "aggregate": [
+    {
+      "method": "local",
+      "attention_backend": "blockpair",
+      "repeats": 1,
+      "tokens_per_sec_mean": 21285.693141103973,
+      "tokens_per_sec_std": 0.0,
+      "peak_allocated_gb_mean": 0.0,
+      "peak_allocated_gb_std": 0.0,
+      "peak_reserved_gb_mean": 0.0,
+      "peak_reserved_gb_std": 0.0
+    },
+    {
+      "method": "zigzag",
+      "attention_backend": "blockpair",
+      "repeats": 1,
+      "tokens_per_sec_mean": 14042.278314885163,
+      "tokens_per_sec_std": 0.0,
+      "peak_allocated_gb_mean": 0.0,
+      "peak_allocated_gb_std": 0.0,
+      "peak_reserved_gb_mean": 0.0,
+      "peak_reserved_gb_std": 0.0
+    }
+  ]
+}

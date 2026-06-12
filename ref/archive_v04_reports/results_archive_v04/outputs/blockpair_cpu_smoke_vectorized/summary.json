@@ -1,0 +1,115 @@
+{
+  "status": "ok",
+  "config": {
+    "task": "copy_first",
+    "methods": "local,zigzag",
+    "seq_len": 64,
+    "block_size": 8,
+    "degree": 2,
+    "steps": 2,
+    "eval_batches": 1,
+    "batch_size": 2,
+    "d_model": 32,
+    "layers": 1,
+    "heads": 2,
+    "ffn_dim": 64,
+    "dropout": 0.1,
+    "learning_rate": 0.0003,
+    "attention_backend": "auto_blockpair",
+    "num_keys": 64,
+    "num_values": 4,
+    "seed": 0,
+    "log_every": 30,
+    "output_dir": "../../outputs/blockpair_cpu_smoke_vectorized",
+    "skip_tests": false
+  },
+  "mask_test_cases": 8,
+  "results": [
+    {
+      "method": "local",
+      "task": "copy_first",
+      "attention_backend": "blockpair",
+      "seq_len": 64,
+      "block_size": 8,
+      "degree": 2,
+      "steps": 2,
+      "batch_size": 2,
+      "final_train_loss": 1.0572693347930908,
+      "final_valid_loss": 1.5186777114868164,
+      "final_valid_accuracy": 0.0,
+      "tokens_per_sec": 7812.408982497035,
+      "elapsed_sec": 0.032768381759524345,
+      "device": "cpu",
+      "gpu_name": null,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 8,
+        "effective_k_mean": 8.0,
+        "effective_k_min": 8,
+        "effective_k_max": 8,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 512,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 4,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/blockpair_cpu_smoke_vectorized/local_metrics.jsonl",
+      "neighbor_shape": [
+        64,
+        0
+      ],
+      "block_pair_shape": [
+        0,
+        7
+      ]
+    },
+    {
+      "method": "zigzag",
+      "task": "copy_first",
+      "attention_backend": "blockpair",
+      "seq_len": 64,
+      "block_size": 8,
+      "degree": 2,
+      "steps": 2,
+      "batch_size": 2,
+      "final_train_loss": 1.1653807163238525,
+      "final_valid_loss": 1.9053131341934204,
+      "final_valid_accuracy": 0.0,
+      "tokens_per_sec": 14123.903199966046,
+      "elapsed_sec": 0.018125301226973534,
+      "device": "cpu",
+      "gpu_name": null,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 12,
+        "effective_k_mean": 12.0,
+        "effective_k_min": 12,
+        "effective_k_max": 12,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 768,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 4,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "../../outputs/blockpair_cpu_smoke_vectorized/zigzag_metrics.jsonl",
+      "neighbor_shape": [
+        64,
+        4
+      ],
+      "block_pair_shape": [
+        256,
+        7
+      ]
+    }
+  ]
+}

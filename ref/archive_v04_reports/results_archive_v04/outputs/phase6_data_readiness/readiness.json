@@ -1,0 +1,90 @@
+{
+  "status": "blocked",
+  "repo_dir": "/Users/sxye/Documents/expander/code/lra-benchmarks",
+  "downloads": {},
+  "listops": {
+    "source_scope": "pipeline_only_generated_or_incomplete",
+    "splits": {
+      "basic_train.tsv": {
+        "exists": true,
+        "path": "/Users/sxye/Documents/expander/code/lra-benchmarks/datasets/lra_release/listops-1000/basic_train.tsv",
+        "bytes": 562740,
+        "sha256": "cc583107a6042c8bd6a75a0b6eb3697a57202f8fafea60c1b1ba9e62dace4d18",
+        "rows": 1024,
+        "label_distribution": {
+          "0": 161,
+          "1": 87,
+          "2": 96,
+          "3": 79,
+          "4": 86,
+          "5": 106,
+          "6": 83,
+          "7": 64,
+          "8": 93,
+          "9": 169
+        },
+        "max_tokens": 512
+      },
+      "basic_val.tsv": {
+        "exists": true,
+        "path": "/Users/sxye/Documents/expander/code/lra-benchmarks/datasets/lra_release/listops-1000/basic_val.tsv",
+        "bytes": 146171,
+        "sha256": "539239a3a978057e96abcd8c94c6ac2a4e0425c8a54eae67c2a031f26665e68f",
+        "rows": 256,
+        "label_distribution": {
+          "0": 42,
+          "1": 27,
+          "2": 17,
+          "3": 13,
+          "4": 26,
+          "5": 24,
+          "6": 19,
+          "7": 18,
+          "8": 25,
+          "9": 45
+        },
+        "max_tokens": 512
+      },
+      "basic_test.tsv": {
+        "exists": true,
+        "path": "/Users/sxye/Documents/expander/code/lra-benchmarks/datasets/lra_release/listops-1000/basic_test.tsv",
+        "bytes": 138382,
+        "sha256": "b3e85ac8133bcb9f919c3aba16237f720f26e420df9c9c10d5b0fdedd1e939b2",
+        "rows": 256,
+        "label_distribution": {
+          "0": 46,
+          "1": 23,
+          "2": 8,
+          "3": 29,
+          "4": 24,
+          "5": 32,
+          "6": 21,
+          "7": 21,
+          "8": 18,
+          "9": 34
+        },
+        "max_tokens": 507
+      }
+    },
+    "ready_for_official_claims": false
+  },
+  "imdb": {
+    "splits": {
+      "train": {
+        "exists": false,
+        "path": "/Users/sxye/Documents/expander/code/lra-benchmarks/datasets/aclImdb/train",
+        "neg_count": 0,
+        "pos_count": 0,
+        "max_chars_sampled": 0
+      },
+      "test": {
+        "exists": false,
+        "path": "/Users/sxye/Documents/expander/code/lra-benchmarks/datasets/aclImdb/test",
+        "neg_count": 0,
+        "pos_count": 0,
+        "max_chars_sampled": 0
+      }
+    },
+    "ready": false
+  }
+}

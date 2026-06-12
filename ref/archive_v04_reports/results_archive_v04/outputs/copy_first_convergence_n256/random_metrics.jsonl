@@ -1,0 +1,13 @@
+{"step": 1, "method": "random", "train_loss": 1.5167477130889893, "valid_loss": 1.7901650428771974, "valid_accuracy": 0.24609375}
+{"step": 250, "method": "random", "train_loss": 1.3896294832229614, "valid_loss": 1.3977752119302749, "valid_accuracy": 0.260546875}
+{"step": 500, "method": "random", "train_loss": 0.0011839051730930805, "valid_loss": 0.0009831718052737415, "valid_accuracy": 1.0}
+{"step": 750, "method": "random", "train_loss": 0.0013297717086970806, "valid_loss": 0.0010682324675144628, "valid_accuracy": 1.0}
+{"step": 1000, "method": "random", "train_loss": 0.0002724129590205848, "valid_loss": 0.00023911512216727714, "valid_accuracy": 1.0}
+{"step": 1250, "method": "random", "train_loss": 0.00018881907453760505, "valid_loss": 0.00016002911106625107, "valid_accuracy": 1.0}
+{"step": 1500, "method": "random", "train_loss": 0.00017753738211467862, "valid_loss": 0.00015053136448841541, "valid_accuracy": 1.0}
+{"step": 1750, "method": "random", "train_loss": 0.0002958725090138614, "valid_loss": 0.00022714386832376477, "valid_accuracy": 1.0}
+{"step": 2000, "method": "random", "train_loss": 8.037344377953559e-05, "valid_loss": 7.357145259447861e-05, "valid_accuracy": 1.0}
+{"step": 2250, "method": "random", "train_loss": 6.368349568219855e-05, "valid_loss": 5.694097253581276e-05, "valid_accuracy": 1.0}
+{"step": 2500, "method": "random", "train_loss": 4.7777513827895746e-05, "valid_loss": 4.309137621021364e-05, "valid_accuracy": 1.0}
+{"step": 2750, "method": "random", "train_loss": 7.66068187658675e-05, "valid_loss": 5.736717630497878e-05, "valid_accuracy": 1.0}
+{"step": 3000, "method": "random", "train_loss": 0.00011004426050931215, "valid_loss": 7.73755940826959e-05, "valid_accuracy": 1.0}

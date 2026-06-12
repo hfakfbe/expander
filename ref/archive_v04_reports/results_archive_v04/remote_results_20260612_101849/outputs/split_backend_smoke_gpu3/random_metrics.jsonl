@@ -1,0 +1,3 @@
+{"step": 1, "method": "random", "train_loss": 1.454376220703125, "valid_loss": 1.470499336719513, "valid_accuracy": 0.21875}
+{"step": 20, "method": "random", "train_loss": 1.4279922246932983, "valid_loss": 1.3967249393463135, "valid_accuracy": 0.359375}
+{"step": 40, "method": "random", "train_loss": 1.348771095275879, "valid_loss": 1.385786771774292, "valid_accuracy": 0.21875}

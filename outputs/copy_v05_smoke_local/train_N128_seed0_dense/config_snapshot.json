@@ -1,0 +1,63 @@
+{
+  "attention": {
+    "block_size": 16,
+    "causal": true,
+    "degree": 2,
+    "graph": {
+      "G": {
+        "type": "cyclic"
+      },
+      "H": {
+        "type": "cycle"
+      }
+    },
+    "methods": [
+      "dense",
+      "local",
+      "random",
+      "zigzag"
+    ]
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 64,
+    "dropout": 0.1,
+    "ffn_dim": 128,
+    "heads": 4,
+    "layers": 2
+  },
+  "output": {
+    "curve_format": "png",
+    "plot_curves": true,
+    "root": "outputs/copy_v05_smoke_local"
+  },
+  "task": {
+    "data": "online",
+    "eval_lengths": [
+      128
+    ],
+    "mode": "full_copy",
+    "name": "copy",
+    "num_values": 4,
+    "special_tokens": {
+      "eos": 6,
+      "pad": 0,
+      "sep": 5
+    },
+    "train_lengths": [
+      128
+    ]
+  },
+  "train": {
+    "batch_size": 4,
+    "eval_batches": 2,
+    "learning_rate": 0.001,
+    "log_every": 10,
+    "optimizer": "adamw",
+    "seeds": [
+      0
+    ],
+    "steps": 20
+  }
+}

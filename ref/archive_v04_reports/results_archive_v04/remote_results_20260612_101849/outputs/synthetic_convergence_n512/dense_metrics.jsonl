@@ -1,0 +1,13 @@
+{"step": 1, "method": "dense", "train_loss": 1.5265306234359741, "valid_loss": 1.723292961716652, "valid_accuracy": 0.24375}
+{"step": 250, "method": "dense", "train_loss": 1.4942779541015625, "valid_loss": 1.3967221289873124, "valid_accuracy": 0.25625}
+{"step": 500, "method": "dense", "train_loss": 1.3949142694473267, "valid_loss": 1.3871018052101136, "valid_accuracy": 0.2578125}
+{"step": 750, "method": "dense", "train_loss": 1.4080467224121094, "valid_loss": 1.3824337363243102, "valid_accuracy": 0.2859375}
+{"step": 1000, "method": "dense", "train_loss": 1.4007501602172852, "valid_loss": 1.3831167757511138, "valid_accuracy": 0.28125}
+{"step": 1250, "method": "dense", "train_loss": 1.407614827156067, "valid_loss": 1.383345726132393, "valid_accuracy": 0.28046875}
+{"step": 1500, "method": "dense", "train_loss": 1.4208036661148071, "valid_loss": 1.3909368842840195, "valid_accuracy": 0.26953125}
+{"step": 1750, "method": "dense", "train_loss": 1.3962738513946533, "valid_loss": 1.389985775947571, "valid_accuracy": 0.278125}
+{"step": 2000, "method": "dense", "train_loss": 1.392796277999878, "valid_loss": 1.375529557466507, "valid_accuracy": 0.278125}
+{"step": 2250, "method": "dense", "train_loss": 1.3738242387771606, "valid_loss": 1.3800210297107696, "valid_accuracy": 0.28984375}
+{"step": 2500, "method": "dense", "train_loss": 1.4128742218017578, "valid_loss": 1.3821420967578888, "valid_accuracy": 0.26640625}
+{"step": 2750, "method": "dense", "train_loss": 1.3798539638519287, "valid_loss": 1.3821843713521957, "valid_accuracy": 0.27421875}
+{"step": 3000, "method": "dense", "train_loss": 1.3611345291137695, "valid_loss": 1.3686726957559585, "valid_accuracy": 0.29296875}

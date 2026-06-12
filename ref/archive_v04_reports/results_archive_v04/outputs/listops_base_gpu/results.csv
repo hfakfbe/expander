@@ -1,0 +1,2 @@
+task,method,max_length,steps,batch_size,train_samples,eval_samples,eval_loss,eval_accuracy,tokens_per_sec,peak_allocated_gb,peak_reserved_gb,device
+generated_listops,base_dense_bert,512,100,4,1024,256,2.273257,0.1750,121409.895221,0.066665,0.087891,cuda

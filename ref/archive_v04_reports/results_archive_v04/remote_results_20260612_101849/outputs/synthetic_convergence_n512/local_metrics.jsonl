@@ -1,0 +1,3 @@
+{"step": 1, "method": "local", "train_loss": 1.510338544845581, "valid_loss": 1.7388039618730544, "valid_accuracy": 0.2546875}
+{"step": 250, "method": "local", "train_loss": 1.4890079498291016, "valid_loss": 1.3998680979013443, "valid_accuracy": 0.2484375}
+{"step": 500, "method": "local", "train_loss": 1.3893629312515259, "valid_loss": 1.3906553596258164, "valid_accuracy": 0.246875}

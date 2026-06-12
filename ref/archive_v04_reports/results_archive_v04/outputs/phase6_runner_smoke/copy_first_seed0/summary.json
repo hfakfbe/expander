@@ -1,0 +1,106 @@
+{
+  "status": "ok",
+  "config": {
+    "task": "copy_first",
+    "methods": "dense,local",
+    "seq_len": 64,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 2,
+    "eval_batches": 1,
+    "batch_size": 2,
+    "d_model": 128,
+    "layers": 2,
+    "heads": 4,
+    "ffn_dim": 256,
+    "dropout": 0.1,
+    "learning_rate": 0.0003,
+    "attention_backend": "auto_split",
+    "num_keys": 64,
+    "num_values": 10,
+    "seed": 0,
+    "log_every": 30,
+    "output_dir": "outputs/phase6_runner_smoke/copy_first_seed0",
+    "skip_tests": false
+  },
+  "mask_test_cases": 8,
+  "results": [
+    {
+      "method": "dense",
+      "task": "copy_first",
+      "attention_backend": "dense_mask",
+      "seq_len": 64,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 2,
+      "batch_size": 2,
+      "final_train_loss": 2.4937634468078613,
+      "final_valid_loss": 2.2644355297088623,
+      "final_valid_accuracy": 0.0,
+      "tokens_per_sec": 6629.84856003805,
+      "elapsed_sec": 0.03861325001344085,
+      "device": "cpu",
+      "gpu_name": null,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 64,
+        "effective_k_mean": 64.0,
+        "effective_k_min": 64,
+        "effective_k_max": 64,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 4096,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "outputs/phase6_runner_smoke/copy_first_seed0/dense_metrics.jsonl",
+      "neighbor_shape": null,
+      "block_pair_shape": null
+    },
+    {
+      "method": "local",
+      "task": "copy_first",
+      "attention_backend": "split",
+      "seq_len": 64,
+      "block_size": 16,
+      "degree": 2,
+      "steps": 2,
+      "batch_size": 2,
+      "final_train_loss": 3.0069243907928467,
+      "final_valid_loss": 2.9658265113830566,
+      "final_valid_accuracy": 0.0,
+      "tokens_per_sec": 26331.916652306405,
+      "elapsed_sec": 0.009722042013891041,
+      "device": "cpu",
+      "gpu_name": null,
+      "peak_allocated_gb": 0.0,
+      "peak_reserved_gb": 0.0,
+      "mask": {
+        "raw_k": 16,
+        "effective_k_mean": 16.0,
+        "effective_k_min": 16,
+        "effective_k_max": 16,
+        "duplicate_rate_estimate": 0.0,
+        "attention_pair_count": 1024,
+        "self_loop_rate": 1.0
+      },
+      "task_spec": {
+        "num_keys": 64,
+        "num_values": 10,
+        "query_token": 75,
+        "pad_token": 0
+      },
+      "metrics_path": "outputs/phase6_runner_smoke/copy_first_seed0/local_metrics.jsonl",
+      "neighbor_shape": [
+        64,
+        0
+      ],
+      "block_pair_shape": null
+    }
+  ]
+}
