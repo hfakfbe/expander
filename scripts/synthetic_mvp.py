@@ -4,6 +4,7 @@ import csv
 import gc
 import hashlib
 import json
+import math
 import os
 import random
 import shlex
@@ -57,6 +58,18 @@ def mask_to_neighbors(mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         neighbors[row, : len(idx)] = idx
         valid[row, : len(idx)] = True
     return neighbors, valid
+
+
+def build_causal_mask(seq_len: int, device: torch.device) -> torch.Tensor:
+    return torch.ones((seq_len, seq_len), dtype=torch.bool, device=device).tril()
+
+
+def local_valid_from_mask(mask: torch.Tensor, block_size: int) -> torch.Tensor:
+    seq_len = mask.shape[0]
+    offsets = torch.arange(block_size, device=mask.device)
+    block_starts = (torch.arange(seq_len, device=mask.device) // block_size) * block_size
+    local_positions = block_starts[:, None] + offsets[None, :]
+    return mask.gather(1, local_positions)
 
 
 def dense_attention(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
@@ -131,6 +144,7 @@ def local_cross_attention(
     k: torch.Tensor,
     v: torch.Tensor,
     block_size: int,
+    local_valid: torch.Tensor,
     cross_neighbors: torch.Tensor | None,
     valid_cross_neighbors: torch.Tensor | None,
     dropout: nn.Module | None = None,
@@ -146,6 +160,10 @@ def local_cross_attention(
     v_blocks = v.view(batch, heads, num_blocks, block_size, head_dim)
     local_scores = torch.einsum("bhqtd,bhqsd->bhqts", q_blocks, k_blocks) * scale
     local_scores_flat = local_scores.reshape(batch, heads, seq_len, block_size)
+    local_scores_flat = local_scores_flat.masked_fill(
+        ~local_valid[None, None, :, :],
+        torch.finfo(local_scores_flat.dtype).min,
+    )
 
     has_cross = (
         cross_neighbors is not None
@@ -187,6 +205,7 @@ def local_blockpair_attention(
     k: torch.Tensor,
     v: torch.Tensor,
     block_size: int,
+    local_valid: torch.Tensor,
     cross_neighbors: torch.Tensor | None,
     valid_cross_neighbors: torch.Tensor | None,
     block_pair_index: torch.Tensor | None,
@@ -203,6 +222,10 @@ def local_blockpair_attention(
     v_blocks = v.view(batch, heads, num_blocks, block_size, head_dim)
     local_scores = torch.einsum("bhqtd,bhqsd->bhqts", q_blocks, k_blocks) * scale
     local_scores_flat = local_scores.reshape(batch, heads, seq_len, block_size)
+    local_scores_flat = local_scores_flat.masked_fill(
+        ~local_valid[None, None, :, :],
+        torch.finfo(local_scores_flat.dtype).min,
+    )
 
     has_cross = (
         cross_neighbors is not None
@@ -280,16 +303,24 @@ def run_mask_tests(device: torch.device) -> list[dict]:
                 v = torch.randn(2, 2, seq_len, 8, device=device)
                 dense = dense_attention(q, k, v, mask)
                 neigh = neighbor_attention(q, k, v, mask)
+                local_valid = local_valid_from_mask(mask, block_size)
                 cross = build_cross_mask("zigzag", seq_len, block_size, degree, device, seed=0)
                 cross_neighbors, valid_cross_neighbors = mask_to_neighbors(cross)
                 split = local_cross_attention(
-                    q, k, v, block_size, cross_neighbors, valid_cross_neighbors
+                    q, k, v, block_size, local_valid, cross_neighbors, valid_cross_neighbors
                 )
                 block_pair_index = cross_neighbors_to_block_pair_index(
                     cross_neighbors, valid_cross_neighbors, block_size
                 )
                 blockpair = local_blockpair_attention(
-                    q, k, v, block_size, cross_neighbors, valid_cross_neighbors, block_pair_index
+                    q,
+                    k,
+                    v,
+                    block_size,
+                    local_valid,
+                    cross_neighbors,
+                    valid_cross_neighbors,
+                    block_pair_index,
                 )
                 max_error = float((dense - neigh).abs().max().item())
                 split_max_error = float((dense - split).abs().max().item())
@@ -336,6 +367,7 @@ class MaskedSelfAttention(nn.Module):
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
+        local_valid: torch.Tensor,
         neighbors: torch.Tensor | None,
         valid_neighbors: torch.Tensor | None,
         block_pair_index: torch.Tensor | None,
@@ -369,7 +401,7 @@ class MaskedSelfAttention(nn.Module):
             out = (attn[..., None] * gathered_v).sum(dim=-2)
         elif self.attention_backend == "split":
             out = local_cross_attention(
-                q, k, v, self.block_size, neighbors, valid_neighbors, self.dropout
+                q, k, v, self.block_size, local_valid, neighbors, valid_neighbors, self.dropout
             )
         elif self.attention_backend == "blockpair":
             out = local_blockpair_attention(
@@ -377,6 +409,7 @@ class MaskedSelfAttention(nn.Module):
                 k,
                 v,
                 self.block_size,
+                local_valid,
                 neighbors,
                 valid_neighbors,
                 block_pair_index,
@@ -414,19 +447,22 @@ class Block(nn.Module):
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
+        local_valid: torch.Tensor,
         neighbors: torch.Tensor | None,
         valid_neighbors: torch.Tensor | None,
         block_pair_index: torch.Tensor | None,
     ) -> torch.Tensor:
-        x = x + self.attn(self.ln1(x), mask, neighbors, valid_neighbors, block_pair_index)
+        x = x + self.attn(
+            self.ln1(x), mask, local_valid, neighbors, valid_neighbors, block_pair_index
+        )
         return x + self.ffn(self.ln2(x))
 
 
-class TinyTransformer(nn.Module):
+class Transformer(nn.Module):
     def __init__(
         self,
         vocab_size: int,
-        num_classes: int,
+        output_size: int,
         seq_len: int,
         d_model: int,
         num_layers: int,
@@ -446,12 +482,13 @@ class TinyTransformer(nn.Module):
             ]
         )
         self.norm = nn.LayerNorm(d_model)
-        self.head = nn.Linear(d_model, num_classes)
+        self.head = nn.Linear(d_model, output_size)
 
     def forward(
         self,
         x: torch.Tensor,
         mask: torch.Tensor,
+        local_valid: torch.Tensor,
         neighbors: torch.Tensor | None = None,
         valid_neighbors: torch.Tensor | None = None,
         block_pair_index: torch.Tensor | None = None,
@@ -459,79 +496,92 @@ class TinyTransformer(nn.Module):
         pos = torch.arange(x.shape[1], device=x.device)
         h = self.token(x) + self.pos(pos)[None, :, :]
         for block in self.blocks:
-            h = block(h, mask, neighbors, valid_neighbors, block_pair_index)
-        return self.head(self.norm(h[:, -1]))
+            h = block(h, mask, local_valid, neighbors, valid_neighbors, block_pair_index)
+        return self.head(self.norm(h))
 
 
 @dataclass
 class TaskSpec:
-    num_keys: int = 64
-    num_values: int = 10
-    query_token: int = 75
+    num_values: int = 4
     pad_token: int = 0
+    sep_token: int | None = None
+    eos_token: int | None = None
+
+    def __post_init__(self) -> None:
+        if self.sep_token is None:
+            self.sep_token = self.num_values + 1
+        if self.eos_token is None:
+            self.eos_token = self.num_values + 2
+        expected = {
+            "pad_token": 0,
+            "sep_token": self.num_values + 1,
+            "eos_token": self.num_values + 2,
+        }
+        actual = {
+            "pad_token": self.pad_token,
+            "sep_token": self.sep_token,
+            "eos_token": self.eos_token,
+        }
+        if actual != expected:
+            raise ValueError(f"unsupported special token layout: expected {expected}, got {actual}")
 
     @property
     def vocab_size(self) -> int:
-        return self.query_token + 1
-
-    def value_token(self, value: int) -> int:
-        return 1 + self.num_keys + value
+        return int(self.eos_token) + 1
 
 
-def make_associative_recall_batch(
+@dataclass
+class CopyBatch:
+    tokens: torch.Tensor
+    loss_positions: torch.Tensor
+    targets: torch.Tensor
+    N: int
+    T_raw: int
+    T: int
+
+
+def padded_copy_lengths(N: int, block_size: int) -> tuple[int, int]:
+    T_raw = 2 * int(N) + 2
+    T = int(math.ceil(T_raw / block_size) * block_size)
+    return T_raw, T
+
+
+def make_full_copy_batch(
     batch_size: int,
-    seq_len: int,
+    N: int,
+    block_size: int,
     spec: TaskSpec,
     device: torch.device,
-) -> tuple[torch.Tensor, torch.Tensor]:
-    pairs = min((seq_len - 2) // 2, spec.num_keys)
-    x = torch.full((batch_size, seq_len), spec.pad_token, dtype=torch.long, device=device)
-    y = torch.empty((batch_size,), dtype=torch.long, device=device)
-    for b in range(batch_size):
-        keys = torch.randperm(spec.num_keys, device=device)[:pairs] + 1
-        values = torch.randint(0, spec.num_values, (pairs,), device=device)
-        query_idx = int(torch.randint(0, pairs, (1,), device=device).item())
-        x[b, 0 : 2 * pairs : 2] = keys
-        x[b, 1 : 2 * pairs : 2] = torch.tensor(
-            [spec.value_token(int(v.item())) for v in values], device=device
-        )
-        x[b, -2] = spec.query_token
-        x[b, -1] = keys[query_idx]
-        y[b] = values[query_idx]
-    return x, y
-
-
-def make_copy_batch(
-    batch_size: int,
-    seq_len: int,
-    spec: TaskSpec,
-    device: torch.device,
-    source_pos: int,
-    seed: int | None = None,
-    batch_index: int | None = None,
+    seed: int,
+    batch_index: int,
     stream: str = "train",
-) -> tuple[torch.Tensor, torch.Tensor]:
-    if seed is None or batch_index is None:
-        x = torch.randint(
-            1,
-            spec.num_values + 1,
-            (batch_size, seq_len),
-            dtype=torch.long,
-            device=device,
-        )
-    else:
-        derived_seed = stable_int_seed(seed, batch_index, seq_len, spec.num_values, stream)
-        gen = torch.Generator(device="cpu")
-        gen.manual_seed(derived_seed)
-        x = torch.randint(
-            1,
-            spec.num_values + 1,
-            (batch_size, seq_len),
-            dtype=torch.long,
-            generator=gen,
-        ).to(device)
-    y = x[:, source_pos] - 1
-    return x, y
+) -> CopyBatch:
+    T_raw, T = padded_copy_lengths(N, block_size)
+    derived_seed = stable_int_seed(seed, batch_index, N, spec.num_values, stream)
+    gen = torch.Generator(device="cpu")
+    gen.manual_seed(derived_seed)
+    source = torch.randint(
+        1,
+        spec.num_values + 1,
+        (batch_size, N),
+        dtype=torch.long,
+        generator=gen,
+    ).to(device)
+    tokens = torch.full((batch_size, T), spec.pad_token, dtype=torch.long, device=device)
+    tokens[:, :N] = source
+    tokens[:, N] = int(spec.sep_token)
+    tokens[:, N + 1 : 2 * N + 1] = source
+    tokens[:, 2 * N + 1] = int(spec.eos_token)
+    loss_positions = torch.arange(N, 2 * N + 1, dtype=torch.long, device=device)
+    targets = tokens[:, loss_positions + 1]
+    return CopyBatch(
+        tokens=tokens,
+        loss_positions=loss_positions,
+        targets=targets,
+        N=N,
+        T_raw=T_raw,
+        T=T,
+    )
 
 
 def stable_int_seed(*parts) -> int:
@@ -541,9 +591,9 @@ def stable_int_seed(*parts) -> int:
 
 
 def canonical_task_name(task: str) -> str:
-    if task == "copy":
-        return "copy_first"
-    return task
+    if task != "copy":
+        raise ValueError(f"v0.5 only supports task=copy, got {task}")
+    return "copy"
 
 
 def make_batch(
@@ -554,32 +604,21 @@ def make_batch(
     batch_size: int | None = None,
     batch_index: int | None = None,
     stream: str = "train",
-) -> tuple[torch.Tensor, torch.Tensor]:
+) -> CopyBatch:
     task = canonical_task_name(args.task)
-    seq_len = int(seq_len if seq_len is not None else args.seq_len)
+    N = int(seq_len if seq_len is not None else args.seq_len)
     batch_size = int(batch_size if batch_size is not None else args.batch_size)
-    if args.task == "associative_recall":
-        return make_associative_recall_batch(batch_size, seq_len, spec, device)
-    if task == "copy_visible":
-        return make_copy_batch(
-            batch_size,
-            seq_len,
-            spec,
-            device,
-            source_pos=seq_len - 2,
-            seed=getattr(args, "seed", None),
-            batch_index=batch_index,
-            stream=stream,
-        )
-    if task == "copy_first":
-        return make_copy_batch(
-            batch_size,
-            seq_len,
-            spec,
-            device,
-            source_pos=0,
-            seed=getattr(args, "seed", None),
-            batch_index=batch_index,
+    if task == "copy":
+        if batch_index is None:
+            raise ValueError("copy batch generation requires an explicit batch_index")
+        return make_full_copy_batch(
+            batch_size=batch_size,
+            N=N,
+            block_size=args.block_size,
+            spec=spec,
+            device=device,
+            seed=int(getattr(args, "seed")),
+            batch_index=int(batch_index),
             stream=stream,
         )
     raise ValueError(f"unknown task: {args.task}")
@@ -602,14 +641,21 @@ RESULT_FIELDS = [
     "task",
     "data_mode",
     "num_values",
+    "copy_mode",
+    "sep_token",
+    "eos_token",
+    "pad_token",
     "method",
     "attention_backend",
     "N_train",
     "N_eval",
+    "T_raw",
+    "T",
     "B",
     "d",
     "G_type",
     "H_type",
+    "causal",
     "seed",
     "architecture",
     "layers",
@@ -619,21 +665,23 @@ RESULT_FIELDS = [
     "dropout",
     "optimizer",
     "learning_rate",
+    "log_every",
     "steps",
     "batch_size",
     "eval_batches",
     "raw_K",
-    "effective_K_mean",
-    "effective_K_min",
-    "effective_K_max",
+    "effective_K_mean_after_causal",
+    "effective_K_min_after_causal",
+    "effective_K_max_after_causal",
     "duplicate_rate",
     "self_loop_rate",
-    "attention_pair_count",
+    "attention_pair_count_after_causal",
     "final_train_loss",
     "eval_loss",
-    "eval_accuracy",
-    "final_valid_loss",
-    "final_valid_accuracy",
+    "eval_token_accuracy",
+    "eval_sequence_accuracy",
+    "eval_eos_accuracy",
+    "training_curves_path",
     "tokens_per_sec",
     "elapsed_sec",
     "peak_allocated_gb",
@@ -661,14 +709,24 @@ def resolve_attention_backend(requested: str, method: str) -> str:
     return requested
 
 
+@dataclass
+class AttentionArtifacts:
+    mask: torch.Tensor
+    local_valid: torch.Tensor
+    neighbors: torch.Tensor | None
+    valid_neighbors: torch.Tensor | None
+    block_pair_index: torch.Tensor | None
+    metrics: dict
+
+
 def make_attention_artifacts(
     method: str,
     seq_len: int,
     args,
     device: torch.device,
     attention_backend: str,
-) -> tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None, torch.Tensor | None, dict]:
-    mask = build_attention_mask(
+) -> AttentionArtifacts:
+    structural_mask = build_attention_mask(
         method,
         seq_len,
         args.block_size,
@@ -677,13 +735,16 @@ def make_attention_artifacts(
         args.seed,
         getattr(args, "graph_config", None),
     )
+    causal_mask = build_causal_mask(seq_len, device) if args.causal else None
+    mask = structural_mask & causal_mask if causal_mask is not None else structural_mask
+    local_valid = local_valid_from_mask(mask, args.block_size)
     neighbors = None
     valid_neighbors = None
     block_pair_index = None
     if attention_backend == "neighbor":
         neighbors, valid_neighbors = mask_to_neighbors(mask)
     elif attention_backend in {"split", "blockpair"}:
-        cross_mask = build_cross_mask(
+        structural_cross_mask = build_cross_mask(
             method,
             seq_len,
             args.block_size,
@@ -692,13 +753,22 @@ def make_attention_artifacts(
             args.seed,
             getattr(args, "graph_config", None),
         )
+        cross_mask = (
+            structural_cross_mask & causal_mask if causal_mask is not None else structural_cross_mask
+        )
         neighbors, valid_neighbors = mask_to_neighbors(cross_mask)
         if attention_backend == "blockpair":
             block_pair_index = cross_neighbors_to_block_pair_index(
                 neighbors, valid_neighbors, args.block_size
             )
-    return mask, neighbors, valid_neighbors, block_pair_index, mask_metrics(
-        mask, method, args.block_size, args.degree
+    metric = mask_metrics(mask, method, args.block_size, args.degree)
+    return AttentionArtifacts(
+        mask=mask,
+        local_valid=local_valid,
+        neighbors=neighbors,
+        valid_neighbors=valid_neighbors,
+        block_pair_index=block_pair_index,
+        metrics=metric,
     )
 
 
@@ -707,42 +777,77 @@ def cuda_sync(device: torch.device) -> None:
         torch.cuda.synchronize()
 
 
+def copy_loss_and_metrics(logits: torch.Tensor, batch: CopyBatch) -> tuple[torch.Tensor, dict]:
+    selected_logits = logits[:, batch.loss_positions, :]
+    loss = F.cross_entropy(
+        selected_logits.reshape(-1, selected_logits.shape[-1]),
+        batch.targets.reshape(-1),
+    )
+    pred = selected_logits.argmax(dim=-1)
+    correct = pred == batch.targets
+    token_accuracy = float(correct.float().mean().item())
+    sequence_accuracy = float(correct.all(dim=1).float().mean().item())
+    eos_accuracy = float((pred[:, -1] == batch.targets[:, -1]).float().mean().item())
+    return loss, {
+        "token_accuracy": token_accuracy,
+        "sequence_accuracy": sequence_accuracy,
+        "eos_accuracy": eos_accuracy,
+    }
+
+
 def evaluate(
     model,
-    mask,
-    neighbors,
-    valid_neighbors,
-    block_pair_index,
+    artifacts: AttentionArtifacts,
     args,
     spec,
     device,
-    seq_len: int,
+    N: int,
     stream: str,
-) -> tuple[float, float]:
+) -> dict:
     model.eval()
     total_loss = 0.0
-    total_correct = 0
-    total = 0
+    total_tokens = 0
+    total_token_correct = 0
+    total_sequences = 0
+    total_sequence_correct = 0
+    total_eos_correct = 0
     with torch.no_grad():
         for batch_idx in range(args.eval_batches):
-            x, y = make_batch(
+            batch = make_batch(
                 args,
                 spec,
                 device,
-                seq_len=seq_len,
+                seq_len=N,
                 batch_size=args.batch_size,
                 batch_index=batch_idx,
                 stream=stream,
             )
-            logits = model(x, mask, neighbors, valid_neighbors, block_pair_index)
-            loss = F.cross_entropy(logits, y)
+            logits = model(
+                batch.tokens,
+                artifacts.mask,
+                artifacts.local_valid,
+                artifacts.neighbors,
+                artifacts.valid_neighbors,
+                artifacts.block_pair_index,
+            )
+            loss, batch_metrics = copy_loss_and_metrics(logits, batch)
             if not torch.isfinite(loss):
                 raise RuntimeError(f"non-finite eval loss for {stream}")
             total_loss += float(loss.item())
-            total_correct += int((logits.argmax(dim=-1) == y).sum().item())
-            total += y.numel()
+            total_tokens += int(batch.targets.numel())
+            total_token_correct += int(round(batch_metrics["token_accuracy"] * batch.targets.numel()))
+            total_sequences += int(batch.targets.shape[0])
+            total_sequence_correct += int(
+                round(batch_metrics["sequence_accuracy"] * batch.targets.shape[0])
+            )
+            total_eos_correct += int(round(batch_metrics["eos_accuracy"] * batch.targets.shape[0]))
     model.train()
-    return total_loss / args.eval_batches, total_correct / total
+    return {
+        "loss": total_loss / args.eval_batches,
+        "token_accuracy": total_token_correct / total_tokens,
+        "sequence_accuracy": total_sequence_correct / total_sequences,
+        "eos_accuracy": total_eos_correct / total_sequences,
+    }
 
 
 def write_json(path: Path, payload) -> None:
@@ -765,6 +870,31 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str] | None = None)
         writer.writerows(rows)
 
 
+def plot_training_curves(metrics_rows: list[dict], output_path: Path) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    steps = [int(row["step"]) for row in metrics_rows]
+    panels = [
+        ("train_loss", "train loss"),
+        ("eval_loss", "eval loss"),
+        ("eval_token_accuracy", "eval token accuracy"),
+        ("eval_sequence_accuracy", "eval sequence accuracy"),
+    ]
+    fig, axes = plt.subplots(2, 2, figsize=(10, 7))
+    for ax, (key, title) in zip(axes.flatten(), panels):
+        ax.plot(steps, [float(row[key]) for row in metrics_rows], marker="o", linewidth=1.5)
+        ax.set_title(title)
+        ax.set_xlabel("step")
+        ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=160)
+    plt.close(fig)
+
+
 def train_method(
     method: str,
     args,
@@ -784,15 +914,22 @@ def train_method(
     if torch.cuda.is_available():
         gc.collect()
         torch.cuda.empty_cache()
-    spec = TaskSpec(num_keys=args.num_keys, num_values=args.num_values)
-    attention_backend = resolve_attention_backend(args.attention_backend, method)
-    mask, neighbors, valid_neighbors, block_pair_index, train_mask_metric = make_attention_artifacts(
-        method, train_len, args, device, attention_backend
+    spec = TaskSpec(
+        num_values=args.num_values,
+        pad_token=args.pad_token,
+        sep_token=args.sep_token,
+        eos_token=args.eos_token,
     )
-    model = TinyTransformer(
+    attention_backend = resolve_attention_backend(args.attention_backend, method)
+    train_T_raw, train_T = padded_copy_lengths(train_len, args.block_size)
+    max_T = max(padded_copy_lengths(eval_len, args.block_size)[1] for eval_len in eval_lengths)
+    train_artifacts = make_attention_artifacts(
+        method, train_T, args, device, attention_backend
+    )
+    model = Transformer(
         vocab_size=spec.vocab_size,
-        num_classes=spec.num_values,
-        seq_len=max([train_len, *eval_lengths]),
+        output_size=spec.vocab_size,
+        seq_len=max_T,
         d_model=args.d_model,
         num_layers=args.layers,
         num_heads=args.heads,
@@ -812,9 +949,10 @@ def train_method(
     last_loss = None
     metrics_path = output_dir / "metrics.jsonl"
     method_metrics_path = output_dir / f"{method}_metrics.jsonl"
+    metrics_rows: list[dict] = []
     with metrics_path.open("w", encoding="utf-8") as fp:
         for step in range(1, args.steps + 1):
-            x, y = make_batch(
+            batch = make_batch(
                 args,
                 spec,
                 device,
@@ -824,20 +962,26 @@ def train_method(
                 stream="train",
             )
             opt.zero_grad(set_to_none=True)
-            logits = model(x, mask, neighbors, valid_neighbors, block_pair_index)
-            loss = F.cross_entropy(logits, y)
+            logits = model(
+                batch.tokens,
+                train_artifacts.mask,
+                train_artifacts.local_valid,
+                train_artifacts.neighbors,
+                train_artifacts.valid_neighbors,
+                train_artifacts.block_pair_index,
+            )
+            loss, train_metrics = copy_loss_and_metrics(logits, batch)
             if not torch.isfinite(loss):
                 raise RuntimeError(f"{method} produced non-finite loss at step {step}")
             loss.backward()
             opt.step()
             last_loss = float(loss.item())
             if step == 1 or step % args.log_every == 0 or step == args.steps:
-                eval_loss, eval_acc = evaluate(
+                cuda_sync(device)
+                elapsed_so_far = time.perf_counter() - start
+                eval_metrics = evaluate(
                     model,
-                    mask,
-                    neighbors,
-                    valid_neighbors,
-                    block_pair_index,
+                    train_artifacts,
                     args,
                     spec,
                     device,
@@ -851,9 +995,16 @@ def train_method(
                     "N_train": train_len,
                     "N_eval": train_len,
                     "train_loss": last_loss,
-                    "valid_loss": eval_loss,
-                    "valid_accuracy": eval_acc,
+                    "train_token_accuracy": train_metrics["token_accuracy"],
+                    "train_sequence_accuracy": train_metrics["sequence_accuracy"],
+                    "train_eos_accuracy": train_metrics["eos_accuracy"],
+                    "eval_loss": eval_metrics["loss"],
+                    "eval_token_accuracy": eval_metrics["token_accuracy"],
+                    "eval_sequence_accuracy": eval_metrics["sequence_accuracy"],
+                    "eval_eos_accuracy": eval_metrics["eos_accuracy"],
+                    "tokens_per_sec": step * args.batch_size * train_T / max(elapsed_so_far, 1e-12),
                 }
+                metrics_rows.append(row)
                 fp.write(json.dumps(row) + "\n")
                 fp.flush()
                 print(json.dumps(row), flush=True)
@@ -861,18 +1012,23 @@ def train_method(
         cuda_sync(device)
     elapsed = time.perf_counter() - start
     method_metrics_path.write_text(metrics_path.read_text(encoding="utf-8"), encoding="utf-8")
+    training_curves_path = output_dir / "training_curves.png"
+    if args.plot_curves:
+        plot_training_curves(metrics_rows, training_curves_path)
 
     base_result = {
         "method": method,
         "task": args.task,
         "attention_backend": attention_backend,
-        "seq_len": train_len,
+        "N_train": train_len,
+        "T_raw": train_T_raw,
+        "T": train_T,
         "block_size": args.block_size,
         "degree": args.degree,
         "steps": args.steps,
         "batch_size": args.batch_size,
         "final_train_loss": last_loss,
-        "tokens_per_sec": args.steps * args.batch_size * args.seq_len / elapsed,
+        "tokens_per_sec": args.steps * args.batch_size * train_T / elapsed,
         "elapsed_sec": elapsed,
         "device": str(device),
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
@@ -882,23 +1038,26 @@ def train_method(
         "peak_reserved_gb": (
             torch.cuda.max_memory_reserved() / 1024**3 if torch.cuda.is_available() else 0.0
         ),
-        "mask": train_mask_metric,
+        "mask": train_artifacts.metrics,
         "task_spec": asdict(spec),
         "metrics_path": str(metrics_path),
-        "neighbor_shape": list(neighbors.shape) if neighbors is not None else None,
-        "block_pair_shape": list(block_pair_index.shape) if block_pair_index is not None else None,
+        "training_curves_path": str(training_curves_path) if args.plot_curves else "",
+        "neighbor_shape": list(train_artifacts.neighbors.shape)
+        if train_artifacts.neighbors is not None
+        else None,
+        "block_pair_shape": list(train_artifacts.block_pair_index.shape)
+        if train_artifacts.block_pair_index is not None
+        else None,
     }
     records = []
     for eval_len in eval_lengths:
-        eval_mask, eval_neighbors, eval_valid_neighbors, eval_block_pair_index, eval_mask_metric = (
-            make_attention_artifacts(method, eval_len, args, device, attention_backend)
+        eval_T_raw, eval_T = padded_copy_lengths(eval_len, args.block_size)
+        eval_artifacts = make_attention_artifacts(
+            method, eval_T, args, device, attention_backend
         )
-        eval_loss, eval_acc = evaluate(
+        eval_metrics = evaluate(
             model,
-            eval_mask,
-            eval_neighbors,
-            eval_valid_neighbors,
-            eval_block_pair_index,
+            eval_artifacts,
             args,
             spec,
             device,
@@ -926,14 +1085,21 @@ def train_method(
             "task": args.task,
             "data_mode": getattr(args, "data_mode", "online"),
             "num_values": args.num_values,
+            "copy_mode": args.copy_mode,
+            "sep_token": args.sep_token,
+            "eos_token": args.eos_token,
+            "pad_token": args.pad_token,
             "method": method,
             "attention_backend": attention_backend,
             "N_train": train_len,
             "N_eval": eval_len,
+            "T_raw": eval_T_raw,
+            "T": eval_T,
             "B": args.block_size,
             "d": args.degree,
             "G_type": g_type,
             "H_type": h_type,
+            "causal": args.causal,
             "seed": seed,
             "architecture": args.architecture,
             "layers": args.layers,
@@ -943,22 +1109,24 @@ def train_method(
             "dropout": args.dropout,
             "optimizer": args.optimizer,
             "learning_rate": args.learning_rate,
+            "log_every": args.log_every,
             "steps": args.steps,
             "batch_size": args.batch_size,
             "eval_batches": args.eval_batches,
-            "raw_K": eval_mask_metric["raw_k"],
-            "effective_K_mean": eval_mask_metric["effective_k_mean"],
-            "effective_K_min": eval_mask_metric["effective_k_min"],
-            "effective_K_max": eval_mask_metric["effective_k_max"],
-            "duplicate_rate": eval_mask_metric["duplicate_rate"],
-            "self_loop_rate": eval_mask_metric["self_loop_rate"],
-            "attention_pair_count": eval_mask_metric["attention_pair_count"],
+            "raw_K": eval_artifacts.metrics["raw_k"],
+            "effective_K_mean_after_causal": eval_artifacts.metrics["effective_k_mean"],
+            "effective_K_min_after_causal": eval_artifacts.metrics["effective_k_min"],
+            "effective_K_max_after_causal": eval_artifacts.metrics["effective_k_max"],
+            "duplicate_rate": eval_artifacts.metrics["duplicate_rate"],
+            "self_loop_rate": eval_artifacts.metrics["self_loop_rate"],
+            "attention_pair_count_after_causal": eval_artifacts.metrics["attention_pair_count"],
             "final_train_loss": last_loss,
-            "eval_loss": eval_loss,
-            "eval_accuracy": eval_acc,
-            "final_valid_loss": eval_loss,
-            "final_valid_accuracy": eval_acc,
-            "tokens_per_sec": args.steps * args.batch_size * train_len / elapsed,
+            "eval_loss": eval_metrics["loss"],
+            "eval_token_accuracy": eval_metrics["token_accuracy"],
+            "eval_sequence_accuracy": eval_metrics["sequence_accuracy"],
+            "eval_eos_accuracy": eval_metrics["eos_accuracy"],
+            "training_curves_path": str(training_curves_path) if args.plot_curves else "",
+            "tokens_per_sec": args.steps * args.batch_size * train_T / elapsed,
             "elapsed_sec": elapsed,
             "peak_allocated_gb": base_result["peak_allocated_gb"],
             "peak_reserved_gb": base_result["peak_reserved_gb"],
@@ -973,7 +1141,7 @@ def train_method(
     base_result["evals"] = records
     if records:
         base_result["final_valid_loss"] = records[0]["eval_loss"]
-        base_result["final_valid_accuracy"] = records[0]["eval_accuracy"]
+        base_result["final_valid_token_accuracy"] = records[0]["eval_token_accuracy"]
     write_csv(output_dir / "results.csv", records, RESULT_FIELDS)
     write_jsonl(output_dir / "results.jsonl", records)
     write_json(
@@ -993,12 +1161,18 @@ DEFAULT_CONFIG = {
     "task": {
         "name": "copy",
         "data": "online",
+        "mode": "full_copy",
         "num_values": 4,
+        "special_tokens": {
+            "pad": 0,
+            "sep": 5,
+            "eos": 6,
+        },
         "train_lengths": [128],
         "eval_lengths": [128],
     },
     "model": {
-        "architecture": "tiny_transformer",
+        "architecture": "transformer",
         "layers": 2,
         "d_model": 64,
         "heads": 4,
@@ -1008,6 +1182,7 @@ DEFAULT_CONFIG = {
     },
     "attention": {
         "methods": ["dense", "local", "random", "zigzag"],
+        "causal": True,
         "block_size": 16,
         "degree": 2,
         "graph": copy.deepcopy(DEFAULT_GRAPH_CONFIG),
@@ -1023,6 +1198,8 @@ DEFAULT_CONFIG = {
     },
     "output": {
         "root": "outputs/synthetic_mvp",
+        "plot_curves": True,
+        "curve_format": "png",
     },
 }
 
@@ -1128,7 +1305,7 @@ def load_config(path: Path | None) -> tuple[dict, str, str]:
 def apply_cli_overrides(config: dict, cli) -> dict:
     config = copy.deepcopy(config)
     if cli.task is not None:
-        config["task"]["name"] = "copy" if cli.task == "copy_first" else cli.task
+        config["task"]["name"] = cli.task
     if cli.seq_len is not None:
         config["task"]["train_lengths"] = [cli.seq_len]
         config["task"]["eval_lengths"] = [cli.seq_len]
@@ -1185,36 +1362,46 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
     output = config["output"]
     train_lengths = [int(v) for v in task.get("train_lengths", task.get("sequence_lengths", [128]))]
     eval_lengths = [int(v) for v in task.get("eval_lengths", train_lengths)]
-    if model.get("architecture") != "tiny_transformer":
+    if task.get("mode", "full_copy") != "full_copy":
+        raise ValueError(f"unsupported copy mode: {task.get('mode')}")
+    if model.get("architecture") != "transformer":
         raise ValueError(f"unsupported architecture: {model.get('architecture')}")
+    block_size = int(attention["block_size"])
+    degree = int(attention["degree"])
+    padded_lengths = [padded_copy_lengths(N, block_size)[1] for N in [*train_lengths, *eval_lengths]]
     graph_config = validate_graph_config(
-        max([*train_lengths, *eval_lengths]),
-        int(attention["block_size"]),
-        int(attention["degree"]),
+        max(padded_lengths),
+        block_size,
+        degree,
         attention.get("graph", DEFAULT_GRAPH_CONFIG),
     )
-    for seq_len in [*train_lengths, *eval_lengths]:
+    for seq_len in padded_lengths:
         validate_graph_config(
             seq_len,
-            int(attention["block_size"]),
-            int(attention["degree"]),
+            block_size,
+            degree,
             graph_config,
         )
     steps = int(train["steps"])
     log_every = int(train.get("log_every", max(1, steps // 10)))
     command = shell_command()
+    special_tokens = task.get("special_tokens", {})
     return SimpleNamespace(
         task=canonical_task_name(task.get("name", "copy")),
         data_mode=task.get("data", "online"),
+        copy_mode=task.get("mode", "full_copy"),
         num_values=int(task.get("num_values", 4)),
-        num_keys=int(task.get("num_keys", 64)),
+        pad_token=int(special_tokens.get("pad", 0)),
+        sep_token=int(special_tokens.get("sep", int(task.get("num_values", 4)) + 1)),
+        eos_token=int(special_tokens.get("eos", int(task.get("num_values", 4)) + 2)),
         train_lengths=train_lengths,
         eval_lengths=eval_lengths,
         methods=[str(method) for method in attention["methods"]],
-        block_size=int(attention["block_size"]),
-        degree=int(attention["degree"]),
+        block_size=block_size,
+        degree=degree,
+        causal=bool(attention.get("causal", True)),
         graph_config=graph_config,
-        architecture=model.get("architecture", "tiny_transformer"),
+        architecture=model.get("architecture", "transformer"),
         layers=int(model["layers"]),
         d_model=int(model["d_model"]),
         heads=int(model["heads"]),
@@ -1240,13 +1427,15 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
         local_or_remote=cli.local_or_remote or detect_location(),
         seq_len=train_lengths[0],
         seed=int(train["seeds"][0]),
+        plot_curves=bool(output.get("plot_curves", True)),
+        curve_format=output.get("curve_format", "png"),
     )
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path)
-    parser.add_argument("--task", choices=["copy", "copy_first", "copy_visible", "associative_recall"])
+    parser.add_argument("--task", choices=["copy"])
     parser.add_argument("--methods")
     parser.add_argument("--seq-len", type=int)
     parser.add_argument("--train-lengths")
@@ -1271,7 +1460,7 @@ def parse_args():
             "auto_blockpair groups cross edges by block pair."
         ),
     )
-    parser.add_argument("--num-keys", type=int)
+    parser.add_argument("--num-keys", type=int, help=argparse.SUPPRESS)
     parser.add_argument("--num-values", type=int)
     parser.add_argument("--seed", type=int)
     parser.add_argument("--seeds")
@@ -1286,6 +1475,7 @@ def parse_args():
 
 def failure_record(args, run_id: str, train_len: int, seed: int, method: str, error: Exception, run_dir: Path) -> dict:
     graph_config = getattr(args, "graph_config", DEFAULT_GRAPH_CONFIG)
+    T_raw, T = padded_copy_lengths(train_len, args.block_size)
     return {
         "run_id": run_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -1303,14 +1493,21 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "task": args.task,
         "data_mode": args.data_mode,
         "num_values": args.num_values,
+        "copy_mode": args.copy_mode,
+        "sep_token": args.sep_token,
+        "eos_token": args.eos_token,
+        "pad_token": args.pad_token,
         "method": method,
         "attention_backend": args.attention_backend,
         "N_train": train_len,
         "N_eval": "",
+        "T_raw": T_raw,
+        "T": T,
         "B": args.block_size,
         "d": args.degree,
         "G_type": graph_config.get("G", {}).get("type"),
         "H_type": graph_config.get("H", {}).get("type"),
+        "causal": args.causal,
         "seed": seed,
         "architecture": args.architecture,
         "layers": args.layers,
@@ -1320,21 +1517,23 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "dropout": args.dropout,
         "optimizer": args.optimizer,
         "learning_rate": args.learning_rate,
+        "log_every": args.log_every,
         "steps": args.steps,
         "batch_size": args.batch_size,
         "eval_batches": args.eval_batches,
         "raw_K": "",
-        "effective_K_mean": "",
-        "effective_K_min": "",
-        "effective_K_max": "",
+        "effective_K_mean_after_causal": "",
+        "effective_K_min_after_causal": "",
+        "effective_K_max_after_causal": "",
         "duplicate_rate": "",
         "self_loop_rate": "",
-        "attention_pair_count": "",
+        "attention_pair_count_after_causal": "",
         "final_train_loss": "",
         "eval_loss": "",
-        "eval_accuracy": "",
-        "final_valid_loss": "",
-        "final_valid_accuracy": "",
+        "eval_token_accuracy": "",
+        "eval_sequence_accuracy": "",
+        "eval_eos_accuracy": "",
+        "training_curves_path": "",
         "tokens_per_sec": "",
         "elapsed_sec": "",
         "peak_allocated_gb": torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0,
@@ -1382,10 +1581,13 @@ def main() -> None:
                     try:
                         existing = json.loads(existing_summary.read_text(encoding="utf-8"))
                         existing_rows = existing.get("results", [])
+                        curve_path = run_dir / "training_curves.png"
                         if (
                             existing.get("status") == "ok"
                             and len(existing_rows) >= len(args.eval_lengths)
                             and all(row.get("status") == "ok" for row in existing_rows)
+                            and all("eval_token_accuracy" in row for row in existing_rows)
+                            and curve_path.exists()
                         ):
                             all_records.extend(existing_rows)
                             result = existing.get("result")

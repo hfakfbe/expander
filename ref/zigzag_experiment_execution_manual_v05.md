@@ -376,7 +376,7 @@ configs/
     "eval_lengths": [256, 512, 1024, 2048]
   },
   "model": {
-    "architecture": "tiny_transformer",
+    "architecture": "transformer",
     "layers": 8,
     "d_model": 128,
     "heads": 4,
@@ -614,7 +614,7 @@ num_values = 4
 learning_rate = 0.001
 log_every = 250
 seeds = config 指定，默认 [0, 1, 2]
-architecture = tiny_transformer
+architecture = transformer
 layers = 8
 d_model = 128
 heads = 4
@@ -702,7 +702,7 @@ learning_rate
 log_every
 raw_K
 effective_K_mean_after_causal
-attention_pair_count
+attention_pair_count_after_causal
 final_train_loss
 eval_loss
 eval_token_accuracy

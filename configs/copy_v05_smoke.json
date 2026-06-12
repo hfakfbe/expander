@@ -2,12 +2,18 @@
   "task": {
     "name": "copy",
     "data": "online",
+    "mode": "full_copy",
     "num_values": 4,
+    "special_tokens": {
+      "pad": 0,
+      "sep": 5,
+      "eos": 6
+    },
     "train_lengths": [128],
     "eval_lengths": [128]
   },
   "model": {
-    "architecture": "tiny_transformer",
+    "architecture": "transformer",
     "layers": 2,
     "d_model": 64,
     "heads": 4,
@@ -17,6 +23,7 @@
   },
   "attention": {
     "methods": ["dense", "local", "random", "zigzag"],
+    "causal": true,
     "block_size": 16,
     "degree": 2,
     "graph": {
@@ -34,6 +41,8 @@
     "log_every": 10
   },
   "output": {
-    "root": "outputs/copy_v05_smoke_local"
+    "root": "outputs/copy_v05_smoke_local",
+    "plot_curves": true,
+    "curve_format": "png"
   }
 }
