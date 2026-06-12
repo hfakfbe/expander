@@ -147,6 +147,14 @@ random / zigzag raw K = B + d^2 = 20
 dense K = N
 ```
 
+当前 v0.5 实验明确使用 non-causal encoder-style attention。这里的 non-causal 是指 attention 不使用下三角 causal mask；每个 query token 可以按对应方法的 mask 访问其允许的任意位置 token。若用户或报告中写到 casual，应统一理解为 causal mask 设定；本手册当前固定为：
+
+```text
+causal = false
+```
+
+因此，dense 方法中最后一个 token 可以直接看见 `x0`；local-only 只能看见最后一个 block 内 token；random 和 zig-zag 依赖跨 block 边与多层传播访问远端信息。
+
 ### 2.2 G 和 H
 
 从 v0.5 起，G/H 图结构必须与训练代码解耦，单独写在代码文件中。推荐新增：
@@ -182,6 +190,82 @@ H.type: cycle
 ```
 
 后续若加入 random regular、permutation 或 layer-wise graph，只能通过新增 graph module 和 config 字段实现，不能散落在训练脚本里。
+
+### 2.3 Copy 实验输入输出
+
+copy 实验只使用在线生成的离散 token 序列。每个 batch 的输入是：
+
+```text
+x ∈ {1, 2, ..., num_values}^{batch_size x N}
+```
+
+其中第一轮主实验固定：
+
+```text
+num_values = 4
+x_i ∈ {1, 2, 3, 4}
+```
+
+目标是预测序列第一个 token：
+
+```text
+y = x_0
+```
+
+实现中分类标签建议使用从 0 开始的 class index：
+
+```text
+label = x_0 - 1
+label ∈ {0, 1, 2, 3}
+```
+
+模型读取方式固定为：
+
+```text
+hidden = Transformer(x)
+logits = Linear(LayerNorm(hidden[:, -1]))
+loss = CrossEntropyLoss(logits, label)
+metric = accuracy(argmax(logits), label)
+```
+
+也就是说，分类头只读取最后一个 token 的 hidden state。这个设计使任务成为长程信息传递测试：当 `N` 大于 `B` 时，local-only 的最后一个 token 不能直接访问 `x0`。
+
+训练和评估都在线生成数据，不保存静态数据集。训练长度用 `N_train` 表示，评估长度用 `N_eval` 表示。`N_eval > N_train` 的结果必须标注为 extrapolation。
+
+### 2.4 训练动态曲线
+
+v0.5 不只记录最终 accuracy，还必须记录训练动态。每个 method / seed / N_train 至少输出：
+
+```text
+train loss vs step
+eval loss vs step
+eval accuracy vs step
+tokens/sec vs step 或 measured interval
+```
+
+曲线数据来自训练过程中的结构化日志，不允许从终端文本手工摘抄。推荐每次在以下 step 记录一次：
+
+```text
+step = 1
+step % log_every == 0
+step = final step
+```
+
+第一轮主实验推荐：
+
+```text
+log_every = 250
+```
+
+每个 run 至少保存：
+
+```text
+train_curve.csv
+eval_curve.csv
+training_curves.png
+```
+
+其中 `training_curves.png` 至少包含 loss 曲线和 accuracy 曲线。若暂时没有绘图依赖，必须先保存 CSV/JSONL 曲线数据，并在 phase 报告中说明图像待生成。
 
 ## 3. Phase 1：配置化与图结构解耦
 
@@ -244,6 +328,7 @@ configs/
   },
   "attention": {
     "methods": ["dense", "local", "random", "zigzag"],
+    "causal": false,
     "block_size": 16,
     "degree": 2,
     "graph": {
@@ -256,10 +341,12 @@ configs/
     "batch_size": 16,
     "eval_batches": 20,
     "learning_rate": 0.001,
+    "log_every": 250,
     "seeds": [0, 1, 2]
   },
   "output": {
-    "root": "outputs/copy_v05_main"
+    "root": "outputs/copy_v05_main",
+    "save_curves": true
   }
 }
 ```
@@ -274,6 +361,8 @@ configs/
 4. G/H 图结构移入单独文件。
 5. 旧 `synthetic_mvp.py` 中与 G/H 相关的函数迁移或包装到 `graph_structures.py`。
 6. mask metrics 必须继续记录 raw K、effective K、pair count、duplicate rate、self-loop rate。
+7. attention config 必须显式写入 `causal=false`，并在 summary 中记录。
+8. metrics 日志必须足以生成训练动态曲线。
 
 ### 3.5 单元测试 / Smoke
 
@@ -325,10 +414,12 @@ git commit 完成
 任务定义：
 
 ```text
-输入:  x = [x0, x1, ..., xN-1]
-x_i ∈ {1, 2, 3, 4}
-输出:  y = x0
-读取:  最后一个 token 的 hidden state 接分类头
+输入:    x = [x0, x1, ..., xN-1]
+取值:    x_i ∈ {1, 2, 3, 4}
+输出:    y = x0
+标签:    label = x0 - 1
+读取:    最后一个 token 的 hidden state 接分类头
+causal: false
 ```
 
 随机猜测准确率约为 `1/num_values`。当 `N` 足够大且 `B=16` 时，local-only 无法直接看到 `x0`。
@@ -380,6 +471,7 @@ Smoke test 的目标不是收敛，而是验证：
 forward/backward 正常
 eval 正常
 loss/accuracy 可记录
+训练动态曲线数据可记录
 无 NaN
 4 种方法产物完整
 ```
@@ -459,6 +551,7 @@ batch_size = 16
 eval_batches = 20
 num_values = 4
 learning_rate = 0.001
+log_every = 250
 seeds = config 指定，默认 [0, 1, 2]
 architecture = tiny_transformer
 layers = 8
@@ -467,6 +560,8 @@ heads = 4
 ffn_dim = 256
 dropout = 0.1
 attention_backend = auto_split
+causal = false
+save_curves = true
 ```
 
 如需改动以上参数，必须新建 config，不得覆盖已完成实验的 config。
@@ -511,6 +606,9 @@ outputs/copy_v05_main/
 summary.json
 results.csv
 *_metrics.jsonl
+train_curve.csv
+eval_curve.csv
+training_curves.png 或可生成该图的曲线数据
 command.sh
 config_snapshot.json
 ```
@@ -529,6 +627,7 @@ B
 d
 G_type
 H_type
+causal
 architecture
 layers
 d_model
@@ -538,12 +637,16 @@ steps
 batch_size
 eval_batches
 learning_rate
+log_every
 raw_K
 effective_K_mean
 attention_pair_count
 final_train_loss
 eval_loss
 eval_accuracy
+curve_train_loss_path
+curve_eval_loss_path
+curve_accuracy_path
 tokens_per_sec
 peak_allocated_gb
 peak_reserved_gb
@@ -561,8 +664,9 @@ Phase 3 完成标准：
 3. 每个训练 run 都评测到 N_eval=2048；
 4. 所有 seeds 都按 config 完成，或失败原因明确记录；
 5. 主结果 CSV/JSONL 完整；
-6. 本地和远端结果同步；
-7. git commit 完成。
+6. 每个 run 的训练动态曲线数据完整，能生成 loss/accuracy 曲线；
+7. 本地和远端结果同步；
+8. git commit 完成。
 ```
 
 ## 6. 分析口径
@@ -801,6 +905,7 @@ B
 d
 G_type
 H_type
+causal
 seed
 architecture
 layers
@@ -810,6 +915,7 @@ ffn_dim
 dropout
 optimizer
 learning_rate
+log_every
 steps
 batch_size
 eval_batches
@@ -823,6 +929,9 @@ attention_pair_count
 final_train_loss
 eval_loss
 eval_accuracy
+curve_train_loss_path
+curve_eval_loss_path
+curve_accuracy_path
 tokens_per_sec
 elapsed_sec
 peak_allocated_gb
