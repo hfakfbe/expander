@@ -2,10 +2,7 @@
 __pycache__/
 *.pyc
 *.pyo
-*.log
 .deps/
-datasets/
-outputs/
 
 # Model checkpoints / tensor artifacts
 *.pt

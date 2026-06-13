@@ -1,0 +1,29 @@
+/home/huiwei/miniconda3/envs/ysx_base/lib/python3.10/site-packages/torch/nn/modules/module.py:1787: FutureWarning: `encoder_attention_mask` is deprecated and will be removed in version 4.55.0 for `BertSdpaSelfAttention.forward`.
+  return forward_call(*args, **kwargs)
+step=1 train_loss=2.294182
+step=20 train_loss=2.289819
+step=40 train_loss=2.174971
+step=60 train_loss=2.380498
+step=80 train_loss=2.235003
+step=100 train_loss=2.076991
+{
+  "status": "ok",
+  "repo_dir": "/home/huiwei/ysx/zigzag_attention/code/lra-benchmarks",
+  "steps": 100,
+  "batch_size": 4,
+  "max_length": 512,
+  "train_samples": 1024,
+  "eval_samples": 256,
+  "device": "cuda",
+  "cuda_available": true,
+  "gpu_name": "NVIDIA A100-SXM4-80GB",
+  "torch_version": "2.10.0+cu128",
+  "final_train_loss": 2.076991081237793,
+  "mean_train_loss": 2.3054460060596464,
+  "eval_loss": 2.273256778717041,
+  "eval_accuracy": 0.175,
+  "tokens_per_sec": 121409.89522119937,
+  "elapsed_sec": 1.6868476793169975,
+  "peak_allocated_gb": 0.0666646957397461,
+  "peak_reserved_gb": 0.087890625
+}

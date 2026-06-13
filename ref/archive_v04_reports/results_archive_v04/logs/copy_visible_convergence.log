@@ -1,0 +1,185 @@
+{"mask_tests": "ok", "cases": 8}
+{"step": 1, "method": "dense", "train_loss": 1.5900304317474365, "valid_loss": 1.4333074301481248, "valid_accuracy": 0.257421875}
+{"step": 250, "method": "dense", "train_loss": 0.0015215501189231873, "valid_loss": 0.0011051973036956043, "valid_accuracy": 1.0}
+{"step": 500, "method": "dense", "train_loss": 0.0008184788166545331, "valid_loss": 0.000466726776357973, "valid_accuracy": 1.0}
+{"step": 750, "method": "dense", "train_loss": 0.0017273734556511045, "valid_loss": 0.0003004643098392989, "valid_accuracy": 1.0}
+{"step": 1000, "method": "dense", "train_loss": 0.00028281984850764275, "valid_loss": 0.0002262362355395453, "valid_accuracy": 1.0}
+{"step": 1250, "method": "dense", "train_loss": 0.00018084941257257015, "valid_loss": 0.00014413934586627876, "valid_accuracy": 1.0}
+{"step": 1500, "method": "dense", "train_loss": 0.00013526977272704244, "valid_loss": 0.00011523126377142035, "valid_accuracy": 1.0}
+{"step": 1750, "method": "dense", "train_loss": 0.00011595431715250015, "valid_loss": 9.936871247191447e-05, "valid_accuracy": 1.0}
+{"step": 2000, "method": "dense", "train_loss": 8.695342694409192e-05, "valid_loss": 7.139928002288797e-05, "valid_accuracy": 1.0}
+{
+  "completed": "dense",
+  "result": {
+    "method": "dense",
+    "task": "copy_visible",
+    "seq_len": 512,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 2000,
+    "batch_size": 64,
+    "final_train_loss": 8.695342694409192e-05,
+    "final_valid_loss": 7.121130620362237e-05,
+    "final_valid_accuracy": 1.0,
+    "tokens_per_sec": 1202498.8736054066,
+    "elapsed_sec": 54.499843150377274,
+    "device": "cuda",
+    "gpu_name": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_gb": 1.8781533241271973,
+    "peak_reserved_gb": 2.263671875,
+    "mask": {
+      "raw_k": 512,
+      "effective_k_mean": 512.0,
+      "effective_k_min": 512,
+      "effective_k_max": 512,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 262144,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 4,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/copy_visible_convergence/dense_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "local", "train_loss": 1.5731420516967773, "valid_loss": 1.420861929655075, "valid_accuracy": 0.266015625}
+{"step": 250, "method": "local", "train_loss": 0.0006845282623544335, "valid_loss": 0.0005844176237587817, "valid_accuracy": 1.0}
+{"step": 500, "method": "local", "train_loss": 0.00030721889925189316, "valid_loss": 0.0002648439069162123, "valid_accuracy": 1.0}
+{"step": 750, "method": "local", "train_loss": 0.0001710609794827178, "valid_loss": 0.00014802756122662687, "valid_accuracy": 1.0}
+{"step": 1000, "method": "local", "train_loss": 0.00011919911048607901, "valid_loss": 9.41690566833131e-05, "valid_accuracy": 1.0}
+{"step": 1250, "method": "local", "train_loss": 9.259583748644218e-05, "valid_loss": 7.125523879949469e-05, "valid_accuracy": 1.0}
+{"step": 1500, "method": "local", "train_loss": 5.942575808148831e-05, "valid_loss": 4.784168104379205e-05, "valid_accuracy": 1.0}
+{"step": 1750, "method": "local", "train_loss": 4.167765291640535e-05, "valid_loss": 3.63896474482317e-05, "valid_accuracy": 1.0}
+{"step": 2000, "method": "local", "train_loss": 3.4804746974259615e-05, "valid_loss": 2.8553661968544476e-05, "valid_accuracy": 1.0}
+{
+  "completed": "local",
+  "result": {
+    "method": "local",
+    "task": "copy_visible",
+    "seq_len": 512,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 2000,
+    "batch_size": 64,
+    "final_train_loss": 3.4804746974259615e-05,
+    "final_valid_loss": 2.8556036659210805e-05,
+    "final_valid_accuracy": 1.0,
+    "tokens_per_sec": 1233868.3204760079,
+    "elapsed_sec": 53.11425774730742,
+    "device": "cuda",
+    "gpu_name": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_gb": 1.8781533241271973,
+    "peak_reserved_gb": 2.263671875,
+    "mask": {
+      "raw_k": 16,
+      "effective_k_mean": 16.0,
+      "effective_k_min": 16,
+      "effective_k_max": 16,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 8192,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 4,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/copy_visible_convergence/local_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "random", "train_loss": 1.5802826881408691, "valid_loss": 1.4236730277538299, "valid_accuracy": 0.262890625}
+{"step": 250, "method": "random", "train_loss": 0.0007040862110443413, "valid_loss": 0.0006035375918145292, "valid_accuracy": 1.0}
+{"step": 500, "method": "random", "train_loss": 0.00031102891080081463, "valid_loss": 0.0002713225476327352, "valid_accuracy": 1.0}
+{"step": 750, "method": "random", "train_loss": 0.0001763722684700042, "valid_loss": 0.00015355223440565168, "valid_accuracy": 1.0}
+{"step": 1000, "method": "random", "train_loss": 0.0001268204505322501, "valid_loss": 9.958961436495883e-05, "valid_accuracy": 1.0}
+{"step": 1250, "method": "random", "train_loss": 9.515347483102232e-05, "valid_loss": 7.527951365773333e-05, "valid_accuracy": 1.0}
+{"step": 1500, "method": "random", "train_loss": 6.118775490904227e-05, "valid_loss": 5.030085685575614e-05, "valid_accuracy": 1.0}
+{"step": 1750, "method": "random", "train_loss": 4.316770355217159e-05, "valid_loss": 3.792799561779248e-05, "valid_accuracy": 1.0}
+{"step": 2000, "method": "random", "train_loss": 3.588505205698311e-05, "valid_loss": 2.9907765429015855e-05, "valid_accuracy": 1.0}
+{
+  "completed": "random",
+  "result": {
+    "method": "random",
+    "task": "copy_visible",
+    "seq_len": 512,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 2000,
+    "batch_size": 64,
+    "final_train_loss": 3.588505205698311e-05,
+    "final_valid_loss": 2.9945203505121753e-05,
+    "final_valid_accuracy": 1.0,
+    "tokens_per_sec": 1230213.9536510068,
+    "elapsed_sec": 53.27203435264528,
+    "device": "cuda",
+    "gpu_name": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_gb": 1.8781533241271973,
+    "peak_reserved_gb": 2.263671875,
+    "mask": {
+      "raw_k": 20,
+      "effective_k_mean": 20.0,
+      "effective_k_min": 20,
+      "effective_k_max": 20,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 10240,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 4,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/copy_visible_convergence/random_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "zigzag", "train_loss": 1.5724878311157227, "valid_loss": 1.42426640689373, "valid_accuracy": 0.266796875}
+{"step": 250, "method": "zigzag", "train_loss": 0.0007019127951934934, "valid_loss": 0.0006015784849296324, "valid_accuracy": 1.0}
+{"step": 500, "method": "zigzag", "train_loss": 0.0003133730497211218, "valid_loss": 0.00027110647133667955, "valid_accuracy": 1.0}
+{"step": 750, "method": "zigzag", "train_loss": 0.00017704078345559537, "valid_loss": 0.00015358658638433553, "valid_accuracy": 1.0}
+{"step": 1000, "method": "zigzag", "train_loss": 0.00012532327673397958, "valid_loss": 9.89441532510682e-05, "valid_accuracy": 1.0}
+{"step": 1250, "method": "zigzag", "train_loss": 8.852326573105529e-05, "valid_loss": 7.163757727539633e-05, "valid_accuracy": 1.0}
+{"step": 1500, "method": "zigzag", "train_loss": 6.094930722611025e-05, "valid_loss": 4.976323371010949e-05, "valid_accuracy": 1.0}
+{"step": 1750, "method": "zigzag", "train_loss": 4.288832496968098e-05, "valid_loss": 3.798652760451659e-05, "valid_accuracy": 1.0}
+{"step": 2000, "method": "zigzag", "train_loss": 3.54790136043448e-05, "valid_loss": 3.0067948182477265e-05, "valid_accuracy": 1.0}
+{
+  "completed": "zigzag",
+  "result": {
+    "method": "zigzag",
+    "task": "copy_visible",
+    "seq_len": 512,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 2000,
+    "batch_size": 64,
+    "final_train_loss": 3.54790136043448e-05,
+    "final_valid_loss": 3.006357128469972e-05,
+    "final_valid_accuracy": 1.0,
+    "tokens_per_sec": 1227623.4703348728,
+    "elapsed_sec": 53.38444692827761,
+    "device": "cuda",
+    "gpu_name": "NVIDIA A100-SXM4-80GB",
+    "peak_allocated_gb": 1.8781533241271973,
+    "peak_reserved_gb": 2.263671875,
+    "mask": {
+      "raw_k": 20,
+      "effective_k_mean": 20.0,
+      "effective_k_min": 20,
+      "effective_k_max": 20,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 10240,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 4,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/copy_visible_convergence/zigzag_metrics.jsonl"
+  }
+}

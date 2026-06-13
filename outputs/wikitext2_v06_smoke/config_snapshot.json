@@ -1,0 +1,55 @@
+{
+  "attention": {
+    "causal": true,
+    "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+    "methods": [
+      "dense",
+      "local",
+      "random_regular",
+      "zigzag_certified"
+    ],
+    "multiplicity": {
+      "boolean_ablation": false,
+      "mode": "unique_log_m"
+    }
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 64,
+    "dropout": 0.1,
+    "ffn_dim": 128,
+    "heads": 4,
+    "layers": 2
+  },
+  "output": {
+    "plot_curves": false,
+    "root": "outputs/wikitext2_v06_smoke"
+  },
+  "smoke": {
+    "backward_method": "dense",
+    "max_eval_batches": 1,
+    "max_train_batches": 1
+  },
+  "task": {
+    "dataset_dir": "datasets/wikitext2_raw_v1",
+    "mode": "causal_lm",
+    "name": "wikitext2",
+    "sequence_length": 512
+  },
+  "tokenizer": {
+    "eos_token": "eos",
+    "name": "byte_level_utf8",
+    "pad_token": "pad"
+  },
+  "train": {
+    "batch_size": 2,
+    "eval_batches": 2,
+    "eval_every": 1,
+    "learning_rate": 0.001,
+    "log_every": 1,
+    "seed": 0,
+    "steps": 1
+  },
+  "version": "v06"
+}

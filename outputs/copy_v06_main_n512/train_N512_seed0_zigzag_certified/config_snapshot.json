@@ -1,0 +1,84 @@
+{
+  "attention": {
+    "block_size": 16,
+    "causal": true,
+    "degree": 8,
+    "graph": {
+      "G": {
+        "type": "cyclic"
+      },
+      "H": {
+        "type": "cycle"
+      }
+    },
+    "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+    "methods": [
+      "dense",
+      "local",
+      "random_regular",
+      "zigzag_certified",
+      "zigzag_boolean"
+    ],
+    "multiplicity": {
+      "boolean_ablation": true,
+      "mode": "unique_log_m"
+    },
+    "runtime_graph": {
+      "B": 16,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "T": 1040,
+      "d": 8,
+      "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+      "graph_certified": true,
+      "graph_id": "v06_B16_d8_s2_c41f9afbd3840ed1",
+      "graph_seed": 2,
+      "q": 65
+    }
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 128,
+    "dropout": 0.1,
+    "ffn_dim": 256,
+    "heads": 4,
+    "layers": 8
+  },
+  "output": {
+    "curve_format": "png",
+    "plot_curves": true,
+    "root": "outputs/copy_v06_main_n512"
+  },
+  "task": {
+    "data": "online",
+    "eval_lengths": [
+      512
+    ],
+    "mode": "full_copy",
+    "name": "copy",
+    "num_values": 4,
+    "special_tokens": {
+      "eos": 6,
+      "pad": 0,
+      "sep": 5
+    },
+    "train_lengths": [
+      512
+    ]
+  },
+  "train": {
+    "batch_size": 16,
+    "checkpoint_every": 500,
+    "eval_batches": 50,
+    "eval_every": 50,
+    "learning_rate": 0.001,
+    "log_every": 50,
+    "optimizer": "adamw",
+    "seeds": [
+      0
+    ],
+    "steps": 5000
+  },
+  "version": "v06"
+}

@@ -1,0 +1,56 @@
+{
+  "dataset": "wikitext2",
+  "dataset_config": "wikitext-2-raw-v1",
+  "dataset_revision_or_hash": "b08601e04326c79dfdd32d625aee71d232d685c3",
+  "dataset_source": "Salesforce/wikitext",
+  "required_splits": [
+    "train",
+    "validation",
+    "test"
+  ],
+  "source_errors_before_success": [],
+  "splits": {
+    "test": {
+      "empty_line_rate": 0.33662230380908675,
+      "empty_rows": 1467,
+      "longest_text_length": 2587,
+      "nonempty_rows": 2891,
+      "rows": 4358,
+      "sha256": "c6528d395ed41989bf2e633e04bd47637227b1baf8403298fa88fee8075a032e",
+      "tokenized_length_max": 2589,
+      "tokenized_length_mean": 446.4015911449325,
+      "tokenized_length_min": 5
+    },
+    "train": {
+      "empty_line_rate": 0.3527152895037856,
+      "empty_rows": 12951,
+      "longest_text_length": 3863,
+      "nonempty_rows": 23767,
+      "rows": 36718,
+      "sha256": "c71bad3fd1c03345053b5ac4384e6f8904687d561a3e1050917b3c18e5d83149",
+      "tokenized_length_max": 3869,
+      "tokenized_length_mean": 460.2436992468549,
+      "tokenized_length_min": 5
+    },
+    "validation": {
+      "empty_line_rate": 0.34547872340425534,
+      "empty_rows": 1299,
+      "longest_text_length": 2245,
+      "nonempty_rows": 2461,
+      "rows": 3760,
+      "sha256": "52a93ea9f006d77079acbbedeb999130d87d6801e4559a6a5fc111d7d3716a55",
+      "tokenized_length_max": 2262,
+      "tokenized_length_mean": 465.9524583502641,
+      "tokenized_length_min": 12
+    }
+  },
+  "status": "ok",
+  "text_field": "text",
+  "timestamp": "2026-06-13T06:15:17Z",
+  "tokenizer": {
+    "eos_token_id": 1,
+    "name": "byte_level_utf8",
+    "pad_token_id": 0,
+    "vocab_size": 258
+  }
+}

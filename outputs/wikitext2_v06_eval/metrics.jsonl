@@ -1,0 +1,4 @@
+{"attention_pair_count_after_causal": 541320, "backend": "dense_mask", "effective_K_mean_after_causal": 520.5, "method": "dense", "run_id": "seed0_dense", "test_loss": 5.676579475402832, "validation_loss": 5.650897979736328}
+{"attention_pair_count_after_causal": 8840, "backend": "split", "effective_K_mean_after_causal": 8.5, "method": "local", "run_id": "seed0_local", "test_loss": 5.680569171905518, "validation_loss": 5.653585910797119}
+{"attention_pair_count_after_causal": 41691, "backend": "split", "effective_K_mean_after_causal": 40.087501525878906, "method": "random_regular", "run_id": "seed0_random_regular", "test_loss": 5.678867340087891, "validation_loss": 5.653176307678223}
+{"attention_pair_count_after_causal": 31033, "backend": "split", "effective_K_mean_after_causal": 29.83942222595215, "method": "zigzag_certified", "run_id": "seed0_zigzag_certified", "test_loss": 5.676910877227783, "validation_loss": 5.649774074554443}

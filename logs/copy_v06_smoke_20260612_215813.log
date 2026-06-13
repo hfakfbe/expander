@@ -1,0 +1,466 @@
+{"mask_tests": "ok", "cases": 4}
+{"step": 1, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 2.1532247066497803, "train_token_accuracy": 0.15813840925693512, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.5538496732711793, "eval_token_accuracy": 0.2490253411306043, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 31338.658208447992, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 10, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4072363376617432, "train_token_accuracy": 0.2517056465148926, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4051279306411744, "eval_token_accuracy": 0.24985380116959063, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 93734.03158513829, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 20, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4036344289779663, "train_token_accuracy": 0.24610136449337006, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4006999731063843, "eval_token_accuracy": 0.25014619883040934, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 108818.36970971571, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 30, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4004663228988647, "train_token_accuracy": 0.2565789520740509, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4000731706619263, "eval_token_accuracy": 0.24873294346978558, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 115140.36525442568, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 40, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4004534482955933, "train_token_accuracy": 0.24634502828121185, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3996148586273194, "eval_token_accuracy": 0.25048732943469787, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 118710.66353071605, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 50, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.402653694152832, "train_token_accuracy": 0.24098441004753113, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.398852801322937, "eval_token_accuracy": 0.24858674463937622, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 120955.62189089754, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 60, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4000564813613892, "train_token_accuracy": 0.24074074625968933, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3984107971191406, "eval_token_accuracy": 0.251364522417154, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 121612.07617511056, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 70, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3979084491729736, "train_token_accuracy": 0.2570662796497345, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.399112296104431, "eval_token_accuracy": 0.244541910331384, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 121957.53999384133, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 80, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3979759216308594, "train_token_accuracy": 0.25901558995246887, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3987622022628785, "eval_token_accuracy": 0.2500974658869396, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 122569.01733099362, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 90, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3985940217971802, "train_token_accuracy": 0.2490253448486328, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3981435298919678, "eval_token_accuracy": 0.2536062378167641, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 123353.5015778871, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 100, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3991937637329102, "train_token_accuracy": 0.2548733055591583, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3977416276931762, "eval_token_accuracy": 0.2512183235867446, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 124054.24106420121, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 110, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4003417491912842, "train_token_accuracy": 0.23927874863147736, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3986435174942016, "eval_token_accuracy": 0.24653996101364523, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 124581.16583730641, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 120, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.398613452911377, "train_token_accuracy": 0.24512670934200287, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3967605113983155, "eval_token_accuracy": 0.2544346978557505, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 125318.40033126416, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 130, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3951330184936523, "train_token_accuracy": 0.2636452317237854, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3977577924728393, "eval_token_accuracy": 0.2543372319688109, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 125875.54698204812, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 140, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3954569101333618, "train_token_accuracy": 0.25365498661994934, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3949687719345092, "eval_token_accuracy": 0.24483430799220274, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 126548.93364721938, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 150, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.392997145652771, "train_token_accuracy": 0.25219297409057617, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.625, "eval_loss": 1.3894970655441283, "eval_token_accuracy": 0.254093567251462, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 127113.93278896553, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 160, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3854480981826782, "train_token_accuracy": 0.2570662796497345, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3854344844818116, "eval_token_accuracy": 0.2543372319688109, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 127520.09620734818, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 170, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3849838972091675, "train_token_accuracy": 0.251218318939209, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.388924503326416, "eval_token_accuracy": 0.247953216374269, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 127513.18057329548, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 180, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.386281132698059, "train_token_accuracy": 0.24780702590942383, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3847640037536622, "eval_token_accuracy": 0.2524853801169591, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 127761.78941366053, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 190, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.390703797340393, "train_token_accuracy": 0.24585770070552826, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3851260185241698, "eval_token_accuracy": 0.2517056530214425, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 128020.69870090857, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{"step": 200, "method": "dense", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.384555459022522, "train_token_accuracy": 0.2573099434375763, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3861530542373657, "eval_token_accuracy": 0.25097465886939574, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 128119.89479226289, "effective_K_mean_after_causal": 520.5, "attention_pair_count_after_causal": 541320}
+{
+  "completed": "train_N512_seed0_dense",
+  "evals": [
+    {
+      "version": "v06",
+      "run_id": "train_N512_seed0_dense",
+      "status": "ok",
+      "failure_reason": "",
+      "timestamp": "2026-06-12T13:58:53.059274+00:00",
+      "host": "hhpc",
+      "local_or_remote": "remote",
+      "git_commit": "",
+      "config_path": "configs/copy_v06_smoke.json",
+      "config_sha256": "b90981007965ccc1880a57d24e30eb000f865ac2ebbbd5429cf3d0a363c16f7c",
+      "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/synthetic_mvp.py --config configs/copy_v06_smoke.json --output-dir outputs/copy_v06_smoke",
+      "output_dir": "outputs/copy_v06_smoke/train_N512_seed0_dense",
+      "log_path": "logs/copy_v06_smoke_20260612_215813.log",
+      "CUDA_VISIBLE_DEVICES": "3",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "torch_version": "2.10.0+cu128",
+      "task": "copy",
+      "data_mode": "online",
+      "num_values": 4,
+      "copy_mode": "full_copy",
+      "sep_token": 5,
+      "eos_token": 6,
+      "pad_token": 0,
+      "method": "dense",
+      "graph_id": "v06_B16_d8_s2_c41f9afbd3840ed1",
+      "graph_seed": 2,
+      "attention_backend": "dense_mask",
+      "N_train": 512,
+      "N_eval": 512,
+      "T_raw": 1026,
+      "T": 1040,
+      "B": 16,
+      "d": 8,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "causal": true,
+      "multiplicity_mode": "unique_log_m",
+      "seed": 0,
+      "architecture": "transformer",
+      "layers": 8,
+      "d_model": 128,
+      "heads": 4,
+      "ffn_dim": 256,
+      "dropout": 0.1,
+      "optimizer": "adamw",
+      "learning_rate": 0.001,
+      "log_every": 10,
+      "eval_every": 10,
+      "steps": 200,
+      "batch_size": 8,
+      "eval_batches": 5,
+      "raw_K": 1040,
+      "unique_K_mean": 520.5,
+      "effective_K_mean_after_causal": 520.5,
+      "effective_K_min_after_causal": 1,
+      "effective_K_max_after_causal": 1040,
+      "pre_causal_unique_K_mean": 1040.0,
+      "pre_causal_pair_count": 1081600,
+      "duplicate_rate": 0.49951923076923077,
+      "self_loop_rate": 1.0,
+      "attention_pair_count_after_causal": 541320,
+      "lambda_G": 0.4430783779678246,
+      "mu_H": 0.5491481939947735,
+      "rho_bound": 0.860373989287474,
+      "rho_exact": 0.5999831601197602,
+      "certified": true,
+      "remote_local_overlap_mean": 0.0,
+      "target_in_1hop_rate": 0.9980506822612085,
+      "target_in_2hop_rate": 0.9980506822612085,
+      "target_in_Lhop_rate": 0.0,
+      "average_shortest_path": 1.0,
+      "unreachable_rate": 0.001949317738791423,
+      "final_train_loss": 1.384555459022522,
+      "eval_loss": 1.385039758682251,
+      "eval_token_accuracy": 0.25565302144249513,
+      "eval_sequence_accuracy": 0.0,
+      "eval_eos_accuracy": 1.0,
+      "training_curves_path": "outputs/copy_v06_smoke/train_N512_seed0_dense/training_curves.png",
+      "tokens_per_sec": 127205.5627669056,
+      "elapsed_sec": 13.08118893392384,
+      "peak_allocated_gb": 2.9796295166015625,
+      "peak_reserved_gb": 3.109375,
+      "artifact_dir": "outputs/copy_v06_smoke/train_N512_seed0_dense",
+      "metrics_path": "outputs/copy_v06_smoke/train_N512_seed0_dense/metrics.jsonl",
+      "neighbor_shape": null,
+      "block_pair_shape": null
+    }
+  ]
+}
+{"step": 1, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 2.1284940242767334, "train_token_accuracy": 0.16349902749061584, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.5599662780761718, "eval_token_accuracy": 0.2503898635477583, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 185563.7308896629, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 10, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4046592712402344, "train_token_accuracy": 0.24829435348510742, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4037532329559326, "eval_token_accuracy": 0.249317738791423, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 205595.732085843, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 20, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4018176794052124, "train_token_accuracy": 0.24780702590942383, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4009681463241577, "eval_token_accuracy": 0.24624756335282652, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 193808.1608036489, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 30, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4000779390335083, "train_token_accuracy": 0.25219297409057617, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.399199080467224, "eval_token_accuracy": 0.25024366471734893, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 190353.6468743126, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 40, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3996104001998901, "train_token_accuracy": 0.23781676590442657, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3988833904266358, "eval_token_accuracy": 0.24961013645224173, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 188072.62176939467, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 50, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4030801057815552, "train_token_accuracy": 0.23318713903427124, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3979594469070435, "eval_token_accuracy": 0.24571150097465888, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 186971.8200647794, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 60, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3976613283157349, "train_token_accuracy": 0.2436647117137909, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3966792106628418, "eval_token_accuracy": 0.24819688109161794, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 186356.56701204283, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 70, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.392242431640625, "train_token_accuracy": 0.2514619827270508, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.375, "eval_loss": 1.3903947353363038, "eval_token_accuracy": 0.24649122807017543, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.5, "tokens_per_sec": 185835.29404305355, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 80, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3860396146774292, "train_token_accuracy": 0.2619395852088928, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3872215032577515, "eval_token_accuracy": 0.2536062378167641, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 185475.90737507105, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 90, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3857167959213257, "train_token_accuracy": 0.2548733055591583, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3856332063674928, "eval_token_accuracy": 0.2566276803118908, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 185235.2216532881, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 100, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.387040615081787, "train_token_accuracy": 0.2514619827270508, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3851089000701904, "eval_token_accuracy": 0.2530214424951267, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 185004.70747499366, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 110, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3886990547180176, "train_token_accuracy": 0.24512670934200287, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.386671280860901, "eval_token_accuracy": 0.24990253411306043, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184756.94123559544, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 120, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3855243921279907, "train_token_accuracy": 0.24756336212158203, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3850584030151367, "eval_token_accuracy": 0.2540448343079922, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184608.66510027493, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 130, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3847109079360962, "train_token_accuracy": 0.2568226158618927, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3866569995880127, "eval_token_accuracy": 0.25623781676413254, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184387.13848159998, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 140, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3875172138214111, "train_token_accuracy": 0.24707601964473724, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3871408462524415, "eval_token_accuracy": 0.24844054580896685, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184165.03728410773, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 150, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3885692358016968, "train_token_accuracy": 0.2548733055591583, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.38617901802063, "eval_token_accuracy": 0.2503411306042885, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 183989.42979514826, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 160, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3845546245574951, "train_token_accuracy": 0.26730018854141235, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3853266477584838, "eval_token_accuracy": 0.2578947368421053, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 183826.1618720451, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 170, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.385235071182251, "train_token_accuracy": 0.24853801727294922, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3856907129287719, "eval_token_accuracy": 0.2469298245614035, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 183676.58128600163, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 180, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3884960412979126, "train_token_accuracy": 0.24537037312984467, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3852991342544556, "eval_token_accuracy": 0.24863547758284602, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184028.60465196063, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 190, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3891663551330566, "train_token_accuracy": 0.24122807383537292, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.385738468170166, "eval_token_accuracy": 0.254775828460039, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 184000.13429693395, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{"step": 200, "method": "local", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3854365348815918, "train_token_accuracy": 0.24049708247184753, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3863677263259888, "eval_token_accuracy": 0.2482456140350877, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 183720.54119028006, "effective_K_mean_after_causal": 8.5, "attention_pair_count_after_causal": 8840}
+{
+  "completed": "train_N512_seed0_local",
+  "evals": [
+    {
+      "version": "v06",
+      "run_id": "train_N512_seed0_local",
+      "status": "ok",
+      "failure_reason": "",
+      "timestamp": "2026-06-12T13:59:03.417320+00:00",
+      "host": "hhpc",
+      "local_or_remote": "remote",
+      "git_commit": "",
+      "config_path": "configs/copy_v06_smoke.json",
+      "config_sha256": "b90981007965ccc1880a57d24e30eb000f865ac2ebbbd5429cf3d0a363c16f7c",
+      "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/synthetic_mvp.py --config configs/copy_v06_smoke.json --output-dir outputs/copy_v06_smoke",
+      "output_dir": "outputs/copy_v06_smoke/train_N512_seed0_local",
+      "log_path": "logs/copy_v06_smoke_20260612_215813.log",
+      "CUDA_VISIBLE_DEVICES": "3",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "torch_version": "2.10.0+cu128",
+      "task": "copy",
+      "data_mode": "online",
+      "num_values": 4,
+      "copy_mode": "full_copy",
+      "sep_token": 5,
+      "eos_token": 6,
+      "pad_token": 0,
+      "method": "local",
+      "graph_id": "v06_B16_d8_s2_c41f9afbd3840ed1",
+      "graph_seed": 2,
+      "attention_backend": "split",
+      "N_train": 512,
+      "N_eval": 512,
+      "T_raw": 1026,
+      "T": 1040,
+      "B": 16,
+      "d": 8,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "causal": true,
+      "multiplicity_mode": "unique_log_m",
+      "seed": 0,
+      "architecture": "transformer",
+      "layers": 8,
+      "d_model": 128,
+      "heads": 4,
+      "ffn_dim": 256,
+      "dropout": 0.1,
+      "optimizer": "adamw",
+      "learning_rate": 0.001,
+      "log_every": 10,
+      "eval_every": 10,
+      "steps": 200,
+      "batch_size": 8,
+      "eval_batches": 5,
+      "raw_K": 16,
+      "unique_K_mean": 8.5,
+      "effective_K_mean_after_causal": 8.5,
+      "effective_K_min_after_causal": 1,
+      "effective_K_max_after_causal": 16,
+      "pre_causal_unique_K_mean": 16.0,
+      "pre_causal_pair_count": 16640,
+      "duplicate_rate": 0.46875,
+      "self_loop_rate": 1.0,
+      "attention_pair_count_after_causal": 8840,
+      "lambda_G": 0.4430783779678246,
+      "mu_H": 0.5491481939947735,
+      "rho_bound": 0.860373989287474,
+      "rho_exact": 0.5999831601197602,
+      "certified": true,
+      "remote_local_overlap_mean": 0.0,
+      "target_in_1hop_rate": 0.0,
+      "target_in_2hop_rate": 0.0,
+      "target_in_Lhop_rate": 0.0,
+      "average_shortest_path": Infinity,
+      "unreachable_rate": 1.0,
+      "final_train_loss": 1.3854365348815918,
+      "eval_loss": 1.3851502656936645,
+      "eval_token_accuracy": 0.255458089668616,
+      "eval_sequence_accuracy": 0.0,
+      "eval_eos_accuracy": 1.0,
+      "training_curves_path": "outputs/copy_v06_smoke/train_N512_seed0_local/training_curves.png",
+      "tokens_per_sec": 182594.54680479394,
+      "elapsed_sec": 9.113087050616741,
+      "peak_allocated_gb": 0.5001411437988281,
+      "peak_reserved_gb": 0.580078125,
+      "artifact_dir": "outputs/copy_v06_smoke/train_N512_seed0_local",
+      "metrics_path": "outputs/copy_v06_smoke/train_N512_seed0_local/metrics.jsonl",
+      "neighbor_shape": [
+        1040,
+        0
+      ],
+      "block_pair_shape": null
+    }
+  ]
+}
+{"step": 1, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 2.151315450668335, "train_token_accuracy": 0.15423977375030518, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.5538853883743287, "eval_token_accuracy": 0.2493664717348928, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28136.56269119314, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 10, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4064078330993652, "train_token_accuracy": 0.25414231419563293, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.404852294921875, "eval_token_accuracy": 0.24883040935672515, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27914.40740735526, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 20, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4035418033599854, "train_token_accuracy": 0.24074074625968933, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.400625228881836, "eval_token_accuracy": 0.24975633528265107, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27968.33984391909, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 30, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4008488655090332, "train_token_accuracy": 0.24780702590942383, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4000597953796388, "eval_token_accuracy": 0.24785575048732944, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27979.787840513625, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 40, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4000910520553589, "train_token_accuracy": 0.24585770070552826, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.399575114250183, "eval_token_accuracy": 0.2510233918128655, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27983.528559297894, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 50, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4030390977859497, "train_token_accuracy": 0.2290448397397995, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3989259958267213, "eval_token_accuracy": 0.24853801169590642, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27994.195527445107, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 60, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4009058475494385, "train_token_accuracy": 0.24049708247184753, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3983980417251587, "eval_token_accuracy": 0.25082846003898635, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27990.633067144387, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 70, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.398540735244751, "train_token_accuracy": 0.2495126724243164, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3990551471710204, "eval_token_accuracy": 0.245224171539961, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27999.0556436091, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 80, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.398626685142517, "train_token_accuracy": 0.25219297409057617, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3988479852676392, "eval_token_accuracy": 0.25048732943469787, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27995.638603417778, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 90, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3997708559036255, "train_token_accuracy": 0.24610136449337006, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3982099056243897, "eval_token_accuracy": 0.25316764132553604, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28002.720550758702, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 100, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.399660587310791, "train_token_accuracy": 0.2509746551513672, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3978074073791504, "eval_token_accuracy": 0.25, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28007.915882839356, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 110, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4003535509109497, "train_token_accuracy": 0.2356237769126892, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3987308979034423, "eval_token_accuracy": 0.24814814814814815, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28003.84169472781, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 120, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3978211879730225, "train_token_accuracy": 0.25, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3969239950180055, "eval_token_accuracy": 0.25155945419103315, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 27998.835683693444, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 130, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3959842920303345, "train_token_accuracy": 0.25219297409057617, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3978163003921509, "eval_token_accuracy": 0.2543372319688109, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28000.181522548504, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 140, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.396744966506958, "train_token_accuracy": 0.2495126724243164, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3953288555145265, "eval_token_accuracy": 0.24537037037037038, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 28002.775489632957, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 150, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3931561708450317, "train_token_accuracy": 0.24829435348510742, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.625, "eval_loss": 1.390086841583252, "eval_token_accuracy": 0.251364522417154, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.975, "tokens_per_sec": 28001.02818793147, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 160, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3864363431930542, "train_token_accuracy": 0.24878168106079102, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3856212377548218, "eval_token_accuracy": 0.2537037037037037, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 28004.021356427533, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 170, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3848551511764526, "train_token_accuracy": 0.25243663787841797, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3885632514953614, "eval_token_accuracy": 0.24780701754385964, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 28004.01832528236, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 180, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.386912226676941, "train_token_accuracy": 0.24537037312984467, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3847968816757201, "eval_token_accuracy": 0.2523391812865497, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 28001.055165764694, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 190, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3912792205810547, "train_token_accuracy": 0.2422027289867401, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.385004448890686, "eval_token_accuracy": 0.2550194931773879, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 28002.964047404457, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{"step": 200, "method": "random_regular", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3849453926086426, "train_token_accuracy": 0.24610136449337006, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3862745761871338, "eval_token_accuracy": 0.2523879142300195, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 28001.60089884384, "effective_K_mean_after_causal": 40.087501525878906, "attention_pair_count_after_causal": 41691}
+{
+  "completed": "train_N512_seed0_random_regular",
+  "evals": [
+    {
+      "version": "v06",
+      "run_id": "train_N512_seed0_random_regular",
+      "status": "ok",
+      "failure_reason": "",
+      "timestamp": "2026-06-12T14:00:06.510744+00:00",
+      "host": "hhpc",
+      "local_or_remote": "remote",
+      "git_commit": "",
+      "config_path": "configs/copy_v06_smoke.json",
+      "config_sha256": "b90981007965ccc1880a57d24e30eb000f865ac2ebbbd5429cf3d0a363c16f7c",
+      "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/synthetic_mvp.py --config configs/copy_v06_smoke.json --output-dir outputs/copy_v06_smoke",
+      "output_dir": "outputs/copy_v06_smoke/train_N512_seed0_random_regular",
+      "log_path": "logs/copy_v06_smoke_20260612_215813.log",
+      "CUDA_VISIBLE_DEVICES": "3",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "torch_version": "2.10.0+cu128",
+      "task": "copy",
+      "data_mode": "online",
+      "num_values": 4,
+      "copy_mode": "full_copy",
+      "sep_token": 5,
+      "eos_token": 6,
+      "pad_token": 0,
+      "method": "random_regular",
+      "graph_id": "v06_B16_d8_s2_c41f9afbd3840ed1",
+      "graph_seed": 2,
+      "attention_backend": "split",
+      "N_train": 512,
+      "N_eval": 512,
+      "T_raw": 1026,
+      "T": 1040,
+      "B": 16,
+      "d": 8,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "causal": true,
+      "multiplicity_mode": "unique_log_m",
+      "seed": 0,
+      "architecture": "transformer",
+      "layers": 8,
+      "d_model": 128,
+      "heads": 4,
+      "ffn_dim": 256,
+      "dropout": 0.1,
+      "optimizer": "adamw",
+      "learning_rate": 0.001,
+      "log_every": 10,
+      "eval_every": 10,
+      "steps": 200,
+      "batch_size": 8,
+      "eval_batches": 5,
+      "raw_K": 80,
+      "unique_K_mean": 40.087501525878906,
+      "effective_K_mean_after_causal": 40.087501525878906,
+      "effective_K_min_after_causal": 1,
+      "effective_K_max_after_causal": 79,
+      "pre_causal_unique_K_mean": 78.05673076923077,
+      "pre_causal_pair_count": 81179,
+      "duplicate_rate": 0.49890623092651365,
+      "self_loop_rate": 1.0,
+      "attention_pair_count_after_causal": 41691,
+      "lambda_G": 0.4430783779678246,
+      "mu_H": 0.5491481939947735,
+      "rho_bound": 0.860373989287474,
+      "rho_exact": 0.5999831601197602,
+      "certified": true,
+      "remote_local_overlap_mean": 0.0,
+      "target_in_1hop_rate": 0.042884990253411304,
+      "target_in_2hop_rate": 0.9512670565302144,
+      "target_in_Lhop_rate": 0.0,
+      "average_shortest_path": 2.00390625,
+      "unreachable_rate": 0.001949317738791423,
+      "final_train_loss": 1.3849453926086426,
+      "eval_loss": 1.3851089954376221,
+      "eval_token_accuracy": 0.25394736842105264,
+      "eval_sequence_accuracy": 0.0,
+      "eval_eos_accuracy": 1.0,
+      "training_curves_path": "outputs/copy_v06_smoke/train_N512_seed0_random_regular/training_curves.png",
+      "tokens_per_sec": 27935.49110925905,
+      "elapsed_sec": 59.56580442748964,
+      "peak_allocated_gb": 5.270219802856445,
+      "peak_reserved_gb": 5.5078125,
+      "artifact_dir": "outputs/copy_v06_smoke/train_N512_seed0_random_regular",
+      "metrics_path": "outputs/copy_v06_smoke/train_N512_seed0_random_regular/metrics.jsonl",
+      "neighbor_shape": [
+        1040,
+        64
+      ],
+      "block_pair_shape": null
+    }
+  ]
+}
+{"step": 1, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 2.1498286724090576, "train_token_accuracy": 0.15740740299224854, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.5547588348388672, "eval_token_accuracy": 0.25077972709551655, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 30815.028724533153, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 10, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.40451180934906, "train_token_accuracy": 0.26827484369277954, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.40504891872406, "eval_token_accuracy": 0.24800194931773878, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29600.82476790828, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 20, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4021199941635132, "train_token_accuracy": 0.24780702590942383, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4013080835342406, "eval_token_accuracy": 0.2476608187134503, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29629.558921139094, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 30, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4003130197525024, "train_token_accuracy": 0.26096490025520325, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.4000066995620728, "eval_token_accuracy": 0.24887914230019492, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29633.655731323408, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 40, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4002528190612793, "train_token_accuracy": 0.24439571797847748, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3992221117019654, "eval_token_accuracy": 0.2517056530214425, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29619.381770406093, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 50, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.403387427330017, "train_token_accuracy": 0.23806042969226837, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3988277435302734, "eval_token_accuracy": 0.25155945419103315, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29613.998875586858, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 60, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3996062278747559, "train_token_accuracy": 0.2431773841381073, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3982932567596436, "eval_token_accuracy": 0.2511695906432749, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29611.567473951454, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 70, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3984779119491577, "train_token_accuracy": 0.2655945420265198, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3990756511688232, "eval_token_accuracy": 0.24736842105263157, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29612.289931700085, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 80, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3980497121810913, "train_token_accuracy": 0.2514619827270508, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3986465215682984, "eval_token_accuracy": 0.2536549707602339, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29615.59611792428, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 90, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3984817266464233, "train_token_accuracy": 0.24439571797847748, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3981969594955443, "eval_token_accuracy": 0.2533625730994152, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29615.582990059684, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 100, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.399114727973938, "train_token_accuracy": 0.24610136449337006, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3976141214370728, "eval_token_accuracy": 0.25151072124756335, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29616.630005842406, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 110, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.4000344276428223, "train_token_accuracy": 0.2509746551513672, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3986987829208375, "eval_token_accuracy": 0.2475633528265107, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29614.52996768312, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 120, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3975698947906494, "train_token_accuracy": 0.2514619827270508, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3968135833740234, "eval_token_accuracy": 0.2542397660818713, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29615.21275672618, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 130, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3955379724502563, "train_token_accuracy": 0.25365498661994934, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.3978998184204101, "eval_token_accuracy": 0.2543372319688109, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29615.093218917948, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 140, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.396772861480713, "train_token_accuracy": 0.24780702590942383, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.0, "eval_loss": 1.395600962638855, "eval_token_accuracy": 0.24585769980506822, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.0, "tokens_per_sec": 29617.308908788502, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 150, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3942233324050903, "train_token_accuracy": 0.25316762924194336, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 0.125, "eval_loss": 1.3905184030532838, "eval_token_accuracy": 0.25321637426900584, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 0.6, "tokens_per_sec": 29614.704954906658, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 160, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3855592012405396, "train_token_accuracy": 0.26047757267951965, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3856454849243165, "eval_token_accuracy": 0.25458089668615985, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 29615.24471681741, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 170, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3841129541397095, "train_token_accuracy": 0.26047757267951965, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3879860639572144, "eval_token_accuracy": 0.24785575048732944, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 29614.387311076447, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 180, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3868348598480225, "train_token_accuracy": 0.24683235585689545, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3846384525299071, "eval_token_accuracy": 0.25282651072124757, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 29614.3073183281, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 190, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.390214443206787, "train_token_accuracy": 0.24537037312984467, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3848899841308593, "eval_token_accuracy": 0.252046783625731, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 29614.224040267545, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{"step": 200, "method": "zigzag_certified", "seed": 0, "N_train": 512, "N_eval": 512, "train_loss": 1.3844027519226074, "train_token_accuracy": 0.25974658131599426, "train_sequence_accuracy": 0.0, "train_eos_accuracy": 1.0, "eval_loss": 1.3861974000930786, "eval_token_accuracy": 0.2511695906432749, "eval_sequence_accuracy": 0.0, "eval_eos_accuracy": 1.0, "tokens_per_sec": 29614.14211941914, "effective_K_mean_after_causal": 29.83942222595215, "attention_pair_count_after_causal": 31033}
+{
+  "completed": "train_N512_seed0_zigzag_certified",
+  "evals": [
+    {
+      "version": "v06",
+      "run_id": "train_N512_seed0_zigzag_certified",
+      "status": "ok",
+      "failure_reason": "",
+      "timestamp": "2026-06-12T14:01:05.891814+00:00",
+      "host": "hhpc",
+      "local_or_remote": "remote",
+      "git_commit": "",
+      "config_path": "configs/copy_v06_smoke.json",
+      "config_sha256": "b90981007965ccc1880a57d24e30eb000f865ac2ebbbd5429cf3d0a363c16f7c",
+      "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/synthetic_mvp.py --config configs/copy_v06_smoke.json --output-dir outputs/copy_v06_smoke",
+      "output_dir": "outputs/copy_v06_smoke/train_N512_seed0_zigzag_certified",
+      "log_path": "logs/copy_v06_smoke_20260612_215813.log",
+      "CUDA_VISIBLE_DEVICES": "3",
+      "gpu_name": "NVIDIA A100-SXM4-80GB",
+      "torch_version": "2.10.0+cu128",
+      "task": "copy",
+      "data_mode": "online",
+      "num_values": 4,
+      "copy_mode": "full_copy",
+      "sep_token": 5,
+      "eos_token": 6,
+      "pad_token": 0,
+      "method": "zigzag_certified",
+      "graph_id": "v06_B16_d8_s2_c41f9afbd3840ed1",
+      "graph_seed": 2,
+      "attention_backend": "split",
+      "N_train": 512,
+      "N_eval": 512,
+      "T_raw": 1026,
+      "T": 1040,
+      "B": 16,
+      "d": 8,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "causal": true,
+      "multiplicity_mode": "unique_log_m",
+      "seed": 0,
+      "architecture": "transformer",
+      "layers": 8,
+      "d_model": 128,
+      "heads": 4,
+      "ffn_dim": 256,
+      "dropout": 0.1,
+      "optimizer": "adamw",
+      "learning_rate": 0.001,
+      "log_every": 10,
+      "eval_every": 10,
+      "steps": 200,
+      "batch_size": 8,
+      "eval_batches": 5,
+      "raw_K": 80,
+      "unique_K_mean": 29.83942222595215,
+      "effective_K_mean_after_causal": 29.83942222595215,
+      "effective_K_min_after_causal": 1,
+      "effective_K_max_after_causal": 63,
+      "pre_causal_unique_K_mean": 58.875,
+      "pre_causal_pair_count": 61230,
+      "duplicate_rate": 0.6270072221755981,
+      "self_loop_rate": 1.0,
+      "attention_pair_count_after_causal": 31033,
+      "lambda_G": 0.4430783779678246,
+      "mu_H": 0.5491481939947735,
+      "rho_bound": 0.860373989287474,
+      "rho_exact": 0.5999831601197602,
+      "certified": true,
+      "remote_local_overlap_mean": 0.0,
+      "target_in_1hop_rate": 0.04483430799220273,
+      "target_in_2hop_rate": 0.39571150097465885,
+      "target_in_Lhop_rate": 0.08382066276803118,
+      "average_shortest_path": 2.733201581027668,
+      "unreachable_rate": 0.01364522417153996,
+      "final_train_loss": 1.3844027519226074,
+      "eval_loss": 1.3850626945495605,
+      "eval_token_accuracy": 0.25380116959064325,
+      "eval_sequence_accuracy": 0.0,
+      "eval_eos_accuracy": 1.0,
+      "training_curves_path": "outputs/copy_v06_smoke/train_N512_seed0_zigzag_certified/training_curves.png",
+      "tokens_per_sec": 29550.666376967198,
+      "elapsed_sec": 56.310066878795624,
+      "peak_allocated_gb": 4.47360372543335,
+      "peak_reserved_gb": 4.60546875,
+      "artifact_dir": "outputs/copy_v06_smoke/train_N512_seed0_zigzag_certified",
+      "metrics_path": "outputs/copy_v06_smoke/train_N512_seed0_zigzag_certified/metrics.jsonl",
+      "neighbor_shape": [
+        1040,
+        53
+      ],
+      "block_pair_shape": null
+    }
+  ]
+}

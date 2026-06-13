@@ -1,0 +1,165 @@
+{"mask_tests": "ok", "cases": 8}
+{"step": 1, "method": "dense", "train_loss": 2.5570895671844482, "valid_loss": 2.3847021102905273, "valid_accuracy": 0.05}
+{"step": 20, "method": "dense", "train_loss": 2.377030611038208, "valid_loss": 2.399196720123291, "valid_accuracy": 0.0875}
+{"step": 40, "method": "dense", "train_loss": 2.519434928894043, "valid_loss": 2.335465431213379, "valid_accuracy": 0.2125}
+{"step": 60, "method": "dense", "train_loss": 2.488818645477295, "valid_loss": 2.340349006652832, "valid_accuracy": 0.1375}
+{
+  "completed": "dense",
+  "result": {
+    "method": "dense",
+    "task": "associative_recall",
+    "seq_len": 128,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 60,
+    "batch_size": 16,
+    "final_train_loss": 2.488818645477295,
+    "final_valid_loss": 2.3275240421295167,
+    "final_valid_accuracy": 0.1,
+    "tokens_per_sec": 23824.892970404097,
+    "elapsed_sec": 5.157630724832416,
+    "device": "cpu",
+    "gpu_name": null,
+    "peak_allocated_gb": 0.0,
+    "peak_reserved_gb": 0.0,
+    "mask": {
+      "raw_k": 128,
+      "effective_k_mean": 128.0,
+      "effective_k_min": 128,
+      "effective_k_max": 128,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 16384,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 10,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/synthetic_mvp_cpu/dense_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "local", "train_loss": 2.546706438064575, "valid_loss": 2.3840198040008547, "valid_accuracy": 0.075}
+{"step": 20, "method": "local", "train_loss": 2.396921157836914, "valid_loss": 2.3962228775024412, "valid_accuracy": 0.1}
+{"step": 40, "method": "local", "train_loss": 2.5242199897766113, "valid_loss": 2.3374731063842775, "valid_accuracy": 0.2125}
+{"step": 60, "method": "local", "train_loss": 2.487351179122925, "valid_loss": 2.344006633758545, "valid_accuracy": 0.15}
+{
+  "completed": "local",
+  "result": {
+    "method": "local",
+    "task": "associative_recall",
+    "seq_len": 128,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 60,
+    "batch_size": 16,
+    "final_train_loss": 2.487351179122925,
+    "final_valid_loss": 2.328649568557739,
+    "final_valid_accuracy": 0.1,
+    "tokens_per_sec": 24348.106760958803,
+    "elapsed_sec": 5.046798964962363,
+    "device": "cpu",
+    "gpu_name": null,
+    "peak_allocated_gb": 0.0,
+    "peak_reserved_gb": 0.0,
+    "mask": {
+      "raw_k": 16,
+      "effective_k_mean": 16.0,
+      "effective_k_min": 16,
+      "effective_k_max": 16,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 2048,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 10,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/synthetic_mvp_cpu/local_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "random", "train_loss": 2.544175148010254, "valid_loss": 2.3834556579589843, "valid_accuracy": 0.0625}
+{"step": 20, "method": "random", "train_loss": 2.3886866569519043, "valid_loss": 2.3984084606170653, "valid_accuracy": 0.0875}
+{"step": 40, "method": "random", "train_loss": 2.524475574493408, "valid_loss": 2.335738754272461, "valid_accuracy": 0.225}
+{"step": 60, "method": "random", "train_loss": 2.4885647296905518, "valid_loss": 2.3418628215789794, "valid_accuracy": 0.125}
+{
+  "completed": "random",
+  "result": {
+    "method": "random",
+    "task": "associative_recall",
+    "seq_len": 128,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 60,
+    "batch_size": 16,
+    "final_train_loss": 2.4885647296905518,
+    "final_valid_loss": 2.3309000968933105,
+    "final_valid_accuracy": 0.075,
+    "tokens_per_sec": 24102.62498016021,
+    "elapsed_sec": 5.098199889063835,
+    "device": "cpu",
+    "gpu_name": null,
+    "peak_allocated_gb": 0.0,
+    "peak_reserved_gb": 0.0,
+    "mask": {
+      "raw_k": 20,
+      "effective_k_mean": 20.0,
+      "effective_k_min": 20,
+      "effective_k_max": 20,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 2560,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 10,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/synthetic_mvp_cpu/random_metrics.jsonl"
+  }
+}
+{"step": 1, "method": "zigzag", "train_loss": 2.5477640628814697, "valid_loss": 2.382993221282959, "valid_accuracy": 0.0625}
+{"step": 20, "method": "zigzag", "train_loss": 2.3923871517181396, "valid_loss": 2.401089811325073, "valid_accuracy": 0.1}
+{"step": 40, "method": "zigzag", "train_loss": 2.5312752723693848, "valid_loss": 2.3401299476623536, "valid_accuracy": 0.2}
+{"step": 60, "method": "zigzag", "train_loss": 2.4964380264282227, "valid_loss": 2.3457204818725588, "valid_accuracy": 0.125}
+{
+  "completed": "zigzag",
+  "result": {
+    "method": "zigzag",
+    "task": "associative_recall",
+    "seq_len": 128,
+    "block_size": 16,
+    "degree": 2,
+    "steps": 60,
+    "batch_size": 16,
+    "final_train_loss": 2.4964380264282227,
+    "final_valid_loss": 2.3267292022705077,
+    "final_valid_accuracy": 0.0875,
+    "tokens_per_sec": 24704.804170363215,
+    "elapsed_sec": 4.973931351676583,
+    "device": "cpu",
+    "gpu_name": null,
+    "peak_allocated_gb": 0.0,
+    "peak_reserved_gb": 0.0,
+    "mask": {
+      "raw_k": 20,
+      "effective_k_mean": 20.0,
+      "effective_k_min": 20,
+      "effective_k_max": 20,
+      "duplicate_rate_estimate": 0.0,
+      "attention_pair_count": 2560,
+      "self_loop_rate": 1.0
+    },
+    "task_spec": {
+      "num_keys": 64,
+      "num_values": 10,
+      "query_token": 75,
+      "pad_token": 0
+    },
+    "metrics_path": "../../outputs/synthetic_mvp_cpu/zigzag_metrics.jsonl"
+  }
+}

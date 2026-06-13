@@ -1,0 +1,12 @@
+{
+  "config": "wikitext-2-raw-v1",
+  "dataset": "wikitext2",
+  "files": {
+    "test": "test.jsonl",
+    "train": "train.jsonl",
+    "validation": "validation.jsonl"
+  },
+  "revision_or_hash": "b08601e04326c79dfdd32d625aee71d232d685c3",
+  "source": "Salesforce/wikitext",
+  "variant": "wikitext-2-raw-v1"
+}

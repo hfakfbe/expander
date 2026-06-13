@@ -1,0 +1,3 @@
+target_in_1hop_rate,target_in_2hop_rate,target_in_Lhop_rate,average_shortest_path,unreachable_rate,method,N,T,B,d,seed,layers,mask_scope,attention_pair_count,raw_K
+0.05458089668615984,0.9980506822612085,1.0,1.9473684210526316,0.0,random_regular,512,1040,16,8,1,8,structural,81243,80
+0.05263157894736842,0.9122807017543859,0.9980506822612085,2.033203125,0.001949317738791423,random_regular,512,1040,16,8,1,8,causal_effective,40871,80
