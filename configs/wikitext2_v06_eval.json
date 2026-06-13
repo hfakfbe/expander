@@ -1,0 +1,45 @@
+{
+  "version": "v06",
+  "task": {
+    "name": "wikitext2",
+    "mode": "causal_lm",
+    "dataset_dir": "datasets/wikitext2_raw_v1",
+    "sequence_length": 512
+  },
+  "model": {
+    "architecture": "transformer",
+    "layers": 2,
+    "d_model": 64,
+    "heads": 4,
+    "ffn_dim": 128,
+    "dropout": 0.1,
+    "attention_backend": "auto_split"
+  },
+  "attention": {
+    "methods": ["dense", "local", "random_regular", "zigzag_certified"],
+    "causal": true,
+    "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+    "multiplicity": {
+      "mode": "unique_log_m",
+      "boolean_ablation": false
+    }
+  },
+  "tokenizer": {
+    "name": "byte_level_utf8",
+    "pad_token": "pad",
+    "eos_token": "eos"
+  },
+  "train": {
+    "steps": 0,
+    "batch_size": 1,
+    "eval_batches": 1,
+    "learning_rate": 0.001,
+    "log_every": 50,
+    "eval_every": 100,
+    "seed": 0
+  },
+  "output": {
+    "root": "outputs/wikitext2_v06_eval",
+    "plot_curves": false
+  }
+}

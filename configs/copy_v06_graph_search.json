@@ -1,0 +1,25 @@
+{
+  "version": "v06",
+  "N_task": 512,
+  "T_raw": 1026,
+  "candidate_block_sizes": [16, 32, 64],
+  "candidate_degrees": [4, 6, 8],
+  "graph_seeds": [0, 1, 2, 3, 4],
+  "G": {
+    "type": "permutation_regular",
+    "require_derangement": true,
+    "max_parallel_edges_per_block_pair": 2
+  },
+  "H": {
+    "type": "permutation_regular",
+    "allow_self_port": false
+  },
+  "acceptance": {
+    "rho_bound_lt": 1.0,
+    "prefer_simple_sufficient_condition": true,
+    "max_remote_local_overlap_mean": 0.25
+  },
+  "output": {
+    "root": "outputs/copy_v06_graph_search"
+  }
+}

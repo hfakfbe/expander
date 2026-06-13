@@ -1,0 +1,50 @@
+{
+  "version": "v06",
+  "task": {
+    "name": "copy",
+    "data": "online",
+    "mode": "full_copy",
+    "num_values": 4,
+    "special_tokens": {
+      "pad": 0,
+      "sep": 5,
+      "eos": 6
+    },
+    "train_lengths": [512],
+    "eval_lengths": [512]
+  },
+  "model": {
+    "architecture": "transformer",
+    "layers": 8,
+    "d_model": 128,
+    "heads": 4,
+    "ffn_dim": 256,
+    "dropout": 0.1,
+    "attention_backend": "auto_split"
+  },
+  "attention": {
+    "methods": ["dense", "local", "random_regular", "zigzag_certified", "zigzag_boolean"],
+    "causal": true,
+    "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+    "multiplicity": {
+      "mode": "unique_log_m",
+      "boolean_ablation": true
+    }
+  },
+  "train": {
+    "steps": 5000,
+    "batch_size": 16,
+    "eval_batches": 50,
+    "learning_rate": 0.001,
+    "optimizer": "adamw",
+    "log_every": 50,
+    "eval_every": 50,
+    "checkpoint_every": 500,
+    "seeds": [0]
+  },
+  "output": {
+    "root": "outputs/copy_v06_main_n512",
+    "plot_curves": true,
+    "curve_format": "png"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "version": "v06",
+  "dataset": {
+    "name": "wikitext2",
+    "preferred_source": {
+      "path": "Salesforce/wikitext",
+      "name": "wikitext-2-raw-v1"
+    },
+    "fallback_source": {
+      "path": "carlosejimenez/wikitext__wikitext-2-raw-v1"
+    },
+    "text_field": "text",
+    "cache_dir": "datasets/hf_cache",
+    "output_dir": "datasets/wikitext2_raw_v1"
+  },
+  "validation": {
+    "required_splits": ["train", "validation", "test"],
+    "min_rows": {
+      "train": 1,
+      "validation": 1,
+      "test": 1
+    },
+    "max_empty_line_rate": 0.5
+  }
+}
