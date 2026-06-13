@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from legacy_synthetic_mvp import *  # noqa: F401,F403
-from legacy_synthetic_mvp import main
+from synthetic_mvp_core import *  # noqa: F401,F403
+from synthetic_mvp_core.runner import main
 
 
 if __name__ == "__main__":
