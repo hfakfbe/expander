@@ -7,6 +7,7 @@ import shutil
 import shlex
 import sys
 import time
+import copy
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
@@ -202,15 +203,21 @@ def lm_loss_and_metrics(logits: torch.Tensor, batch: LMBatch) -> tuple[torch.Ten
 
 
 def build_runtime(config: dict, output_dir: Path, device: torch.device) -> SimpleNamespace:
+    raw_config_snapshot = copy.deepcopy(config)
     task = config["task"]
     model = config["model"]
     attention = config["attention"]
     train = config["train"]
     graph_materialization = None
+    graph_artifact_path = str(attention.get("graph_artifact", ""))
     if config.get("graph") and not bool(config.get("graph", {}).get("generate", False)):
         graph_materialization = materialize_graph_artifact(config, output_dir, require=True)
-        attention["graph_artifact"] = str(graph_materialization.selected_graph_path)
-    graph_artifact = graph_materialization.artifact if graph_materialization is not None else load_graph_artifact(attention["graph_artifact"])
+        graph_artifact_path = str(graph_materialization.selected_graph_path)
+    graph_artifact = (
+        graph_materialization.artifact
+        if graph_materialization is not None
+        else load_graph_artifact(graph_artifact_path)
+    )
     sequence_length = int(task["sequence_length"])
     T = int(graph_artifact["T"])
     eval_cfg = config.get("eval", {})
@@ -269,7 +276,7 @@ def build_runtime(config: dict, output_dir: Path, device: torch.device) -> Simpl
         causal=bool(attention.get("causal", True)),
         graph_config=graph_artifact,
         graph_artifact=graph_artifact,
-        graph_artifact_path=str(attention["graph_artifact"]),
+        graph_artifact_path=graph_artifact_path,
         graph_materialization=graph_materialization,
         graph_certificate=dict(graph_artifact.get("certificate", {})),
         graph_id=str(graph_artifact.get("graph_id", "")),
@@ -302,8 +309,37 @@ def build_runtime(config: dict, output_dir: Path, device: torch.device) -> Simpl
         seed=int(train.get("seed", train.get("seeds", [0])[0])),
         output_dir=output_dir,
         device=device,
-        config_snapshot=config,
+        raw_config_snapshot=raw_config_snapshot,
+        config_snapshot=build_resolved_config_snapshot(
+            raw_config_snapshot,
+            graph_materialization,
+            graph_artifact_path,
+        ),
     )
+
+
+def build_resolved_config_snapshot(
+    config: dict,
+    graph_materialization,
+    graph_artifact_path: str,
+) -> dict:
+    resolved = copy.deepcopy(config)
+    if graph_artifact_path:
+        resolved.setdefault("attention", {})["graph_artifact"] = str(graph_artifact_path)
+    if graph_materialization is not None:
+        resolved.setdefault("attention", {}).setdefault("runtime_graph", {}).update(
+            graph_materialization.as_dict()
+        )
+        graph_cfg = resolved.setdefault("graph", {})
+        graph_cfg["runtime_graph_artifact_path"] = str(graph_materialization.selected_graph_path)
+        graph_cfg["runtime_graph_certificate_path"] = str(graph_materialization.certificate_path)
+        graph_cfg["runtime_graph_generation_path"] = str(graph_materialization.generation_path)
+        graph_cfg["graph_artifact_sha256"] = graph_materialization.graph_artifact_sha256
+        graph_cfg["canonical_graph_artifact_sha256"] = graph_materialization.canonical_graph_artifact_sha256
+        graph_cfg["graph_artifact_sha256_matches_canonical"] = (
+            graph_materialization.sha256_matches_canonical
+        )
+    return resolved
 
 
 def copy_phase4_artifacts(args: SimpleNamespace, output_dir: Path) -> dict:

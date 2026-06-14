@@ -31,6 +31,7 @@ from synthetic_mvp_core.training import (
 )
 from v07_artifacts import file_sha256, git_commit, materialize_graph_artifact
 from wikitext2_utils import (
+    build_resolved_config_snapshot,
     build_model_and_artifacts,
     build_runtime,
     copy_phase4_artifacts,
@@ -271,8 +272,8 @@ def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str
     args = build_runtime(config, output_dir, device)
     tokenizer = load_phase4_tokenizer(args.tokenizer_source_dir)
     manifest = copy_phase4_artifacts(args, output_dir)
-    write_json(output_dir / "raw_config_snapshot.json", config)
-    write_json(output_dir / "resolved_config_snapshot.json", config)
+    write_json(output_dir / "raw_config_snapshot.json", args.raw_config_snapshot)
+    write_json(output_dir / "resolved_config_snapshot.json", args.config_snapshot)
     train_blocks = load_tokenized_blocks(args.tokenized_train_path)
     test_blocks = load_tokenized_blocks(args.tokenized_test_path)
     data_ctx = data_context(args, tokenizer)
@@ -289,15 +290,19 @@ def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str
         method = canonical_method(method)
         run_dir = output_dir / f"seed{args.seed}_{method}"
         run_dir.mkdir(parents=True, exist_ok=True)
-        run_config = dict(config)
         run_materialization = materialize_graph_artifact(config, run_dir, require=True)
         args.graph_materialization = run_materialization
         args.graph_artifact = run_materialization.artifact
         args.graph_config = run_materialization.artifact
         args.graph_certificate = run_materialization.certificate
         args.graph_artifact_path = str(run_materialization.selected_graph_path)
+        run_config = build_resolved_config_snapshot(
+            config,
+            run_materialization,
+            str(run_materialization.selected_graph_path),
+        )
         copy_phase4_artifacts(args, run_dir)
-        write_json(run_dir / "raw_config_snapshot.json", config)
+        write_json(run_dir / "raw_config_snapshot.json", args.raw_config_snapshot)
         write_json(run_dir / "resolved_config_snapshot.json", run_config)
         write_json(run_dir / "config_snapshot.json", run_config)
         write_command(run_dir / "command.sh")
