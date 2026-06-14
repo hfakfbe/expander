@@ -271,7 +271,10 @@ def build_graph_artifact(
         "G": G,
         "H": H,
     }
-    payload["graph_id"] = _stable_id(payload, prefix=f"v06_B{block_size}_d{degree}_s{graph_seed}")
+    payload["graph_id"] = _stable_id(
+        payload,
+        prefix=f"{version}_B{block_size}_d{degree}_s{graph_seed}",
+    )
     validate_graph_artifact(payload)
     return payload
 
@@ -504,6 +507,7 @@ def canonical_method(method: str) -> str:
     aliases = {
         "random": "random_regular",
         "zigzag": "zigzag_cycle",
+        "zigzag_certified_cosine": "zigzag_certified_cosine",
     }
     return aliases.get(method, method)
 
@@ -529,6 +533,8 @@ def build_attention_mask(
         return local
     if method == "random_regular":
         return local | build_random_cross(seq_len, block_size, degree, device, seed, graph_config)
+    if method == "zigzag_certified_cosine":
+        method = "zigzag_certified"
     if method in {"zigzag_certified", "zigzag_boolean", "zigzag_cycle"}:
         return local | build_zigzag_cross(seq_len, block_size, degree, device, graph_config)
     raise ValueError(f"unknown method: {method}")
@@ -551,6 +557,8 @@ def build_cross_mask(
         return build_random_cross(seq_len, block_size, degree, device, seed, graph_config) & ~local
     if method == "zigzag_cycle":
         graph_config = DEFAULT_GRAPH_CONFIG
+    if method == "zigzag_certified_cosine":
+        method = "zigzag_certified"
     if method in {"zigzag_certified", "zigzag_boolean", "zigzag_cycle"}:
         return build_zigzag_cross(seq_len, block_size, degree, device, graph_config) & ~local
     raise ValueError(f"unknown method: {method}")

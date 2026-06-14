@@ -6,6 +6,7 @@ import csv
 import json
 import math
 import sys
+import time
 from collections import Counter, deque
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,6 +26,12 @@ from graph_structures import (
     expected_raw_k,
     load_graph_artifact,
     padded_length,
+)
+from v07_artifacts import (
+    V07_GRAPH_GENERATION_ALGORITHM,
+    file_sha256,
+    git_commit,
+    normalize_certificate,
 )
 
 
@@ -48,7 +55,10 @@ CERTIFICATE_FIELDS = [
     "lambda_G",
     "mu_H",
     "rho_bound",
+    "rho_zigzag_bound",
+    "rho_zigzag_certified",
     "rho_exact",
+    "rho_zigzag_exact",
     "simple_condition_lhs",
     "certified",
     "resample_reason",
@@ -277,7 +287,12 @@ def write_json(path: Path, payload) -> None:
 def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fp:
-        writer = csv.DictWriter(fp, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(
+            fp,
+            fieldnames=fieldnames,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -346,7 +361,10 @@ def certificate_for_artifact(artifact: dict, config: dict, resample_reason: str 
         "lambda_G": lambda_G,
         "mu_H": mu_H,
         "rho_bound": rho_bound,
+        "rho_zigzag_bound": rho_bound,
         "rho_exact": rho_exact,
+        "rho_zigzag_exact": rho_exact,
+        "rho_zigzag_certified": bool(certified),
         "simple_condition_lhs": simple_lhs,
         "certified": bool(certified),
         "resample_reason": resample_reason,
@@ -401,6 +419,7 @@ def select_certificate(rows: list[dict]) -> dict | None:
 
 
 def run_graph_search(config: dict, output_dir: Path) -> dict:
+    started = time.perf_counter()
     output_dir.mkdir(parents=True, exist_ok=True)
     graph_dir = output_dir / "graphs"
     graph_dir.mkdir(parents=True, exist_ok=True)
@@ -414,6 +433,7 @@ def run_graph_search(config: dict, output_dir: Path) -> dict:
                 continue
             for graph_seed in [int(v) for v in config["graph_seeds"]]:
                 try:
+                    graph_cfg = config.get("graph", {})
                     artifact = build_graph_artifact(
                         N_task=int(config["N_task"]),
                         T_raw=int(config["T_raw"]),
@@ -424,8 +444,25 @@ def run_graph_search(config: dict, output_dir: Path) -> dict:
                         h_config=config.get("H", {}),
                         version=config.get("version", "v06"),
                     )
+                    if str(config.get("version", "")).lower() == "v07":
+                        artifact["N_total"] = int(config.get("N_total", config["N_task"]))
+                        artifact["allow_multiedges"] = bool(
+                            graph_cfg.get("allow_multiedges", config.get("allow_multiedges", True))
+                        )
+                        artifact["preserve_multiplicity"] = bool(
+                            graph_cfg.get(
+                                "preserve_multiplicity",
+                                config.get("preserve_multiplicity", True),
+                            )
+                        )
+                        artifact["graph_generation_algorithm"] = str(
+                            graph_cfg.get(
+                                "graph_generation_algorithm",
+                                V07_GRAPH_GENERATION_ALGORITHM,
+                            )
+                        )
                     cert = certificate_for_artifact(artifact, config)
-                    artifact["certificate"] = cert
+                    artifact["certificate"] = normalize_certificate(cert)
                     artifacts[artifact["graph_id"]] = artifact
                     write_json(graph_dir / f"{artifact['graph_id']}.json", artifact)
                     rows.append(cert)
@@ -438,16 +475,80 @@ def run_graph_search(config: dict, output_dir: Path) -> dict:
     selected = select_certificate(rows)
     if selected is not None:
         artifact = artifacts[selected["graph_id"]]
+        selected = normalize_certificate(selected)
+        artifact["certificate"] = selected
         write_json(output_dir / "selected_graph.json", artifact)
         write_json(output_dir / "selected_graph_certificate.json", selected)
+        if str(config.get("version", "")).lower() == "v07":
+            write_json(output_dir / "graph_certificate.json", selected)
+            artifact_sha = file_sha256(output_dir / "selected_graph.json")
+            (output_dir / "graph_artifact.sha256").write_text(
+                artifact_sha + "  selected_graph.json\n", encoding="utf-8"
+            )
+            graph_cfg = config.get("graph", {})
+            generation = {
+                "status": "ok",
+                "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                "command": " ".join(sys.argv),
+                "git_commit": git_commit(Path.cwd()),
+                "graph_generation_algorithm": str(
+                    graph_cfg.get("graph_generation_algorithm", V07_GRAPH_GENERATION_ALGORITHM)
+                ),
+                "graph_seed": int(artifact["graph_seed"]),
+                "N_total": int(config.get("N_total", artifact.get("N_total", artifact["N_task"]))),
+                "N_task": int(artifact["N_task"]),
+                "T_raw": int(artifact["T_raw"]),
+                "T": int(artifact["T"]),
+                "q": int(artifact["q"]),
+                "B": int(artifact["B"]),
+                "d": int(artifact["d"]),
+                "allow_multiedges": bool(artifact.get("allow_multiedges", True)),
+                "preserve_multiplicity": bool(artifact.get("preserve_multiplicity", True)),
+                "canonical_graph_artifact_sha256": artifact_sha,
+                "selected_graph_path": str(output_dir / "selected_graph.json"),
+                "graph_certificate_path": str(output_dir / "graph_certificate.json"),
+                "graph_artifact_sha256_path": str(output_dir / "graph_artifact.sha256"),
+                "generation_attempts": len(rows),
+            }
+            write_json(output_dir / "graph_generation.json", generation)
     summary = {
         "status": "ok" if selected is not None else "failed",
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "num_candidates": len(rows),
         "num_certified": sum(1 for row in rows if bool(row.get("certified"))),
         "selected_graph_id": selected["graph_id"] if selected is not None else "",
         "selected_certificate": selected,
+        "total_wall_time_sec": time.perf_counter() - started,
     }
+    if selected is not None and str(config.get("version", "")).lower() == "v07":
+        artifact_sha = file_sha256(output_dir / "selected_graph.json")
+        summary.update(
+            {
+                "canonical_graph_dir": str(output_dir),
+                "canonical_graph_artifact_path": str(output_dir / "selected_graph.json"),
+                "canonical_graph_artifact_sha256": artifact_sha,
+                "canonical_graph_seed": artifacts[selected["graph_id"]].get("graph_seed", ""),
+                "canonical_graph_generation_algorithm": artifacts[selected["graph_id"]].get(
+                    "graph_generation_algorithm",
+                    V07_GRAPH_GENERATION_ALGORITHM,
+                ),
+                "graph_seed": artifacts[selected["graph_id"]].get("graph_seed", ""),
+                "graph_generation_algorithm": artifacts[selected["graph_id"]].get(
+                    "graph_generation_algorithm",
+                    V07_GRAPH_GENERATION_ALGORITHM,
+                ),
+                "N_total": int(config.get("N_total", artifacts[selected["graph_id"]].get("N_task", 0))),
+                "T": int(artifacts[selected["graph_id"]]["T"]),
+                "q": int(artifacts[selected["graph_id"]]["q"]),
+                "B": int(artifacts[selected["graph_id"]]["B"]),
+                "d": int(artifacts[selected["graph_id"]]["d"]),
+                "allow_multiedges": bool(artifacts[selected["graph_id"]].get("allow_multiedges", True)),
+                "preserve_multiplicity": bool(
+                    artifacts[selected["graph_id"]].get("preserve_multiplicity", True)
+                ),
+            }
+        )
     write_json(output_dir / "summary.json", summary)
     if selected is None:
         raise SystemExit("no certified graph found; stop before training")

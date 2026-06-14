@@ -50,6 +50,15 @@ def padded_copy_lengths(N: int, block_size: int) -> tuple[int, int]:
     T = int(math.ceil(T_raw / block_size) * block_size)
     return T_raw, T
 
+def copy_source_length_from_total(N_total: int) -> int:
+    N_total = int(N_total)
+    if N_total < 2 or N_total % 2 != 0:
+        raise ValueError("copy N_total must be an even length >= 2")
+    source_length = (N_total - 2) // 2
+    if 2 * source_length + 2 != N_total:
+        raise ValueError(f"cannot derive exact copy_source_length from N_total={N_total}")
+    return source_length
+
 def make_full_copy_batch(
     batch_size: int,
     N: int,

@@ -4,6 +4,8 @@ import copy
 import json
 import os
 import socket
+import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,12 +37,15 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         method, certificate, getattr(args, "multiplicity_mode", "boolean")
     )
     T_raw, T = padded_copy_lengths(train_len, args.block_size)
+    graph_materialization = getattr(args, "graph_materialization", None)
+    graph_extra = graph_materialization.as_dict() if graph_materialization is not None else {}
     return {
         "version": getattr(args, "version", "v06"),
         "run_id": run_id,
         "status": "failed",
         "failure_reason": repr(error),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "host": socket.gethostname(),
         "local_or_remote": args.local_or_remote,
         "git_commit": args.git_commit,
@@ -51,6 +56,7 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "log_path": args.log_path,
         "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
         "gpu_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else None,
+        "python_version": sys.version.split()[0],
         "torch_version": torch.__version__,
         "task": args.task,
         "data_mode": args.data_mode,
@@ -62,7 +68,11 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "method": method,
         "graph_id": getattr(args, "graph_id", ""),
         "graph_seed": getattr(args, "graph_seed", ""),
+        "graph_generation_algorithm": getattr(args, "graph_artifact", {}).get("graph_generation_algorithm", ""),
+        **graph_extra,
         "attention_backend": args.attention_backend,
+        "N_total": getattr(args, "N_total", 2 * train_len + 2),
+        "copy_source_length": getattr(args, "copy_source_length", train_len),
         "N_train": train_len,
         "N_eval": "",
         "T_raw": T_raw,
@@ -100,7 +110,10 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "lambda_G": certificate.get("lambda_G", ""),
         "mu_H": certificate.get("mu_H", ""),
         "rho_bound": certificate.get("rho_bound", ""),
+        "rho_zigzag_bound": certificate.get("rho_zigzag_bound", certificate.get("rho_bound", "")),
+        "rho_zigzag_certified": certificate.get("rho_zigzag_certified", certificate.get("certified", "")),
         "rho_exact": certificate.get("rho_exact", ""),
+        "rho_zigzag_exact": certificate.get("rho_zigzag_exact", certificate.get("rho_exact", "")),
         "certified": cert_fields["certified"],
         "graph_certified": cert_fields["graph_certified"],
         "implementation_certified": cert_fields["implementation_certified"],
@@ -119,15 +132,23 @@ def failure_record(args, run_id: str, train_len: int, seed: int, method: str, er
         "training_curves_path": "",
         "tokens_per_sec": "",
         "elapsed_sec": "",
+        "total_wall_time_sec": "",
+        "train_wall_time_sec": "",
+        "eval_wall_time_sec": "",
+        "data_prep_wall_time_sec": "",
         "peak_allocated_gb": torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0.0,
         "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1024**3 if torch.cuda.is_available() else 0.0,
         "artifact_dir": str(run_dir),
         "metrics_path": "",
+        "summary_path": str(run_dir / "summary.json"),
+        "raw_config_snapshot_path": str(run_dir / "raw_config_snapshot.json"),
+        "resolved_config_snapshot_path": str(run_dir / "resolved_config_snapshot.json"),
         "neighbor_shape": "",
         "block_pair_shape": "",
     }
 
 def main() -> None:
+    started = time.perf_counter()
     cli = parse_args()
     config, config_path, config_sha = load_config(cli.config)
     config = apply_cli_overrides(config, cli)
@@ -141,6 +162,7 @@ def main() -> None:
     set_seed(args.seed)
     write_json(args.output_dir / "config_snapshot.json", args.config_snapshot)
     write_json(args.output_dir / "raw_config_snapshot.json", args.raw_config_snapshot)
+    write_json(args.output_dir / "resolved_config_snapshot.json", args.config_snapshot)
     write_command_script(args.output_dir / "command.sh", args.command)
 
     test_results = []
@@ -194,6 +216,7 @@ def main() -> None:
                 run_args.output_dir = run_dir
                 write_json(run_dir / "config_snapshot.json", args.config_snapshot)
                 write_json(run_dir / "raw_config_snapshot.json", args.raw_config_snapshot)
+                write_json(run_dir / "resolved_config_snapshot.json", args.config_snapshot)
                 write_command_script(run_dir / "command.sh", args.command)
                 try:
                     result = train_method(
@@ -221,7 +244,7 @@ def main() -> None:
                         {
                             "status": "failed",
                             "run_id": run_id,
-                            "config": serialize_args(args),
+                            "config": getattr(args, "config_snapshot", {}),
                             "failure_reason": repr(exc),
                             "results": [failed],
                         },
@@ -251,7 +274,10 @@ def main() -> None:
         args.output_dir / "summary.json",
         {
             "status": status,
-            "config": serialize_args(args),
+            "config": getattr(args, "config_snapshot", {}),
+            "raw_config_snapshot_path": str(args.output_dir / "raw_config_snapshot.json"),
+            "resolved_config_snapshot_path": str(args.output_dir / "resolved_config_snapshot.json"),
+            "total_wall_time_sec": time.perf_counter() - started,
             "mask_test_cases": len(test_results),
             "results": all_records,
             "method_results": method_results,

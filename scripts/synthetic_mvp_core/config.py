@@ -17,8 +17,9 @@ from graph_structures import (
     load_graph_artifact,
     validate_graph_config,
 )
+from v07_artifacts import materialize_graph_artifact
 
-from .data import canonical_task_name, padded_copy_lengths
+from .data import canonical_task_name, copy_source_length_from_total, padded_copy_lengths
 
 
 DEFAULT_CONFIG = {
@@ -123,6 +124,8 @@ def detect_location() -> str:
 def jsonable(value):
     if isinstance(value, Path):
         return str(value)
+    if hasattr(value, "as_dict") and callable(value.as_dict):
+        return jsonable(value.as_dict())
     if isinstance(value, SimpleNamespace):
         return {key: jsonable(item) for key, item in vars(value).items()}
     if isinstance(value, dict):
@@ -193,6 +196,7 @@ def apply_cli_overrides(config: dict, cli) -> dict:
     if cli.steps is not None:
         config["train"]["steps"] = cli.steps
     if cli.eval_batches is not None:
+        config.setdefault("eval", {})["eval_batches"] = cli.eval_batches
         config["train"]["eval_batches"] = cli.eval_batches
     if cli.batch_size is not None:
         config["train"]["batch_size"] = cli.batch_size
@@ -234,6 +238,7 @@ def build_resolved_config_snapshot(
     graph_artifact: dict | None,
     graph_certificate: dict,
     padded_lengths: list[int],
+    graph_materialization=None,
 ) -> dict:
     resolved = copy.deepcopy(config)
     attention = resolved.setdefault("attention", {})
@@ -241,6 +246,14 @@ def build_resolved_config_snapshot(
     attention["degree"] = int(degree)
     if graph_artifact_path:
         attention["graph_artifact"] = str(graph_artifact_path)
+    if graph_materialization is not None:
+        graph_cfg = resolved.setdefault("graph", {})
+        graph_cfg["runtime_graph_artifact_path"] = str(graph_materialization.selected_graph_path)
+        graph_cfg["runtime_graph_certificate_path"] = str(graph_materialization.certificate_path)
+        graph_cfg["runtime_graph_generation_path"] = str(graph_materialization.generation_path)
+        graph_cfg["graph_artifact_sha256"] = graph_materialization.graph_artifact_sha256
+        graph_cfg["canonical_graph_artifact_sha256"] = graph_materialization.canonical_graph_artifact_sha256
+        graph_cfg["graph_artifact_sha256_matches_canonical"] = graph_materialization.sha256_matches_canonical
     runtime_graph = {
         "graph_artifact": str(graph_artifact_path),
         "graph_id": "",
@@ -251,6 +264,8 @@ def build_resolved_config_snapshot(
         "q": (max(padded_lengths) // int(block_size)) if padded_lengths else "",
         "graph_certified": bool(graph_certificate.get("certified", False)),
     }
+    if graph_materialization is not None:
+        runtime_graph.update(graph_materialization.as_dict())
     if graph_artifact is not None:
         runtime_graph.update(
             {
@@ -266,11 +281,22 @@ def build_resolved_config_snapshot(
     return resolved
 
 def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> SimpleNamespace:
+    user_config_snapshot = copy.deepcopy(config)
     task = config["task"]
     model = config["model"]
     attention = config["attention"]
     train = config["train"]
+    eval_cfg = config.get("eval", {})
     output = config["output"]
+    structure = config.get("structure", {})
+    if structure:
+        attention["block_size"] = int(structure.get("B", attention.get("block_size", 16)))
+        attention["degree"] = int(structure.get("d", attention.get("degree", 4)))
+    if "N_total" in task:
+        source_length = int(task.get("copy_source_length") or copy_source_length_from_total(task["N_total"]))
+        task["copy_source_length"] = source_length
+        task["train_lengths"] = [source_length]
+        task["eval_lengths"] = [source_length]
     train_lengths = [int(v) for v in task.get("train_lengths", task.get("sequence_lengths", [128]))]
     eval_lengths = [int(v) for v in task.get("eval_lengths", train_lengths)]
     if task.get("mode", "full_copy") != "full_copy":
@@ -278,6 +304,19 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
     if model.get("architecture") != "transformer":
         raise ValueError(f"unsupported architecture: {model.get('architecture')}")
     methods = [canonical_method(str(method)) for method in attention["methods"]]
+    output_dir = Path(output["root"])
+    graph_materialization = None
+    if config.get("graph") and not bool(config.get("graph", {}).get("generate", False)):
+        graph_materialization = materialize_graph_artifact(
+            config,
+            output_dir,
+            require=any(
+                method in {"zigzag_certified", "zigzag_certified_cosine", "zigzag_boolean", "random_regular"}
+                for method in methods
+            ),
+        )
+        if graph_materialization is not None:
+            attention["graph_artifact"] = str(graph_materialization.selected_graph_path)
     graph_artifact_path = attention.get("graph_artifact", "")
     graph_artifact = None
     graph_certificate = {}
@@ -286,8 +325,11 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
         if path.exists():
             graph_artifact = load_graph_artifact(path)
             graph_certificate = dict(graph_artifact.get("certificate", {}))
-        elif any(method in {"zigzag_certified", "zigzag_boolean"} for method in methods):
+        elif any(method in {"zigzag_certified", "zigzag_certified_cosine", "zigzag_boolean"} for method in methods):
             raise FileNotFoundError(f"graph_artifact not found: {path}")
+    if graph_materialization is not None:
+        graph_artifact = graph_materialization.artifact
+        graph_certificate = graph_materialization.certificate
     if graph_artifact is not None:
         block_size = int(graph_artifact["B"])
         degree = int(graph_artifact["d"])
@@ -310,7 +352,7 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
     command = shell_command()
     special_tokens = task.get("special_tokens", {})
     multiplicity = attention.get("multiplicity", {})
-    raw_config_snapshot = copy.deepcopy(config)
+    raw_config_snapshot = user_config_snapshot
     resolved_config_snapshot = build_resolved_config_snapshot(
         config=config,
         block_size=block_size,
@@ -319,13 +361,45 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
         graph_artifact=graph_artifact,
         graph_certificate=graph_certificate,
         padded_lengths=padded_lengths,
+        graph_materialization=graph_materialization,
     )
+    if structure:
+        expected_q = structure.get("q")
+        if expected_q is not None and graph_artifact is not None and int(expected_q) != int(graph_artifact["q"]):
+            raise ValueError(f"structure.q={expected_q} does not match graph q={graph_artifact['q']}")
+    if str(config.get("version", "")).lower() == "v07":
+        if max(padded_lengths) != 1024:
+            raise ValueError(f"v07 copy expects padded T=1024, got {max(padded_lengths)}")
+        if int(block_size) != 32 or int(degree) != 8:
+            raise ValueError(f"v07 copy expects B=32,d=8, got B={block_size},d={degree}")
+        if graph_artifact is not None and int(graph_artifact.get("q", 0)) != 32:
+            raise ValueError(f"v07 copy expects q=32, got q={graph_artifact.get('q')}")
+    random_alignment_mode = str(
+        attention.get("random_alignment_mode")
+        or config.get("attention", {}).get("random_alignment_mode")
+        or "per_query"
+    )
+    random_target_k_source = str(
+        attention.get("random_target_k_source")
+        or config.get("attention", {}).get("random_target_k_source")
+        or "zigzag_actual_post_causal"
+    )
+    method_overrides = copy.deepcopy(config.get("method_overrides", {}))
+    default_lr_scheduler = str(train.get("lr_scheduler", train.get("default_lr_scheduler", "constant")))
+    eval_batch_size = int(eval_cfg.get("batch_size", train.get("eval_batch_size", train["batch_size"])))
+    eval_batches = eval_cfg.get("eval_batches", train.get("eval_batches", 1))
+    if eval_batches == "all":
+        eval_batches_value = "all"
+    else:
+        eval_batches_value = int(eval_batches)
     return SimpleNamespace(
         version=str(config.get("version", "v06")),
         task=canonical_task_name(task.get("name", "copy")),
         data_mode=task.get("data", "online"),
         copy_mode=task.get("mode", "full_copy"),
         num_values=int(task.get("num_values", 4)),
+        N_total=int(task.get("N_total", 2 * train_lengths[0] + 2)),
+        copy_source_length=int(task.get("copy_source_length", train_lengths[0])),
         pad_token=int(special_tokens.get("pad", 0)),
         sep_token=int(special_tokens.get("sep", int(task.get("num_values", 4)) + 1)),
         eos_token=int(special_tokens.get("eos", int(task.get("num_values", 4)) + 2)),
@@ -338,6 +412,7 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
         graph_config=graph_config,
         graph_artifact=graph_artifact,
         graph_artifact_path=str(graph_artifact_path),
+        graph_materialization=graph_materialization,
         graph_certificate=graph_certificate,
         graph_id=str(graph_config.get("graph_id", "")),
         graph_seed=graph_config.get("graph_seed", ""),
@@ -351,14 +426,26 @@ def build_runtime_args(config: dict, cli, config_path: str, config_sha: str) -> 
         attention_backend=model["attention_backend"],
         steps=steps,
         batch_size=int(train["batch_size"]),
-        eval_batches=int(train["eval_batches"]),
+        eval_batch_size=eval_batch_size,
+        eval_batches=eval_batches_value,
         learning_rate=float(train["learning_rate"]),
+        base_learning_rate=float(train.get("base_learning_rate", train["learning_rate"])),
+        lr_scheduler=default_lr_scheduler,
+        method_overrides=method_overrides,
+        warmup_ratio=float(train.get("warmup_ratio", 0.0)),
+        min_lr_ratio=float(train.get("min_lr_ratio", 0.0)),
+        weight_decay=float(train.get("weight_decay", 0.0)),
+        grad_clip_norm=float(train.get("grad_clip_norm", 0.0)),
+        gradient_accumulation_steps=int(train.get("gradient_accumulation_steps", 1)),
+        effective_batch_size=int(train.get("effective_batch_size", int(train["batch_size"]))),
+        random_alignment_mode=random_alignment_mode,
+        random_target_k_source=random_target_k_source,
         seeds=[int(seed) for seed in train["seeds"]],
         optimizer=train.get("optimizer", "adamw").lower(),
         log_every=log_every,
         eval_every=eval_every,
         checkpoint_every=int(train.get("checkpoint_every", 0) or 0),
-        output_dir=Path(output["root"]),
+        output_dir=output_dir,
         device=cli.device,
         skip_tests=bool(cli.skip_tests),
         config_path=config_path,

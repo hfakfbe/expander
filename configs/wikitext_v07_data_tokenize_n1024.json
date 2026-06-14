@@ -1,0 +1,35 @@
+{
+  "version": "v07",
+  "task": {
+    "name": "wikitext_data_tokenize",
+    "dataset": "wikitext-103-raw-v1",
+    "preferred_source": "Salesforce/wikitext",
+    "fallback_source": "iohadrubin/wikitext-103-raw-v1",
+    "raw_dataset_dir": "datasets/wikitext_v07_raw",
+    "train_split": "train",
+    "test_split": "test",
+    "sequence_length": 1024
+  },
+  "tokenizer": {
+    "algorithm": "byte_level_bpe",
+    "train_from_split": "train",
+    "vocab_size": 32000,
+    "min_frequency": 2,
+    "special_tokens": ["<pad>", "<eos>", "<unk>"],
+    "pad_token": "<pad>",
+    "eos_token": "<eos>",
+    "unk_token": "<unk>",
+    "output_subdir": "artifacts/tokenizer"
+  },
+  "tokenize": {
+    "output_subdir": "tokenized",
+    "train_output": "train_blocks",
+    "test_output": "test_blocks",
+    "append_eos": true,
+    "drop_last_incomplete_block": true,
+    "write_sha256": true
+  },
+  "output": {
+    "root": "outputs/wikitext_v07_data_tokenize_n1024"
+  }
+}

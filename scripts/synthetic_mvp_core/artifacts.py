@@ -14,6 +14,7 @@ from graph_structures import (
     build_zigzag_multiplicity,
     canonical_method,
     counts_to_mask,
+    expected_raw_k,
     mask_metrics,
 )
 
@@ -117,16 +118,84 @@ RESULT_FIELDS = [
     "block_pair_shape",
 ]
 
+V07_RESULT_EXTRA_FIELDS = [
+    "timestamp_utc",
+    "python_version",
+    "graph_generation_algorithm",
+    "canonical_graph_dir",
+    "canonical_graph_artifact_path",
+    "canonical_graph_artifact_sha256",
+    "canonical_graph_seed",
+    "canonical_graph_generation_algorithm",
+    "graph_generation_status",
+    "graph_generation_attempts",
+    "graph_artifact_path",
+    "graph_generation_path",
+    "graph_certificate_path",
+    "graph_artifact_sha256",
+    "graph_artifact_sha256_matches_canonical",
+    "graph_certificate_sha256",
+    "N_total",
+    "copy_source_length",
+    "rho_zigzag_bound",
+    "rho_zigzag_certified",
+    "rho_zigzag_exact",
+    "rot_g_is_bijection",
+    "P_G_row_stochastic_error",
+    "P_G_col_stochastic_error",
+    "P_H_row_stochastic_error",
+    "P_H_col_stochastic_error",
+    "collision_count_mean",
+    "zigzag_actual_k_min_after_causal",
+    "zigzag_actual_k_mean_after_causal",
+    "zigzag_actual_k_max_after_causal",
+    "zigzag_attention_pair_count_after_causal",
+    "random_target_k_source",
+    "random_actual_k_min_after_causal",
+    "random_actual_k_mean_after_causal",
+    "random_actual_k_max_after_causal",
+    "random_attention_pair_count_after_causal",
+    "random_k_alignment_error_mean",
+    "random_k_alignment_error_max",
+    "random_alignment_mode",
+    "random_k_aligned_to_zigzag",
+    "base_learning_rate",
+    "lr_scheduler",
+    "warmup_ratio",
+    "warmup_steps",
+    "min_lr_ratio",
+    "min_learning_rate",
+    "cosine_total_steps",
+    "weight_decay",
+    "grad_clip_norm",
+    "checkpoint_every",
+    "total_wall_time_sec",
+    "train_wall_time_sec",
+    "eval_wall_time_sec",
+    "data_prep_wall_time_sec",
+    "summary_path",
+    "raw_config_snapshot_path",
+    "resolved_config_snapshot_path",
+]
+
+for field in V07_RESULT_EXTRA_FIELDS:
+    if field not in RESULT_FIELDS:
+        RESULT_FIELDS.append(field)
+
 def method_certification_fields(method: str, certificate: dict, multiplicity_mode: str) -> dict:
     method = canonical_method(method)
-    graph_methods = {"zigzag_certified", "zigzag_boolean"}
-    graph_certified = bool(certificate.get("certified")) if method in graph_methods else ""
+    graph_methods = {"zigzag_certified", "zigzag_certified_cosine", "zigzag_boolean"}
+    graph_certified = (
+        bool(certificate.get("rho_zigzag_certified", certificate.get("certified")))
+        if method in graph_methods
+        else ""
+    )
     implementation_certified = ""
-    if method == "zigzag_certified":
+    if method in {"zigzag_certified", "zigzag_certified_cosine"}:
         implementation_certified = bool(graph_certified and multiplicity_mode == "unique_log_m")
     elif method in {"random_regular", "zigzag_boolean", "zigzag_cycle"}:
         implementation_certified = False
-    theory_aligned = bool(method == "zigzag_certified" and implementation_certified)
+    theory_aligned = bool(method in {"zigzag_certified", "zigzag_certified_cosine"} and implementation_certified)
     return {
         "certified": theory_aligned,
         "graph_certified": graph_certified,
@@ -135,6 +204,7 @@ def method_certification_fields(method: str, certificate: dict, multiplicity_mod
     }
 
 def resolve_attention_backend(requested: str, method: str) -> str:
+    method = canonical_method(method)
     if requested == "auto":
         return "dense_mask" if method == "dense" else "neighbor"
     if requested == "auto_split":
@@ -161,6 +231,8 @@ def _remote_counts_from_edges(seq_len: int, edges: list[tuple[int, int]]) -> lis
 
 def build_method_counts(method: str, seq_len: int, args) -> list[Counter[int]] | None:
     method = canonical_method(method)
+    if method == "zigzag_certified_cosine":
+        method = "zigzag_certified"
     if method == "dense":
         return None
     rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
@@ -168,10 +240,16 @@ def build_method_counts(method: str, seq_len: int, args) -> list[Counter[int]] |
     if method == "local":
         return rows
     if method == "random_regular":
-        for src, dst in build_random_regular_cross_edges(
-            seq_len, args.block_size, args.degree, args.seed
-        ):
-            rows[src][dst] += 1
+        target_rows = getattr(args, "random_aligned_rows", None)
+        if target_rows is not None and len(target_rows) == seq_len:
+            for src, counts in enumerate(target_rows):
+                for dst, multiplicity in counts.items():
+                    rows[src][int(dst)] += int(multiplicity)
+        else:
+            for src, dst in build_random_regular_cross_edges(
+                seq_len, args.block_size, args.degree, args.seed
+            ):
+                rows[src][dst] += 1
         return rows
     if method == "zigzag_cycle":
         graph_config = DEFAULT_GRAPH_CONFIG
@@ -253,6 +331,86 @@ def metrics_from_counts(
     )
     return metric
 
+def causal_row_k_from_counts(
+    rows: list[Counter[int]] | None,
+    seq_len: int,
+    method: str,
+    block_size: int,
+    degree: int,
+) -> dict:
+    if rows is None:
+        values = [src + 1 for src in range(seq_len)]
+    else:
+        values = [sum(1 for dst in counts if int(dst) <= src) for src, counts in enumerate(rows)]
+    return {
+        "raw_k": expected_raw_k(method, seq_len, block_size, degree),
+        "actual_k_min_after_causal": int(min(values)) if values else 0,
+        "actual_k_mean_after_causal": float(np.mean(values)) if values else 0.0,
+        "actual_k_max_after_causal": int(max(values)) if values else 0,
+        "attention_pair_count_after_causal": int(sum(values)),
+        "per_query_k_after_causal": values,
+    }
+
+def build_random_rows_aligned_to_zigzag(seq_len: int, args) -> list[Counter[int]]:
+    zigzag_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    _add_local_counts(zigzag_rows, args.block_size)
+    graph_config = getattr(args, "graph_config", None)
+    if graph_config is None:
+        raise ValueError("random_regular alignment requires a graph artifact")
+    remote_rows = build_zigzag_multiplicity(
+        seq_len, args.block_size, args.degree, graph_config, include_local=False
+    )
+    for src, counts in enumerate(remote_rows):
+        for dst, multiplicity in counts.items():
+            zigzag_rows[src][int(dst)] += int(multiplicity)
+
+    import random
+
+    rng = random.Random(
+        f"random_aligned|{getattr(args, 'seed', 0)}|{seq_len}|{args.block_size}|{args.degree}"
+    )
+    random_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    _add_local_counts(random_rows, args.block_size)
+    for src, zigzag_counts in enumerate(zigzag_rows):
+        target_total = sum(1 for dst in zigzag_counts if int(dst) <= src)
+        local_causal = sum(1 for dst in random_rows[src] if int(dst) <= src)
+        remote_target = max(0, target_total - local_causal)
+        candidates = [dst for dst in range(src + 1) if dst not in random_rows[src]]
+        remote_target = min(remote_target, len(candidates))
+        for dst in rng.sample(candidates, remote_target):
+            random_rows[src][dst] += 1
+    return random_rows
+
+def budget_diagnostics(seq_len: int, args) -> tuple[dict, dict, list[Counter[int]]]:
+    zigzag_rows = build_method_counts("zigzag_certified", seq_len, args)
+    random_rows = build_random_rows_aligned_to_zigzag(seq_len, args)
+    zigzag = causal_row_k_from_counts(
+        zigzag_rows, seq_len, "zigzag_certified", args.block_size, args.degree
+    )
+    random_diag = causal_row_k_from_counts(
+        random_rows, seq_len, "random_regular", args.block_size, args.degree
+    )
+    zigzag_k = zigzag["per_query_k_after_causal"]
+    random_k = random_diag["per_query_k_after_causal"]
+    errors = [abs(int(a) - int(b)) for a, b in zip(random_k, zigzag_k)]
+    mode = getattr(args, "random_alignment_mode", "per_query")
+    zigzag.update(
+        {
+            "random_target_k_source": "zigzag_actual_post_causal",
+            "random_alignment_mode": mode,
+        }
+    )
+    random_diag.update(
+        {
+            "random_target_k_source": "zigzag_actual_post_causal",
+            "random_alignment_mode": mode,
+            "random_k_alignment_error_mean": float(np.mean(errors)) if errors else 0.0,
+            "random_k_alignment_error_max": int(max(errors)) if errors else 0,
+            "random_k_aligned_to_zigzag": bool(max(errors) == 0) if errors else True,
+        }
+    )
+    return zigzag, random_diag, random_rows
+
 @dataclass
 class AttentionArtifacts:
     mask: torch.Tensor
@@ -272,6 +430,8 @@ def make_attention_artifacts(
     attention_backend: str,
 ) -> AttentionArtifacts:
     method = canonical_method(method)
+    if method == "zigzag_certified_cosine":
+        method = "zigzag_certified"
     rows = build_method_counts(method, seq_len, args)
     if rows is None:
         structural_mask = torch.ones((seq_len, seq_len), dtype=torch.bool, device=device)

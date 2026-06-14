@@ -1,0 +1,84 @@
+{
+  "version": "v07",
+  "task": {
+    "name": "copy",
+    "N_total": 1024,
+    "copy_source_length": 511,
+    "num_values": 4
+  },
+  "structure": {
+    "B": 32,
+    "q": 32,
+    "d": 8,
+    "allow_multiedges": true,
+    "preserve_multiplicity": true,
+    "rho_field": "rho_zigzag_bound"
+  },
+  "graph": {
+    "generate": false,
+    "source_dir": "outputs/v07_graph_n1024_q32_B32_d8",
+    "copy_to_subdir": "artifacts/graph",
+    "graph_seed": 0,
+    "graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+    "expected_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "require_sha256_match": true,
+    "allow_multiedges": true,
+    "preserve_multiplicity": true
+  },
+  "attention": {
+    "methods": [
+      "dense",
+      "local",
+      "zigzag_certified",
+      "zigzag_certified_cosine",
+      "random_regular",
+      "zigzag_boolean"
+    ],
+    "causal": true,
+    "random_alignment_mode": "per_query",
+    "random_target_k_source": "zigzag_actual_post_causal",
+    "multiplicity": {
+      "mode": "unique_log_m",
+      "boolean_ablation": true
+    }
+  },
+  "method_overrides": {
+    "zigzag_certified_cosine": {
+      "lr_scheduler": "cosine",
+      "warmup_ratio": 0.03,
+      "min_lr_ratio": 0.1,
+      "cosine_total_steps": 5000
+    }
+  },
+  "model": {
+    "architecture": "transformer",
+    "layers": 8,
+    "d_model": 128,
+    "heads": 4,
+    "ffn_dim": 256,
+    "dropout": 0.1,
+    "attention_backend": "auto_split"
+  },
+  "train": {
+    "steps": 5000,
+    "batch_size": 64,
+    "learning_rate": 0.001,
+    "lr_scheduler": "constant",
+    "log_every": 50,
+    "eval_every": 50,
+    "checkpoint_every": 500,
+    "seeds": [
+      0
+    ],
+    "optimizer": "adamw"
+  },
+  "eval": {
+    "batch_size": 64,
+    "eval_batches": 50
+  },
+  "output": {
+    "root": "outputs/copy_v07_main_n1024_q32_B32_d8",
+    "plot_curves": true,
+    "curve_format": "png"
+  }
+}

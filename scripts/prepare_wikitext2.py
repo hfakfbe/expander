@@ -2,17 +2,18 @@ from __future__ import annotations
 
 import argparse
 import json
-import statistics
+import shlex
 import sys
 import time
 from pathlib import Path
+from typing import Iterable
 
 import requests
 
-from wikitext2_utils import ByteTokenizer, file_sha256, write_command, write_json, write_jsonl
+from v07_artifacts import file_sha256, git_commit, utc_now, write_json
+from wikitext2_utils import write_command, write_jsonl
 
 
-SPLITS = ["train", "validation", "test"]
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEPS_DIR = PROJECT_ROOT / ".deps"
 if DEPS_DIR.exists():
@@ -23,13 +24,12 @@ def read_config(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def source_candidates(config: dict) -> list[dict]:
-    dataset = config["dataset"]
-    candidates = [dict(dataset["preferred_source"])]
-    fallback = dataset.get("fallback_source")
-    if fallback:
-        candidates.append(dict(fallback))
-    return candidates
+def write_text_lines(path: Path, rows: Iterable[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "".join(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n" for row in rows),
+        encoding="utf-8",
+    )
 
 
 def dataset_revision(path: str) -> str:
@@ -40,6 +40,23 @@ def dataset_revision(path: str) -> str:
         return str(payload.get("sha") or payload.get("lastModified") or "")
     except Exception:
         return ""
+
+
+def source_candidates(config: dict) -> list[dict]:
+    task = config.get("task", {})
+    candidates = [
+        {
+            "path": task.get("preferred_source", "Salesforce/wikitext"),
+            "name": task.get("dataset", "wikitext-103-raw-v1"),
+        }
+    ]
+    fallback = task.get("fallback_source")
+    if fallback:
+        if isinstance(fallback, dict):
+            candidates.append(dict(fallback))
+        else:
+            candidates.append({"path": str(fallback), "name": ""})
+    return candidates
 
 
 def fetch_rows(source: dict, split: str, text_field: str) -> tuple[list[dict], int]:
@@ -56,7 +73,7 @@ def fetch_rows(source: dict, split: str, text_field: str) -> tuple[list[dict], i
         }
         if source.get("name"):
             params["config"] = source["name"]
-        response = requests.get("https://datasets-server.huggingface.co/rows", params=params, timeout=60)
+        response = requests.get("https://datasets-server.huggingface.co/rows", params=params, timeout=90)
         response.raise_for_status()
         payload = response.json()
         total = int(payload["num_rows_total"])
@@ -69,141 +86,218 @@ def fetch_rows(source: dict, split: str, text_field: str) -> tuple[list[dict], i
     return rows, int(total or len(rows))
 
 
-def parquet_url(source: dict, split: str) -> str | None:
-    if source.get("path") != "Salesforce/wikitext" or source.get("name") != "wikitext-2-raw-v1":
-        return None
-    return (
-        "https://huggingface.co/datasets/Salesforce/wikitext/resolve/main/"
-        f"wikitext-2-raw-v1/{split}-00000-of-00001.parquet"
-    )
+def fetch_required_splits(config: dict, raw_dir: Path) -> tuple[dict, dict, list[str]]:
+    task = config["task"]
+    text_field = task.get("text_field", "text")
+    splits = [task.get("train_split", "train"), task.get("test_split", "test")]
+    errors: list[str] = []
+    for source in source_candidates(config):
+        try:
+            out = {}
+            totals = {}
+            for split in splits:
+                rows, expected = fetch_rows(source, split, text_field)
+                out[split] = rows
+                totals[split] = expected
+            return {"source": source, "rows": out, "totals": totals}, {
+                "text_field": text_field,
+                "splits": splits,
+            }, errors
+        except Exception as exc:
+            errors.append(f"{source.get('path')}:{source.get('name', '')}: {exc!r}")
+    raise RuntimeError("all WikiText sources failed: " + "; ".join(errors))
 
 
-def fetch_parquet_rows(source: dict, split: str, text_field: str, output_dir: Path) -> list[dict]:
-    url = parquet_url(source, split)
-    if url is None:
-        raise ValueError("no parquet URL known for source")
-    import pyarrow.parquet as pq
-
-    parquet_dir = output_dir / "parquet"
-    parquet_dir.mkdir(parents=True, exist_ok=True)
-    parquet_path = parquet_dir / f"{split}.parquet"
-    response = requests.get(url, timeout=120)
-    response.raise_for_status()
-    parquet_path.write_bytes(response.content)
-    table = pq.read_table(parquet_path)
-    if text_field not in table.column_names:
-        raise ValueError(f"missing text field {text_field!r} in parquet split {split!r}")
-    values = table[text_field].to_pylist()
-    return [{"row_idx": idx, text_field: str(value)} for idx, value in enumerate(values)]
-
-
-def fetch_source_split(source: dict, split: str, text_field: str, output_dir: Path) -> list[dict]:
+def train_byte_level_bpe(config: dict, texts: list[str], tokenizer_dir: Path) -> dict:
     try:
-        return fetch_parquet_rows(source, split, text_field, output_dir)
-    except Exception:
-        rows, expected_total = fetch_rows(source, split, text_field)
-        if len(rows) != expected_total:
-            raise ValueError(f"{split} fetched {len(rows)} rows, expected {expected_total}")
-        return rows
+        from tokenizers import Tokenizer
+        from tokenizers.decoders import ByteLevel as ByteLevelDecoder
+        from tokenizers.models import BPE
+        from tokenizers.pre_tokenizers import ByteLevel
+        from tokenizers.processors import TemplateProcessing
+        from tokenizers.trainers import BpeTrainer
+    except Exception as exc:
+        raise RuntimeError(
+            "tokenizers package is required for v07 byte_level_bpe tokenizer training"
+        ) from exc
 
-
-def split_stats(rows: list[dict], text_field: str, tokenizer: ByteTokenizer) -> dict:
-    lengths = [len(str(row[text_field])) for row in rows]
-    nonempty = [str(row[text_field]) for row in rows if str(row[text_field]).strip()]
-    token_lengths = [len(tokenizer.encode(text, add_eos=True)) for text in nonempty]
-    return {
-        "rows": len(rows),
-        "nonempty_rows": len(nonempty),
-        "empty_rows": len(rows) - len(nonempty),
-        "empty_line_rate": (len(rows) - len(nonempty)) / max(len(rows), 1),
-        "longest_text_length": max(lengths) if lengths else 0,
-        "tokenized_length_min": min(token_lengths) if token_lengths else 0,
-        "tokenized_length_mean": statistics.fmean(token_lengths) if token_lengths else 0.0,
-        "tokenized_length_max": max(token_lengths) if token_lengths else 0,
+    tok_cfg = config["tokenizer"]
+    tokenizer = Tokenizer(BPE(unk_token=tok_cfg.get("unk_token", "<unk>")))
+    tokenizer.pre_tokenizer = ByteLevel(add_prefix_space=False)
+    tokenizer.decoder = ByteLevelDecoder()
+    special_tokens = list(tok_cfg.get("special_tokens", ["<pad>", "<eos>", "<unk>"]))
+    trainer = BpeTrainer(
+        vocab_size=int(tok_cfg.get("vocab_size", 32000)),
+        min_frequency=int(tok_cfg.get("min_frequency", 2)),
+        special_tokens=special_tokens,
+    )
+    tokenizer.train_from_iterator(texts, trainer=trainer)
+    eos_token = tok_cfg.get("eos_token", "<eos>")
+    eos_id = tokenizer.token_to_id(eos_token)
+    tokenizer.post_processor = TemplateProcessing(
+        single=f"$A {eos_token}",
+        special_tokens=[(eos_token, int(eos_id))],
+    )
+    tokenizer_dir.mkdir(parents=True, exist_ok=True)
+    tokenizer_path = tokenizer_dir / "tokenizer.json"
+    tokenizer.save(str(tokenizer_path))
+    config_payload = {
+        "tokenizer_algorithm": "byte_level_bpe",
+        "tokenizer_train_split": tok_cfg.get("train_from_split", "train"),
+        "tokenizer_vocab_size": int(tok_cfg.get("vocab_size", 32000)),
+        "tokenizer_min_frequency": int(tok_cfg.get("min_frequency", 2)),
+        "special_tokens": special_tokens,
+        "pad_token": tok_cfg.get("pad_token", "<pad>"),
+        "eos_token": eos_token,
+        "unk_token": tok_cfg.get("unk_token", "<unk>"),
+        "pad_token_id": tokenizer.token_to_id(tok_cfg.get("pad_token", "<pad>")),
+        "eos_token_id": eos_id,
+        "unk_token_id": tokenizer.token_to_id(tok_cfg.get("unk_token", "<unk>")),
+        "vocab_size": tokenizer.get_vocab_size(),
     }
+    write_json(tokenizer_dir / "tokenizer_config.json", config_payload)
+    training_payload = {
+        "timestamp_utc": utc_now(),
+        "train_split": tok_cfg.get("train_from_split", "train"),
+        "used_test_split": False,
+        "input_text_count": len(texts),
+        "algorithm": "byte_level_bpe",
+    }
+    write_json(tokenizer_dir / "tokenizer_training.json", training_payload)
+    return {
+        "tokenizer": tokenizer,
+        "tokenizer_path": tokenizer_path,
+        "tokenizer_config": config_payload,
+        "tokenizer_training": training_payload,
+    }
+
+
+def encode_blocks(tokenizer, texts: list[str], sequence_length: int, append_eos: bool) -> tuple[list[list[int]], int]:
+    token_ids: list[int] = []
+    eos_id = tokenizer.token_to_id("<eos>")
+    for text in texts:
+        if not text.strip():
+            continue
+        encoded = tokenizer.encode(text).ids
+        if not append_eos and encoded and eos_id is not None and encoded[-1] == eos_id:
+            encoded = encoded[:-1]
+        token_ids.extend(int(v) for v in encoded)
+    usable = (len(token_ids) // int(sequence_length)) * int(sequence_length)
+    blocks = [
+        token_ids[idx : idx + int(sequence_length)]
+        for idx in range(0, usable, int(sequence_length))
+    ]
+    return blocks, len(token_ids)
 
 
 def prepare(config: dict, output_dir: Path) -> dict:
+    total_start = time.perf_counter()
     output_dir.mkdir(parents=True, exist_ok=True)
-    tokenizer = ByteTokenizer()
-    text_field = config["dataset"].get("text_field", "text")
-    errors: list[str] = []
-    selected_source = None
-    split_rows: dict[str, list[dict]] = {}
+    raw_dir = Path(config["task"].get("raw_dataset_dir", "datasets/wikitext_v07_raw"))
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    write_json(output_dir / "raw_config_snapshot.json", config)
 
-    for source in source_candidates(config):
-        try:
-            candidate_rows = {}
-            for split in SPLITS:
-                candidate_rows[split] = fetch_source_split(source, split, text_field, output_dir)
-            selected_source = source
-            split_rows = candidate_rows
-            break
-        except Exception as exc:
-            errors.append(f"{source.get('path')}:{source.get('name', '')}: {exc!r}")
+    download_start = time.perf_counter()
+    fetched, fetch_meta, source_errors = fetch_required_splits(config, raw_dir)
+    download_wall = time.perf_counter() - download_start
+    source = fetched["source"]
+    rows_by_split = fetched["rows"]
+    text_field = fetch_meta["text_field"]
+    train_split = config["task"].get("train_split", "train")
+    test_split = config["task"].get("test_split", "test")
+    raw_files = {}
+    split_stats = {}
+    for split, rows in rows_by_split.items():
+        raw_path = raw_dir / f"{split}.jsonl"
+        write_text_lines(raw_path, rows)
+        raw_files[split] = raw_path
+        nonempty = [row[text_field] for row in rows if str(row[text_field]).strip()]
+        split_stats[split] = {
+            "rows": len(rows),
+            "nonempty_rows": len(nonempty),
+            "sha256": file_sha256(raw_path),
+            "path": str(raw_path),
+        }
 
-    if selected_source is None:
-        raise RuntimeError("all WikiText2 sources failed: " + "; ".join(errors))
+    train_texts = [row[text_field] for row in rows_by_split[train_split] if str(row[text_field]).strip()]
+    tokenizer_start = time.perf_counter()
+    tokenizer_dir = output_dir / config["tokenizer"].get("output_subdir", "artifacts/tokenizer")
+    tokenizer_bundle = train_byte_level_bpe(config, train_texts, tokenizer_dir)
+    tokenizer_wall = time.perf_counter() - tokenizer_start
+    tokenizer = tokenizer_bundle["tokenizer"]
+    tokenizer_path = tokenizer_bundle["tokenizer_path"]
+    tokenizer_sha = file_sha256(tokenizer_path)
 
-    split_summaries = {}
-    for split, rows in split_rows.items():
-        write_jsonl(output_dir / f"{split}.jsonl", rows)
-        split_summaries[split] = split_stats(rows, text_field, tokenizer)
-        split_summaries[split]["sha256"] = file_sha256(output_dir / f"{split}.jsonl")
+    tokenization_start = time.perf_counter()
+    tokenized_dir = output_dir / config.get("tokenize", {}).get("output_subdir", "tokenized")
+    tokenized_dir.mkdir(parents=True, exist_ok=True)
+    sequence_length = int(config["task"].get("sequence_length", 1024))
+    append_eos = bool(config.get("tokenize", {}).get("append_eos", True))
+    train_blocks, train_token_count = encode_blocks(tokenizer, train_texts, sequence_length, append_eos)
+    test_texts = [row[text_field] for row in rows_by_split[test_split] if str(row[text_field]).strip()]
+    test_blocks, test_token_count = encode_blocks(tokenizer, test_texts, sequence_length, append_eos)
+    train_path = tokenized_dir / "train_blocks.jsonl"
+    test_path = tokenized_dir / "test_blocks.jsonl"
+    write_jsonl(train_path, [{"block_id": idx, "input_ids": block} for idx, block in enumerate(train_blocks)])
+    write_jsonl(test_path, [{"block_id": idx, "input_ids": block} for idx, block in enumerate(test_blocks)])
+    tokenization_wall = time.perf_counter() - tokenization_start
 
-    readiness = {
+    if not train_blocks or not test_blocks:
+        raise RuntimeError("tokenized train/test blocks must both be non-empty")
+
+    revision = dataset_revision(source.get("path", ""))
+    summary_common = {
         "status": "ok",
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "dataset": "wikitext2",
-        "dataset_source": selected_source.get("path", ""),
-        "dataset_config": selected_source.get("name", ""),
-        "dataset_revision_or_hash": dataset_revision(selected_source.get("path", "")),
-        "text_field": text_field,
-        "required_splits": SPLITS,
-        "splits": split_summaries,
-        "source_errors_before_success": errors,
-        "tokenizer": {
-            "name": tokenizer.name,
-            "vocab_size": tokenizer.vocab_size,
-            "pad_token_id": tokenizer.pad_token_id,
-            "eos_token_id": tokenizer.eos_token_id,
-        },
+        "timestamp_utc": utc_now(),
+        "dataset": config["task"].get("dataset", "wikitext-103-raw-v1"),
+        "dataset_source": source.get("path", ""),
+        "dataset_config": source.get("name", ""),
+        "dataset_revision_or_hash": revision,
+        "dataset_cache_or_local_path": str(raw_dir),
+        "train_nonempty_rows": split_stats[train_split]["nonempty_rows"],
+        "test_nonempty_rows": split_stats[test_split]["nonempty_rows"],
+        "tokenizer_algorithm": "byte_level_bpe",
+        "tokenizer_train_split": "train",
+        "tokenizer_vocab_size": int(config["tokenizer"].get("vocab_size", 32000)),
+        "tokenizer_min_frequency": int(config["tokenizer"].get("min_frequency", 2)),
+        "tokenizer_sha256": tokenizer_sha,
+        "tokenizer_path": str(tokenizer_path),
+        "tokenized_train_path": str(train_path),
+        "tokenized_train_sha256": file_sha256(train_path),
+        "tokenized_test_path": str(test_path),
+        "tokenized_test_sha256": file_sha256(test_path),
+        "train_token_count": train_token_count,
+        "train_block_count": len(train_blocks),
+        "test_token_count": test_token_count,
+        "test_block_count": len(test_blocks),
+        "sequence_length": sequence_length,
+        "data_download_wall_time_sec": download_wall,
+        "tokenizer_train_wall_time_sec": tokenizer_wall,
+        "tokenization_wall_time_sec": tokenization_wall,
+        "total_wall_time_sec": time.perf_counter() - total_start,
+        "source_errors_before_success": source_errors,
+        "git_commit": git_commit(PROJECT_ROOT),
+        "command": shlex.join([sys.executable, *sys.argv]),
     }
-    validation = config.get("validation", {})
-    for split in validation.get("required_splits", SPLITS):
-        if split not in split_summaries:
-            raise ValueError(f"missing split {split}")
-        min_rows = int(validation.get("min_rows", {}).get(split, 1))
-        if split_summaries[split]["rows"] < min_rows:
-            raise ValueError(f"split {split} has too few rows")
-        max_empty = float(validation.get("max_empty_line_rate", 1.0))
-        if split_summaries[split]["empty_line_rate"] > max_empty:
-            raise ValueError(f"split {split} empty line rate too high")
-
-    nonempty_train = [row[text_field] for row in split_rows["train"] if row[text_field].strip()]
-    tokenized_smoke = {
-        "tokenizer": readiness["tokenizer"],
-        "examples": [
-            {
-                "text_preview": text[:120],
-                "token_ids_prefix": tokenizer.encode(text, add_eos=True)[:32],
-                "tokenized_length": len(tokenizer.encode(text, add_eos=True)),
-            }
-            for text in nonempty_train[:5]
-        ],
+    readiness = {
+        **summary_common,
+        "splits": split_stats,
+        "tokenizer": tokenizer_bundle["tokenizer_config"],
     }
-    dataset_info = {
-        "dataset": "wikitext2",
-        "variant": "wikitext-2-raw-v1",
-        "source": readiness["dataset_source"],
-        "config": readiness["dataset_config"],
-        "revision_or_hash": readiness["dataset_revision_or_hash"],
-        "files": {split: f"{split}.jsonl" for split in SPLITS},
+    tokenization_summary = {
+        **summary_common,
+        "tokenizer_config": tokenizer_bundle["tokenizer_config"],
+        "tokenizer_training": tokenizer_bundle["tokenizer_training"],
     }
-    write_json(output_dir / "dataset_info.json", dataset_info)
+    resolved = dict(config)
+    resolved["resolved_outputs"] = summary_common
+    write_json(output_dir / "resolved_config_snapshot.json", resolved)
+    write_json(output_dir / "config_snapshot.json", resolved)
     write_json(output_dir / "data_readiness.json", readiness)
-    write_json(output_dir / "tokenized_smoke.json", tokenized_smoke)
-    return readiness
+    write_json(output_dir / "tokenization_summary.json", tokenization_summary)
+    write_json(output_dir / "summary.json", summary_common)
+    write_json(output_dir / "dataset_info.json", summary_common)
+    return summary_common
 
 
 def parse_args() -> argparse.Namespace:
@@ -216,11 +310,22 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config = read_config(args.config)
-    output_dir = args.output_dir or Path(config["dataset"]["output_dir"])
-    write_json(output_dir / "config_snapshot.json", config)
+    output_dir = args.output_dir or Path(config["output"]["root"])
+    output_dir.mkdir(parents=True, exist_ok=True)
     write_command(output_dir / "command.sh")
-    readiness = prepare(config, output_dir)
-    print(json.dumps({"status": readiness["status"], "source": readiness["dataset_source"]}), flush=True)
+    try:
+        summary = prepare(config, output_dir)
+    except Exception as exc:
+        error = {
+            "status": "failed",
+            "timestamp_utc": utc_now(),
+            "failure_reason": repr(exc),
+            "command": shlex.join([sys.executable, *sys.argv]),
+        }
+        write_json(output_dir / "summary.json", error)
+        (output_dir / "error.log").write_text(repr(exc) + "\n", encoding="utf-8")
+        raise
+    print(json.dumps({"status": summary["status"], "source": summary["dataset_source"]}), flush=True)
 
 
 if __name__ == "__main__":

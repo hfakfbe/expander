@@ -1,0 +1,94 @@
+{
+  "version": "v07",
+  "task": {
+    "name": "wikitext",
+    "data_phase_dir": "outputs/wikitext_v07_data_tokenize_n1024",
+    "train_split": "train",
+    "test_split": "test",
+    "sequence_length": 1024
+  },
+  "structure": {
+    "B": 32,
+    "q": 32,
+    "d": 8,
+    "allow_multiedges": true,
+    "preserve_multiplicity": true,
+    "rho_field": "rho_zigzag_bound"
+  },
+  "graph": {
+    "generate": false,
+    "source_dir": "outputs/v07_graph_n1024_q32_B32_d8",
+    "copy_to_subdir": "artifacts/graph",
+    "graph_seed": 0,
+    "graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+    "expected_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "require_sha256_match": true,
+    "allow_multiedges": true,
+    "preserve_multiplicity": true
+  },
+  "attention": {
+    "methods": [
+      "dense",
+      "local",
+      "zigzag_certified",
+      "random_regular"
+    ],
+    "causal": true,
+    "random_alignment_mode": "per_query",
+    "random_target_k_source": "zigzag_actual_post_causal",
+    "multiplicity": {
+      "mode": "unique_log_m"
+    }
+  },
+  "data": {
+    "source_dir": "outputs/wikitext_v07_data_tokenize_n1024",
+    "data_readiness_path": "outputs/wikitext_v07_data_tokenize_n1024/data_readiness.json",
+    "tokenization_summary_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenization_summary.json",
+    "tokenized_train_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+    "tokenized_test_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+    "expected_tokenized_train_sha256": "",
+    "expected_tokenized_test_sha256": "",
+    "require_sha256_match": false
+  },
+  "tokenizer": {
+    "train": false,
+    "source_dir": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer",
+    "path": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer/tokenizer.json",
+    "expected_tokenizer_sha256": "",
+    "require_sha256_match": false
+  },
+  "model": {
+    "architecture": "transformer",
+    "layers": 8,
+    "d_model": 128,
+    "heads": 4,
+    "ffn_dim": 256,
+    "dropout": 0.1,
+    "attention_backend": "auto_split"
+  },
+  "train": {
+    "steps": 2,
+    "batch_size": 4,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "grad_clip_norm": 1.0,
+    "log_every": 1,
+    "seeds": [
+      0
+    ]
+  },
+  "eval": {
+    "split": "test",
+    "batch_size": 4,
+    "eval_batches": 2
+  },
+  "output": {
+    "root": "outputs/wikitext_v07_smoke_n1024_q32_B32_d8",
+    "plot_curves": true,
+    "curve_format": "png"
+  },
+  "smoke": {
+    "max_train_batches": 2,
+    "max_test_batches": 2
+  }
+}
