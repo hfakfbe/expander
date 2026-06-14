@@ -1,0 +1,49 @@
+{
+  "status": "ok",
+  "reason_not_committed": "Large raw/cache/train tokenized artifacts are kept out of git per ref/experiment_environment_and_version_control.md.",
+  "remote_root": "/home/huiwei/ysx/zigzag_attention",
+  "generated_by_command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/prepare_wikitext.py --config configs/wikitext_v07_data_tokenize_n1024.json --output-dir outputs/wikitext_v07_data_tokenize_n1024",
+  "log_path": "logs/wikitext_v07_data_tokenize_n1024_20260614T143028Z.log",
+  "artifacts": [
+    {
+      "role": "raw_train",
+      "path": "/home/huiwei/ysx/zigzag_attention/datasets/wikitext_v07_raw/train.jsonl",
+      "relative_path": "datasets/wikitext_v07_raw/train.jsonl",
+      "size_bytes": 600132794,
+      "sha256": "da869760fdb7693abc6c0d348885af66bc3cb7f42cda38c3c30658673cb7f526",
+      "rows": 1801350,
+      "nonempty_rows": 1165029,
+      "committed_to_git": false
+    },
+    {
+      "role": "raw_test",
+      "path": "/home/huiwei/ysx/zigzag_attention/datasets/wikitext_v07_raw/test.jsonl",
+      "relative_path": "datasets/wikitext_v07_raw/test.jsonl",
+      "size_bytes": 1422526,
+      "sha256": "d99166af5649383ae3c85e48c83e8fc7e00a8dd2d756a9e1d87071f8a9958e81",
+      "rows": 4358,
+      "nonempty_rows": 2891,
+      "committed_to_git": false
+    },
+    {
+      "role": "tokenized_train_blocks",
+      "path": "/home/huiwei/ysx/zigzag_attention/outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+      "relative_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+      "size_bytes": 639860340,
+      "sha256": "fbe867482e8ef567a0990477e142af5ae9f12f66ce67fcacd0b32d65d3dd5142",
+      "block_count": 112540,
+      "token_count": 115241250,
+      "committed_to_git": false
+    },
+    {
+      "role": "tokenized_test_blocks",
+      "path": "/home/huiwei/ysx/zigzag_attention/outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+      "relative_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+      "size_bytes": 1524117,
+      "sha256": "5d9e64748794b682f0cedb4e259a83b646359787df54b9b5f5d2bb26396bb3fa",
+      "block_count": 268,
+      "token_count": 275123,
+      "committed_to_git": true
+    }
+  ]
+}

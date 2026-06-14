@@ -1,0 +1,72 @@
+{
+  "output": {
+    "root": "outputs/wikitext_v07_data_tokenize_n1024"
+  },
+  "resolved_outputs": {
+    "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/prepare_wikitext.py --config configs/wikitext_v07_data_tokenize_n1024.json --output-dir outputs/wikitext_v07_data_tokenize_n1024",
+    "data_download_wall_time_sec": 154.79413502290845,
+    "dataset": "wikitext-103-raw-v1",
+    "dataset_cache_or_local_path": "datasets/wikitext_v07_raw",
+    "dataset_config": "wikitext-103-raw-v1",
+    "dataset_revision_or_hash": "",
+    "dataset_source": "Salesforce/wikitext",
+    "git_commit": "dfba8de",
+    "sequence_length": 1024,
+    "source_errors_before_success": [],
+    "status": "ok",
+    "test_block_count": 268,
+    "test_nonempty_rows": 2891,
+    "test_token_count": 275123,
+    "timestamp_utc": "2026-06-14T14:40:08.948357+00:00",
+    "tokenization_wall_time_sec": 357.8162014130503,
+    "tokenized_test_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+    "tokenized_test_sha256": "5d9e64748794b682f0cedb4e259a83b646359787df54b9b5f5d2bb26396bb3fa",
+    "tokenized_train_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+    "tokenized_train_sha256": "fbe867482e8ef567a0990477e142af5ae9f12f66ce67fcacd0b32d65d3dd5142",
+    "tokenizer_algorithm": "byte_level_bpe",
+    "tokenizer_min_frequency": 2,
+    "tokenizer_path": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer/tokenizer.json",
+    "tokenizer_sha256": "1a720397783d6758ee208b8605d7ff197fad86f01b1c56c4c5019cfda96ca616",
+    "tokenizer_train_split": "train",
+    "tokenizer_train_wall_time_sec": 28.73004099354148,
+    "tokenizer_vocab_size": 32000,
+    "total_wall_time_sec": 577.4947245772928,
+    "train_block_count": 112540,
+    "train_nonempty_rows": 1165029,
+    "train_token_count": 115241250
+  },
+  "task": {
+    "dataset": "wikitext-103-raw-v1",
+    "fallback_source": "iohadrubin/wikitext-103-raw-v1",
+    "name": "wikitext_data_tokenize",
+    "preferred_source": "Salesforce/wikitext",
+    "raw_dataset_dir": "datasets/wikitext_v07_raw",
+    "sequence_length": 1024,
+    "test_split": "test",
+    "train_split": "train"
+  },
+  "tokenize": {
+    "append_eos": true,
+    "drop_last_incomplete_block": true,
+    "output_subdir": "tokenized",
+    "test_output": "test_blocks",
+    "train_output": "train_blocks",
+    "write_sha256": true
+  },
+  "tokenizer": {
+    "algorithm": "byte_level_bpe",
+    "eos_token": "<eos>",
+    "min_frequency": 2,
+    "output_subdir": "artifacts/tokenizer",
+    "pad_token": "<pad>",
+    "special_tokens": [
+      "<pad>",
+      "<eos>",
+      "<unk>"
+    ],
+    "train_from_split": "train",
+    "unk_token": "<unk>",
+    "vocab_size": 32000
+  },
+  "version": "v07"
+}
