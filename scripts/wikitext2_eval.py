@@ -172,7 +172,15 @@ def eval_batches_value(args, blocks: torch.Tensor) -> int:
     return int(args.eval_batches)
 
 
-def train_one_method(model, artifacts, train_blocks, args, tokenizer, method: str, metrics_path: Path) -> tuple[float, int, list[dict], dict]:
+def train_one_method(
+    model,
+    artifacts,
+    train_blocks,
+    args,
+    tokenizer,
+    method: str,
+    metrics_path: Path,
+) -> tuple[float, int, list[dict], dict]:
     if args.steps <= 0 and args.epochs <= 0:
         schedule = method_schedule_config(args, method)
         return float("nan"), 0, [], schedule
@@ -180,6 +188,10 @@ def train_one_method(model, artifacts, train_blocks, args, tokenizer, method: st
     rows: list[dict] = []
     total_steps = int(args.steps or (args.epochs * max(1, len(train_blocks) // args.batch_size)))
     total_steps = max(total_steps, int(getattr(args, "max_train_batches", 0) or 0))
+    if args.steps <= 0 and args.epochs > 0:
+        total_steps = args.epochs * max(1, len(train_blocks) // args.effective_batch_size)
+    if args.gradient_accumulation_steps < 1:
+        raise ValueError("gradient_accumulation_steps must be >= 1")
     schedule_args = copy.copy(args)
     schedule_args.steps = total_steps
     schedule = method_schedule_config(schedule_args, method)
@@ -195,36 +207,40 @@ def train_one_method(model, artifacts, train_blocks, args, tokenizer, method: st
         for step in range(1, total_steps + 1):
             current_lr = scheduled_lr(schedule, step)
             apply_lr(optimizer, current_lr)
-            batch = make_lm_batch(
-                train_blocks,
-                args.batch_size,
-                step,
-                args.device,
-                args.sequence_length,
-                args.T,
-                args.seed,
-                f"train_{method}",
-                tokenizer.pad_token_id,
-                tokenizer.eos_token_id,
-            )
-            logits = model(
-                batch.tokens,
-                artifacts.mask,
-                artifacts.local_valid,
-                artifacts.neighbors,
-                artifacts.valid_neighbors,
-                artifacts.block_pair_index,
-                artifacts.local_log_m,
-                artifacts.neighbor_log_m,
-            )
-            loss, _ = lm_loss_and_metrics(logits, batch)
-            finite_loss(float(loss.item()), method)
             optimizer.zero_grad(set_to_none=True)
-            loss.backward()
+            accumulated_loss = 0.0
+            for accum_index in range(args.gradient_accumulation_steps):
+                microbatch_index = (step - 1) * args.gradient_accumulation_steps + accum_index + 1
+                batch = make_lm_batch(
+                    train_blocks,
+                    args.batch_size,
+                    microbatch_index,
+                    args.device,
+                    args.sequence_length,
+                    args.T,
+                    args.seed,
+                    f"train_{method}",
+                    tokenizer.pad_token_id,
+                    tokenizer.eos_token_id,
+                )
+                logits = model(
+                    batch.tokens,
+                    artifacts.mask,
+                    artifacts.local_valid,
+                    artifacts.neighbors,
+                    artifacts.valid_neighbors,
+                    artifacts.block_pair_index,
+                    artifacts.local_log_m,
+                    artifacts.neighbor_log_m,
+                )
+                loss, _ = lm_loss_and_metrics(logits, batch)
+                finite_loss(float(loss.item()), method)
+                accumulated_loss += float(loss.item())
+                (loss / args.gradient_accumulation_steps).backward()
             if args.grad_clip_norm > 0:
                 torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip_norm)
             optimizer.step()
-            last_loss = float(loss.item())
+            last_loss = accumulated_loss / args.gradient_accumulation_steps
             if step == 1 or step % args.log_every == 0 or step == total_steps:
                 now = time.perf_counter()
                 row = {
@@ -238,7 +254,7 @@ def train_one_method(model, artifacts, train_blocks, args, tokenizer, method: st
                     "lr_scheduler": schedule["lr_scheduler"],
                     "elapsed_sec_total": now - started,
                     "seconds_since_prev_log": now - prev,
-                    "tokens_per_sec": step * args.batch_size * args.sequence_length / max(now - started, 1e-9),
+                    "tokens_per_sec": step * args.effective_batch_size * args.sequence_length / max(now - started, 1e-9),
                     "peak_allocated_gb": torch.cuda.max_memory_allocated() / 1024**3 if args.device.type == "cuda" else 0.0,
                     "peak_reserved_gb": torch.cuda.max_memory_reserved() / 1024**3 if args.device.type == "cuda" else 0.0,
                 }
@@ -249,7 +265,7 @@ def train_one_method(model, artifacts, train_blocks, args, tokenizer, method: st
     return last_loss, total_steps, rows, schedule
 
 
-def run_eval(config: dict, output_dir: Path, device: torch.device) -> dict:
+def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str = "") -> dict:
     started = time.perf_counter()
     output_dir.mkdir(parents=True, exist_ok=True)
     args = build_runtime(config, output_dir, device)
@@ -324,7 +340,7 @@ def run_eval(config: dict, output_dir: Path, device: torch.device) -> dict:
                 "host": socket.gethostname(),
                 "local_or_remote": "remote" if str(Path.cwd()).startswith("/home/huiwei") else "local",
                 "command": shlex.join([sys.executable, *sys.argv]),
-                "log_path": "",
+                "log_path": log_path,
                 "CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
                 "gpu_name": torch.cuda.get_device_name(0) if device.type == "cuda" else None,
                 "python_version": sys.version.split()[0],
@@ -398,7 +414,10 @@ def run_eval(config: dict, output_dir: Path, device: torch.device) -> dict:
                 "final_train_loss": final_train_loss,
                 "test_loss": test["test_loss"],
                 "test_perplexity": test["test_perplexity"],
-                "train_tokens_per_sec": train_steps * args.batch_size * args.sequence_length / max(elapsed - test_wall, 1e-9),
+                "train_tokens_per_sec": train_steps
+                * args.effective_batch_size
+                * args.sequence_length
+                / max(elapsed - test_wall, 1e-9),
                 "test_tokens_per_sec": test.get("test_tokens_per_sec", ""),
             }
             write_json(run_dir / "summary.json", record)
@@ -439,6 +458,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
+    parser.add_argument("--log-path", default="")
+    parser.add_argument("--local-or-remote", default="")
     return parser.parse_args()
 
 
@@ -452,7 +473,7 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_json(output_dir / "raw_config_snapshot.json", config)
     write_command(output_dir / "command.sh")
-    summary = run_eval(config, output_dir, device)
+    summary = run_eval(config, output_dir, device, log_path=args.log_path)
     print(json.dumps({"status": summary["status"], "pipeline_only": summary["pipeline_only"]}), flush=True)
     if summary["status"] != "ok":
         raise SystemExit(1)

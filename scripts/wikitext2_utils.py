@@ -232,6 +232,17 @@ def build_runtime(config: dict, output_dir: Path, device: torch.device) -> Simpl
         if not test_matches:
             raise FileNotFoundError(f"no test tokenized files match {test_path}")
         test_path = test_matches[0]
+    batch_size = int(train["batch_size"])
+    gradient_accumulation_steps = int(train.get("gradient_accumulation_steps", 1))
+    if gradient_accumulation_steps < 1:
+        raise ValueError("gradient_accumulation_steps must be >= 1")
+    effective_batch_size = int(train.get("effective_batch_size", batch_size * gradient_accumulation_steps))
+    expected_effective_batch_size = batch_size * gradient_accumulation_steps
+    if effective_batch_size != expected_effective_batch_size:
+        raise ValueError(
+            "effective_batch_size must equal batch_size * gradient_accumulation_steps "
+            f"({effective_batch_size} != {expected_effective_batch_size})"
+        )
     return SimpleNamespace(
         version=str(config.get("version", "v06")),
         task="wikitext",
@@ -273,9 +284,9 @@ def build_runtime(config: dict, output_dir: Path, device: torch.device) -> Simpl
         attention_backend=model["attention_backend"],
         epochs=int(train.get("epochs", 0)),
         steps=int(train.get("steps", 0)),
-        batch_size=int(train["batch_size"]),
-        gradient_accumulation_steps=int(train.get("gradient_accumulation_steps", 1)),
-        effective_batch_size=int(train.get("effective_batch_size", int(train["batch_size"]))),
+        batch_size=batch_size,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        effective_batch_size=effective_batch_size,
         eval_batch_size=int(eval_cfg.get("batch_size", train.get("eval_batch_size", train["batch_size"]))),
         eval_batches=eval_cfg.get("eval_batches", train.get("eval_batches", 1)),
         learning_rate=float(train.get("learning_rate", 0.001)),
