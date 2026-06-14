@@ -25,6 +25,7 @@ from synthetic_mvp_core.artifacts import (
 from synthetic_mvp_core.io_utils import plot_training_curves, write_csv, write_json, write_jsonl
 from synthetic_mvp_core.training import (
     apply_lr,
+    budget_fields,
     compact_budget_payload,
     method_schedule_config,
     scheduled_lr,
@@ -171,6 +172,12 @@ def eval_batches_value(args, blocks: torch.Tensor) -> int:
     if args.eval_batches == "all":
         return max(1, math.ceil(len(blocks) / max(args.eval_batch_size, 1)))
     return int(args.eval_batches)
+
+
+def tensor_shape(value) -> str:
+    if value is None:
+        return ""
+    return "x".join(str(dim) for dim in value.shape)
 
 
 def train_one_method(
@@ -351,6 +358,7 @@ def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str
                 "python_version": sys.version.split()[0],
                 "torch_version": torch.__version__,
                 "method": method,
+                "attention_backend": backend,
                 "seed": args.seed,
                 "N_total": args.sequence_length,
                 "B": args.block_size,
@@ -369,10 +377,18 @@ def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str
                 "graph_certified": cert_fields["graph_certified"],
                 "implementation_certified": cert_fields["implementation_certified"],
                 "theory_aligned_method": cert_fields["theory_aligned_method"],
+                "raw_K": artifacts.metrics.get("raw_k", ""),
+                "unique_K_mean": artifacts.metrics.get("unique_k_mean", ""),
+                "effective_K_mean_after_causal": artifacts.metrics.get("effective_k_mean", ""),
+                "effective_K_min_after_causal": artifacts.metrics.get("effective_k_min", ""),
+                "effective_K_max_after_causal": artifacts.metrics.get("effective_k_max", ""),
+                "pre_causal_unique_K_mean": artifacts.metrics.get("pre_causal_unique_k_mean", ""),
+                "pre_causal_pair_count": artifacts.metrics.get("pre_causal_pair_count", ""),
                 "duplicate_rate": artifacts.metrics.get("duplicate_rate", ""),
                 "self_loop_rate": artifacts.metrics.get("self_loop_rate", ""),
                 "remote_local_overlap_mean": certificate.get("remote_local_overlap_mean", ""),
                 "attention_pair_count_after_causal": artifacts.metrics.get("attention_pair_count", ""),
+                **budget_fields(method, zigzag_budget, random_budget),
                 "layers": args.layers,
                 "d_model": args.d_model,
                 "heads": args.heads,
@@ -413,6 +429,8 @@ def run_eval(config: dict, output_dir: Path, device: torch.device, log_path: str
                 "summary_path": str(run_dir / "summary.json"),
                 "raw_config_snapshot_path": str(run_dir / "raw_config_snapshot.json"),
                 "resolved_config_snapshot_path": str(run_dir / "resolved_config_snapshot.json"),
+                "neighbor_shape": tensor_shape(artifacts.neighbors),
+                "block_pair_shape": tensor_shape(artifacts.block_pair_index),
                 "git_commit": git_commit(Path.cwd()),
                 "config_sha256": "",
                 **data_ctx,
@@ -465,12 +483,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--log-path", default="")
     parser.add_argument("--local-or-remote", default="")
+    parser.add_argument(
+        "--methods",
+        nargs="+",
+        help="Optional method override for parallel method-only runs. Accepts space or comma separated names.",
+    )
     return parser.parse_args()
+
+
+def parse_method_override(values: list[str] | None) -> list[str] | None:
+    if values is None:
+        return None
+    methods: list[str] = []
+    for value in values:
+        methods.extend(method.strip() for method in value.split(",") if method.strip())
+    return methods or None
 
 
 def main() -> None:
     args = parse_args()
     config = read_json(args.config)
+    methods = parse_method_override(args.methods)
+    if methods is not None:
+        config = copy.deepcopy(config)
+        config.setdefault("attention", {})["methods"] = methods
     output_dir = args.output_dir or Path(config["output"]["root"])
     device = torch.device(
         "cuda" if (args.device == "cuda" or (args.device == "auto" and torch.cuda.is_available())) else "cpu"
