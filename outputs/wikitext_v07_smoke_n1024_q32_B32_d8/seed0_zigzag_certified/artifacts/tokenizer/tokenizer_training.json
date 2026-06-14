@@ -1,0 +1,7 @@
+{
+  "algorithm": "byte_level_bpe",
+  "input_text_count": 1165029,
+  "timestamp_utc": "2026-06-14T14:33:51.098484+00:00",
+  "train_split": "train",
+  "used_test_split": false
+}

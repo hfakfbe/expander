@@ -1,0 +1,11 @@
+{
+  "data_readiness_path": "outputs/wikitext_v07_data_tokenize_n1024/data_readiness.json",
+  "tokenization_summary_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenization_summary.json",
+  "tokenized_test_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+  "tokenized_test_sha256": "5d9e64748794b682f0cedb4e259a83b646359787df54b9b5f5d2bb26396bb3fa",
+  "tokenized_train_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+  "tokenized_train_sha256": "fbe867482e8ef567a0990477e142af5ae9f12f66ce67fcacd0b32d65d3dd5142",
+  "tokenizer_path": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer/tokenizer.json",
+  "tokenizer_sha256": "1a720397783d6758ee208b8605d7ff197fad86f01b1c56c4c5019cfda96ca616",
+  "wikitext_data_phase_dir": "outputs/wikitext_v07_data_tokenize_n1024"
+}

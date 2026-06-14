@@ -1,0 +1,9 @@
+{
+  "actual_k_max_after_causal": 80,
+  "actual_k_mean_after_causal": 40.263671875,
+  "actual_k_min_after_causal": 1,
+  "attention_pair_count_after_causal": 41230,
+  "random_alignment_mode": "per_query",
+  "random_target_k_source": "zigzag_actual_post_causal",
+  "raw_k": 96
+}

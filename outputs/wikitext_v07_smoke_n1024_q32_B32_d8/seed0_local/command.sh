@@ -1,0 +1,1 @@
+/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_experiment.py --config configs/wikitext_v07_smoke_n1024_q32_B32_d8.json --output-dir outputs/wikitext_v07_smoke_n1024_q32_B32_d8 --device cuda --log-path logs/wikitext_v07_smoke_n1024_q32_B32_d8_20260614T144847Z.log --local-or-remote remote

@@ -1,0 +1,1 @@
+/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_experiment.py --config configs/wikitext_v07_main_n1024_q32_B32_d8.json --output-dir outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular --device cuda --methods random_regular --log-path logs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular_20260614T145205Z.log --local-or-remote remote

@@ -1,0 +1,1 @@
+/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_experiment.py --config configs/wikitext_v07_main_n1024_q32_B32_d8.json --output-dir outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_dense --device cuda --methods dense --log-path logs/wikitext_v07_main_n1024_q32_B32_d8_parallel_dense_20260614T145205Z.log --local-or-remote remote

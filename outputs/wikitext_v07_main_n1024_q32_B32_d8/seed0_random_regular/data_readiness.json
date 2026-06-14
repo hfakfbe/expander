@@ -1,0 +1,65 @@
+{
+  "command": "/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/prepare_wikitext.py --config configs/wikitext_v07_data_tokenize_n1024.json --output-dir outputs/wikitext_v07_data_tokenize_n1024",
+  "data_download_wall_time_sec": 154.79413502290845,
+  "dataset": "wikitext-103-raw-v1",
+  "dataset_cache_or_local_path": "datasets/wikitext_v07_raw",
+  "dataset_config": "wikitext-103-raw-v1",
+  "dataset_revision_or_hash": "",
+  "dataset_source": "Salesforce/wikitext",
+  "git_commit": "dfba8de",
+  "sequence_length": 1024,
+  "source_errors_before_success": [],
+  "splits": {
+    "test": {
+      "nonempty_rows": 2891,
+      "path": "datasets/wikitext_v07_raw/test.jsonl",
+      "rows": 4358,
+      "sha256": "d99166af5649383ae3c85e48c83e8fc7e00a8dd2d756a9e1d87071f8a9958e81"
+    },
+    "train": {
+      "nonempty_rows": 1165029,
+      "path": "datasets/wikitext_v07_raw/train.jsonl",
+      "rows": 1801350,
+      "sha256": "da869760fdb7693abc6c0d348885af66bc3cb7f42cda38c3c30658673cb7f526"
+    }
+  },
+  "status": "ok",
+  "test_block_count": 268,
+  "test_nonempty_rows": 2891,
+  "test_token_count": 275123,
+  "timestamp_utc": "2026-06-14T14:40:08.948357+00:00",
+  "tokenization_wall_time_sec": 357.8162014130503,
+  "tokenized_test_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+  "tokenized_test_sha256": "5d9e64748794b682f0cedb4e259a83b646359787df54b9b5f5d2bb26396bb3fa",
+  "tokenized_train_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl",
+  "tokenized_train_sha256": "fbe867482e8ef567a0990477e142af5ae9f12f66ce67fcacd0b32d65d3dd5142",
+  "tokenizer": {
+    "eos_token": "<eos>",
+    "eos_token_id": 1,
+    "pad_token": "<pad>",
+    "pad_token_id": 0,
+    "special_tokens": [
+      "<pad>",
+      "<eos>",
+      "<unk>"
+    ],
+    "tokenizer_algorithm": "byte_level_bpe",
+    "tokenizer_min_frequency": 2,
+    "tokenizer_train_split": "train",
+    "tokenizer_vocab_size": 32000,
+    "unk_token": "<unk>",
+    "unk_token_id": 2,
+    "vocab_size": 32000
+  },
+  "tokenizer_algorithm": "byte_level_bpe",
+  "tokenizer_min_frequency": 2,
+  "tokenizer_path": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer/tokenizer.json",
+  "tokenizer_sha256": "1a720397783d6758ee208b8605d7ff197fad86f01b1c56c4c5019cfda96ca616",
+  "tokenizer_train_split": "train",
+  "tokenizer_train_wall_time_sec": 28.73004099354148,
+  "tokenizer_vocab_size": 32000,
+  "total_wall_time_sec": 577.4947245772928,
+  "train_block_count": 112540,
+  "train_nonempty_rows": 1165029,
+  "train_token_count": 115241250
+}

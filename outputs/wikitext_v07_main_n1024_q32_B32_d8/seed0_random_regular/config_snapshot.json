@@ -1,0 +1,119 @@
+{
+  "attention": {
+    "causal": true,
+    "graph_artifact": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/selected_graph.json",
+    "methods": [
+      "random_regular"
+    ],
+    "multiplicity": {
+      "mode": "unique_log_m"
+    },
+    "random_alignment_mode": "per_query",
+    "random_target_k_source": "zigzag_actual_post_causal",
+    "runtime_graph": {
+      "artifact_dir": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph",
+      "canonical_graph_artifact_path": "outputs/v07_graph_n1024_q32_B32_d8/selected_graph.json",
+      "canonical_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+      "canonical_graph_dir": "outputs/v07_graph_n1024_q32_B32_d8",
+      "canonical_graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+      "canonical_graph_seed": 0,
+      "graph_artifact_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/selected_graph.json",
+      "graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+      "graph_artifact_sha256_matches_canonical": true,
+      "graph_certificate_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/graph_certificate.json",
+      "graph_certificate_sha256": "6a3c14d21a5091152499b5d573aa16249b95187dda552eb75405cf3ff8580054",
+      "graph_generation_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/graph_generation.json",
+      "graph_generation_sha256": "d4334df694c54bcb10abe8d4f4b6589c5752f34bf6268e90fddc26eef4f323cc"
+    }
+  },
+  "data": {
+    "data_readiness_path": "outputs/wikitext_v07_data_tokenize_n1024/data_readiness.json",
+    "expected_tokenized_test_sha256": "5d9e64748794b682f0cedb4e259a83b646359787df54b9b5f5d2bb26396bb3fa",
+    "expected_tokenized_train_sha256": "fbe867482e8ef567a0990477e142af5ae9f12f66ce67fcacd0b32d65d3dd5142",
+    "require_sha256_match": true,
+    "source_dir": "outputs/wikitext_v07_data_tokenize_n1024",
+    "tokenization_summary_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenization_summary.json",
+    "tokenized_test_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/test_blocks.jsonl",
+    "tokenized_train_path": "outputs/wikitext_v07_data_tokenize_n1024/tokenized/train_blocks.jsonl"
+  },
+  "eval": {
+    "batch_size": 16,
+    "eval_batches": "all",
+    "split": "test"
+  },
+  "graph": {
+    "allow_multiedges": true,
+    "canonical_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "copy_to_subdir": "artifacts/graph",
+    "expected_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "generate": false,
+    "graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "graph_artifact_sha256_matches_canonical": true,
+    "graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+    "graph_seed": 0,
+    "preserve_multiplicity": true,
+    "require_sha256_match": true,
+    "runtime_graph_artifact_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/selected_graph.json",
+    "runtime_graph_certificate_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/graph_certificate.json",
+    "runtime_graph_generation_path": "outputs/wikitext_v07_main_n1024_q32_B32_d8_parallel_random_regular/seed0_random_regular/artifacts/graph/graph_generation.json",
+    "source_dir": "outputs/v07_graph_n1024_q32_B32_d8"
+  },
+  "method_overrides": {
+    "zigzag_certified_cosine": {
+      "cosine_total_steps": "train_total_steps",
+      "lr_scheduler": "cosine",
+      "min_lr_ratio": 0.1,
+      "warmup_ratio": 0.03
+    }
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 128,
+    "dropout": 0.1,
+    "ffn_dim": 256,
+    "heads": 4,
+    "layers": 8
+  },
+  "output": {
+    "curve_format": "png",
+    "plot_curves": true,
+    "root": "outputs/wikitext_v07_main_n1024_q32_B32_d8"
+  },
+  "structure": {
+    "B": 32,
+    "allow_multiedges": true,
+    "d": 8,
+    "preserve_multiplicity": true,
+    "q": 32,
+    "rho_field": "rho_zigzag_bound"
+  },
+  "task": {
+    "data_phase_dir": "outputs/wikitext_v07_data_tokenize_n1024",
+    "name": "wikitext",
+    "sequence_length": 1024,
+    "test_split": "test",
+    "train_split": "train"
+  },
+  "tokenizer": {
+    "expected_tokenizer_sha256": "1a720397783d6758ee208b8605d7ff197fad86f01b1c56c4c5019cfda96ca616",
+    "path": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer/tokenizer.json",
+    "require_sha256_match": true,
+    "source_dir": "outputs/wikitext_v07_data_tokenize_n1024/artifacts/tokenizer",
+    "train": false
+  },
+  "train": {
+    "batch_size": 16,
+    "effective_batch_size": 32,
+    "epochs": 1,
+    "grad_clip_norm": 1.0,
+    "gradient_accumulation_steps": 2,
+    "learning_rate": 0.0003,
+    "log_every": 100,
+    "seeds": [
+      0
+    ],
+    "weight_decay": 0.01
+  },
+  "version": "v07"
+}
