@@ -86,6 +86,26 @@ def fetch_rows(source: dict, split: str, text_field: str) -> tuple[list[dict], i
     return rows, int(total or len(rows))
 
 
+def fetch_rows_with_datasets(source: dict, split: str, text_field: str, cache_dir: Path) -> tuple[list[dict], int]:
+    try:
+        from datasets import load_dataset
+    except Exception as exc:
+        raise RuntimeError("datasets package is not available") from exc
+
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    args = [source["path"]]
+    if source.get("name"):
+        args.append(source["name"])
+    dataset = load_dataset(*args, split=split, cache_dir=str(cache_dir))
+    rows: list[dict] = []
+    for row_idx, row in enumerate(dataset):
+        value = row.get(text_field)
+        if value is None:
+            raise ValueError(f"missing text field {text_field!r} in split {split!r}")
+        rows.append({"row_idx": int(row_idx), text_field: str(value)})
+    return rows, len(rows)
+
+
 def fetch_required_splits(config: dict, raw_dir: Path) -> tuple[dict, dict, list[str]]:
     task = config["task"]
     text_field = task.get("text_field", "text")
@@ -96,7 +116,19 @@ def fetch_required_splits(config: dict, raw_dir: Path) -> tuple[dict, dict, list
             out = {}
             totals = {}
             for split in splits:
-                rows, expected = fetch_rows(source, split, text_field)
+                try:
+                    rows, expected = fetch_rows_with_datasets(
+                        source,
+                        split,
+                        text_field,
+                        raw_dir / ".hf_cache",
+                    )
+                except Exception as datasets_exc:
+                    errors.append(
+                        f"{source.get('path')}:{source.get('name', '')}:{split}:"
+                        f" datasets={datasets_exc!r}; falling back to rows API"
+                    )
+                    rows, expected = fetch_rows(source, split, text_field)
                 out[split] = rows
                 totals[split] = expected
             return {"source": source, "rows": out, "totals": totals}, {
