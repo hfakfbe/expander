@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -37,10 +38,20 @@ def file_sha256(path: Path) -> str:
 
 
 def git_commit(cwd: Path | None = None) -> str:
+    env_commit = os.environ.get("GIT_COMMIT", "").strip()
+    if env_commit:
+        return env_commit
+    root = cwd or Path.cwd()
+    for parent in [root, *root.parents]:
+        deployed = parent / ".deployed_git_commit_v07"
+        if deployed.exists():
+            value = deployed.read_text(encoding="utf-8").strip()
+            if value:
+                return value
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
-            cwd=str(cwd or Path.cwd()),
+            cwd=str(root),
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
