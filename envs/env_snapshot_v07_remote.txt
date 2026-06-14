@@ -1,0 +1,14 @@
+Sun Jun 14 02:22:56 PM UTC 2026
+deployed_git_commit=a143e01
+Python 3.10.0
+python_executable /home/huiwei/miniconda3/envs/ysx_base/bin/python
+torch 2.10.0+cu128
+cuda True
+gpu0 NVIDIA A100-SXM4-80GB
+tokenizers 0.21.4
+datasets 4.5.0
+matplotlib missing ModuleNotFoundError("No module named 'matplotlib'")
+0, NVIDIA A100-SXM4-80GB, 0, 2331, 81920
+1, NVIDIA A100-SXM4-80GB, 0, 2331, 81920
+2, NVIDIA A100-SXM4-80GB, 0, 2331, 81920
+3, NVIDIA A100-SXM4-80GB, 0, 2331, 81920

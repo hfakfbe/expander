@@ -1,0 +1,3 @@
+target_in_1hop_rate,target_in_2hop_rate,target_in_Lhop_rate,average_shortest_path,unreachable_rate,method,N,T,B,d,seed,layers,mask_scope,attention_pair_count,raw_K
+0.28125,0.625,1.0,2.09375,0.0,zigzag_certified_cosine,511,1024,32,8,0,8,structural,97152,96
+0.279296875,0.560546875,0.998046875,2.1585127201565557,0.001953125,zigzag_certified_cosine,511,1024,32,8,0,8,causal_effective,49088,96

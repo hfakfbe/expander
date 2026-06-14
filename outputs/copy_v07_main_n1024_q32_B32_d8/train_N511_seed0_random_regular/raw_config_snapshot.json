@@ -1,0 +1,104 @@
+{
+  "attention": {
+    "block_size": 16,
+    "causal": true,
+    "degree": 4,
+    "graph": {
+      "G": {
+        "type": "cyclic"
+      },
+      "H": {
+        "type": "cycle"
+      }
+    },
+    "graph_artifact": "outputs/copy_v06_graph_search/selected_graph.json",
+    "methods": [
+      "random_regular"
+    ],
+    "multiplicity": {
+      "boolean_ablation": true,
+      "mode": "unique_log_m"
+    },
+    "random_alignment_mode": "per_query",
+    "random_target_k_source": "zigzag_actual_post_causal"
+  },
+  "eval": {
+    "batch_size": 64,
+    "eval_batches": 50
+  },
+  "graph": {
+    "allow_multiedges": true,
+    "copy_to_subdir": "artifacts/graph",
+    "expected_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "generate": false,
+    "graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+    "graph_seed": 0,
+    "preserve_multiplicity": true,
+    "require_sha256_match": true,
+    "source_dir": "outputs/v07_graph_n1024_q32_B32_d8"
+  },
+  "method_overrides": {
+    "zigzag_certified_cosine": {
+      "cosine_total_steps": 5000,
+      "lr_scheduler": "cosine",
+      "min_lr_ratio": 0.1,
+      "warmup_ratio": 0.03
+    }
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 128,
+    "dropout": 0.1,
+    "ffn_dim": 256,
+    "heads": 4,
+    "layers": 8
+  },
+  "output": {
+    "curve_format": "png",
+    "plot_curves": true,
+    "root": "outputs/copy_v07_main_n1024_q32_B32_d8_parallel_random_regular"
+  },
+  "structure": {
+    "B": 32,
+    "allow_multiedges": true,
+    "d": 8,
+    "preserve_multiplicity": true,
+    "q": 32,
+    "rho_field": "rho_zigzag_bound"
+  },
+  "task": {
+    "N_total": 1024,
+    "copy_source_length": 511,
+    "data": "online",
+    "eval_lengths": [
+      512
+    ],
+    "mode": "full_copy",
+    "name": "copy",
+    "num_values": 4,
+    "special_tokens": {
+      "eos": 6,
+      "pad": 0,
+      "sep": 5
+    },
+    "train_lengths": [
+      512
+    ]
+  },
+  "train": {
+    "batch_size": 64,
+    "checkpoint_every": 500,
+    "eval_batches": 5,
+    "eval_every": 50,
+    "learning_rate": 0.001,
+    "log_every": 50,
+    "lr_scheduler": "constant",
+    "optimizer": "adamw",
+    "seeds": [
+      0
+    ],
+    "steps": 5000
+  },
+  "version": "v07"
+}

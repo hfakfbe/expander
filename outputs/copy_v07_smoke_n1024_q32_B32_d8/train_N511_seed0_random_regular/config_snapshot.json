@@ -1,0 +1,128 @@
+{
+  "attention": {
+    "block_size": 32,
+    "causal": true,
+    "degree": 8,
+    "graph": {
+      "G": {
+        "type": "cyclic"
+      },
+      "H": {
+        "type": "cycle"
+      }
+    },
+    "graph_artifact": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph/selected_graph.json",
+    "methods": [
+      "dense",
+      "local",
+      "zigzag_certified",
+      "random_regular"
+    ],
+    "multiplicity": {
+      "boolean_ablation": true,
+      "mode": "unique_log_m"
+    },
+    "random_alignment_mode": "per_query",
+    "random_target_k_source": "zigzag_actual_post_causal",
+    "runtime_graph": {
+      "B": 32,
+      "G_type": "permutation_regular",
+      "H_type": "permutation_regular",
+      "T": 1024,
+      "artifact_dir": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph",
+      "canonical_graph_artifact_path": "outputs/v07_graph_n1024_q32_B32_d8/selected_graph.json",
+      "canonical_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+      "canonical_graph_dir": "outputs/v07_graph_n1024_q32_B32_d8",
+      "canonical_graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+      "canonical_graph_seed": 0,
+      "d": 8,
+      "graph_artifact": "outputs/copy_v07_smoke_n1024_q32_B32_d8/artifacts/graph/selected_graph.json",
+      "graph_artifact_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph/selected_graph.json",
+      "graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+      "graph_artifact_sha256_matches_canonical": true,
+      "graph_certificate_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph/graph_certificate.json",
+      "graph_certificate_sha256": "6a3c14d21a5091152499b5d573aa16249b95187dda552eb75405cf3ff8580054",
+      "graph_certified": true,
+      "graph_generation_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph/graph_generation.json",
+      "graph_generation_sha256": "3758ea148292089887d698039e5d94ea7d96164045f82b2138e20cdece267e0c",
+      "graph_id": "v07_B32_d8_s0_619e9b962fc61bfd",
+      "graph_seed": 0,
+      "q": 32
+    }
+  },
+  "eval": {
+    "batch_size": 32,
+    "eval_batches": 5
+  },
+  "graph": {
+    "allow_multiedges": true,
+    "canonical_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "copy_to_subdir": "artifacts/graph",
+    "expected_graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "generate": false,
+    "graph_artifact_sha256": "53ae37a6584833a1d20d51162a01a03d18bf7eeb9fd0efd2ebf3b8a482427a48",
+    "graph_artifact_sha256_matches_canonical": true,
+    "graph_generation_algorithm": "zigzag_v07_fixed_N1024_q32_B32_d8",
+    "graph_seed": 0,
+    "preserve_multiplicity": true,
+    "require_sha256_match": true,
+    "runtime_graph_artifact_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/train_N511_seed0_random_regular/artifacts/graph/selected_graph.json",
+    "runtime_graph_certificate_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/artifacts/graph/graph_certificate.json",
+    "runtime_graph_generation_path": "outputs/copy_v07_smoke_n1024_q32_B32_d8/artifacts/graph/graph_generation.json",
+    "source_dir": "outputs/v07_graph_n1024_q32_B32_d8"
+  },
+  "model": {
+    "architecture": "transformer",
+    "attention_backend": "auto_split",
+    "d_model": 128,
+    "dropout": 0.1,
+    "ffn_dim": 256,
+    "heads": 4,
+    "layers": 8
+  },
+  "output": {
+    "curve_format": "png",
+    "plot_curves": true,
+    "root": "outputs/copy_v07_smoke_n1024_q32_B32_d8"
+  },
+  "structure": {
+    "B": 32,
+    "allow_multiedges": true,
+    "d": 8,
+    "preserve_multiplicity": true,
+    "q": 32,
+    "rho_field": "rho_zigzag_bound"
+  },
+  "task": {
+    "N_total": 1024,
+    "copy_source_length": 511,
+    "data": "online",
+    "eval_lengths": [
+      511
+    ],
+    "mode": "full_copy",
+    "name": "copy",
+    "num_values": 4,
+    "special_tokens": {
+      "eos": 6,
+      "pad": 0,
+      "sep": 5
+    },
+    "train_lengths": [
+      511
+    ]
+  },
+  "train": {
+    "batch_size": 32,
+    "eval_batches": 5,
+    "eval_every": 10,
+    "learning_rate": 0.001,
+    "log_every": 10,
+    "optimizer": "adamw",
+    "seeds": [
+      0
+    ],
+    "steps": 200
+  },
+  "version": "v07"
+}
