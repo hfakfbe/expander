@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="430" viewBox="0 0 980 430" role="img" aria-label="Causal Expander Memory Attention architecture">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .box { fill: #f8fafc; stroke: #334155; stroke-width: 1.5; }
+      .mem { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; }
+      .tok { fill: #f0fdf4; stroke: #16a34a; stroke-width: 1.5; }
+      .write { fill: #fff7ed; stroke: #ea580c; stroke-width: 1.5; }
+      .label { font-family: Arial, sans-serif; font-size: 15px; fill: #0f172a; }
+      .small { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .arrow { stroke: #334155; stroke-width: 1.7; fill: none; marker-end: url(#arrow); }
+      .blueArrow { stroke: #2563eb; stroke-width: 1.7; fill: none; marker-end: url(#arrowBlue); }
+      .soft { stroke: #94a3b8; stroke-width: 1.2; fill: none; stroke-dasharray: 4 4; }
+    </style>
+  </defs>
+
+  <text x="28" y="34" class="label" font-weight="700">CEMA layer at time t: read old memory, then commit write for the future</text>
+
+  <rect x="35" y="80" width="190" height="115" rx="8" class="box"/>
+  <text x="58" y="112" class="label">Local causal window</text>
+  <text x="58" y="139" class="small">last W token KV cache</text>
+  <text x="58" y="164" class="small">content flow is causal DAG</text>
+
+  <rect x="35" y="245" width="190" height="115" rx="8" class="mem"/>
+  <text x="58" y="277" class="label">Old memory</text>
+  <text x="58" y="304" class="small">M[t-1]^ell</text>
+  <text x="58" y="329" class="small">fixed m slots</text>
+
+  <circle cx="315" cy="270" r="22" class="mem"/>
+  <circle cx="390" cy="250" r="22" class="mem"/>
+  <circle cx="455" cy="295" r="22" class="mem"/>
+  <circle cx="360" cy="335" r="22" class="mem"/>
+  <path d="M335 264 C350 250, 365 248, 370 250" class="blueArrow"/>
+  <path d="M410 257 C430 265, 440 275, 445 282" class="blueArrow"/>
+  <path d="M440 306 C420 326, 395 334, 382 335" class="blueArrow"/>
+  <path d="M341 325 C320 312, 310 294, 312 283" class="blueArrow"/>
+  <path d="M333 284 C365 306, 397 306, 435 296" class="soft"/>
+  <text x="310" y="382" class="small">expander mix P</text>
+
+  <rect x="555" y="85" width="190" height="110" rx="8" class="tok"/>
+  <text x="578" y="117" class="label">Token block</text>
+  <text x="578" y="144" class="small">h[t] reads local KV</text>
+  <text x="578" y="169" class="small">and M[t-1]</text>
+
+  <rect x="555" y="250" width="190" height="110" rx="8" class="write"/>
+  <text x="578" y="282" class="label">Write proposal</text>
+  <text x="578" y="309" class="small">Delta M[t] from h[t]</text>
+  <text x="578" y="334" class="small">gated commit</text>
+
+  <rect x="810" y="245" width="135" height="115" rx="8" class="mem"/>
+  <text x="833" y="277" class="label">New memory</text>
+  <text x="833" y="304" class="small">M[t]^ell</text>
+  <text x="833" y="329" class="small">visible after t</text>
+
+  <path d="M225 132 C335 110, 450 110, 555 132" class="arrow"/>
+  <path d="M225 302 C260 285, 285 275, 293 272" class="blueArrow"/>
+  <path d="M477 285 C510 245, 530 200, 555 165" class="blueArrow"/>
+  <path d="M650 195 L650 250" class="arrow"/>
+  <path d="M745 305 L810 305" class="arrow"/>
+  <path d="M878 245 C878 207, 825 185, 745 165" class="soft"/>
+
+  <text x="256" y="116" class="small">local causal attention</text>
+  <text x="462" y="232" class="small">memory read</text>
+  <text x="762" y="291" class="small">commit</text>
+  <text x="778" y="190" class="small">only future tokens can read M[t]</text>
+</svg>

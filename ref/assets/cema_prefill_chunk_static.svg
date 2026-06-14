@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="390" viewBox="0 0 980 390" role="img" aria-label="CEMA prefill chunk-static memory">
+  <defs>
+    <marker id="arr2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#334155"/>
+    </marker>
+    <style>
+      .chunk { fill: #f0fdf4; stroke: #15803d; stroke-width: 1.5; }
+      .mem2 { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; }
+      .mix2 { fill: #eef2ff; stroke: #4f46e5; stroke-width: 1.5; }
+      .write2 { fill: #fff7ed; stroke: #ea580c; stroke-width: 1.5; }
+      .label2 { font-family: Arial, sans-serif; font-size: 15px; fill: #0f172a; }
+      .small2 { font-family: Arial, sans-serif; font-size: 12px; fill: #475569; }
+      .edge2 { stroke: #334155; stroke-width: 1.6; fill: none; marker-end: url(#arr2); }
+      .delay2 { stroke: #94a3b8; stroke-width: 1.2; fill: none; stroke-dasharray: 5 5; marker-end: url(#arr2); }
+    </style>
+  </defs>
+
+  <text x="28" y="34" class="label2" font-weight="700">Prefill: chunk-static memory with causal local attention inside each chunk</text>
+
+  <rect x="40" y="95" width="140" height="90" rx="8" class="mem2"/>
+  <text x="68" y="128" class="label2">M[j-1]</text>
+  <text x="58" y="154" class="small2">old memory</text>
+
+  <rect x="235" y="95" width="140" height="90" rx="8" class="mix2"/>
+  <text x="272" y="128" class="label2">Mix_E</text>
+  <text x="253" y="154" class="small2">expander P</text>
+
+  <rect x="430" y="70" width="205" height="140" rx="8" class="chunk"/>
+  <text x="478" y="104" class="label2">Chunk X[j]</text>
+  <text x="455" y="132" class="small2">causal local attention</text>
+  <text x="455" y="157" class="small2">read mixed memory</text>
+  <text x="455" y="182" class="small2">produce H[j]</text>
+
+  <rect x="690" y="95" width="140" height="90" rx="8" class="write2"/>
+  <text x="726" y="128" class="label2">Write</text>
+  <text x="711" y="154" class="small2">Delta M[j]</text>
+
+  <rect x="830" y="250" width="120" height="80" rx="8" class="mem2"/>
+  <text x="858" y="282" class="label2">M[j]</text>
+  <text x="848" y="307" class="small2">next chunks</text>
+
+  <rect x="430" y="250" width="205" height="80" rx="8" class="chunk"/>
+  <text x="476" y="282" class="label2">Chunk X[j+1]</text>
+  <text x="455" y="307" class="small2">can read committed M[j]</text>
+
+  <path d="M180 140 L235 140" class="edge2"/>
+  <path d="M375 140 L430 140" class="edge2"/>
+  <path d="M635 140 L690 140" class="edge2"/>
+  <path d="M780 185 C820 210, 850 230, 875 250" class="edge2"/>
+  <path d="M830 290 L635 290" class="edge2"/>
+  <path d="M532 210 L532 250" class="delay2"/>
+  <text x="548" y="236" class="small2">commit after chunk</text>
+  <text x="62" y="228" class="small2">No token in X[j] can read M[j].</text>
+</svg>

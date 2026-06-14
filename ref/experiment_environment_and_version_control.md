@@ -29,6 +29,32 @@ ref/zigzag_experiment_execution_manual_v06.md
 修复影响结果解释的 bug。
 ```
 
+实验产物、文档和日志也是实验可追溯性的一部分。除 checkpoint/tensor 大文件外，以下内容也必须进入 git：
+
+```text
+ref/ 下的实验文档、报告、归档说明；
+configs/ 下实际使用的配置；
+reports/ 下阶段报告和最终报告；
+logs/ 下正式运行日志；
+outputs/ 下结果表、summary、metrics、diagnostics、training_curves.png、command.sh、config snapshot、graph artifact 副本；
+datasets/ 下 data_readiness、dataset_info、tokenized_smoke、数据源说明等轻量元数据；
+envs/ 下环境快照。
+```
+
+不进入 git 的例外：
+
+```text
+*.pt
+*.pth
+checkpoint*.pt
+checkpoint*.pth
+大型原始数据文件或 cache 文件；
+大型 tensor dump；
+临时 __pycache__、.DS_Store。
+```
+
+如果某个产物太大但不是 checkpoint，先移动到明确的外部归档位置，并在对应报告或 README 中记录路径、sha256、生成命令和不提交原因。
+
 提交前必须检查：
 
 ```bash
@@ -41,11 +67,12 @@ python -m py_compile scripts/*.py
 提交规范：
 
 ```text
-1. 不把 outputs/、logs/、datasets/、cached_graphs/ 或 checkpoint 文件纳入主提交；
-2. 不回退用户已有改动；
-3. 若工作区已有无关改动，只提交本次明确相关文件；
-4. commit message 使用可追溯前缀，例如 v06-graph、v06-mask、v06-wikitext-data；
-5. 每个 phase 完成后至少有一个对应 commit。
+1. 提交代码、配置、文档、日志和轻量实验产物；
+2. 不提交 checkpoint/tensor 大文件，尤其是 *.pt、*.pth；
+3. 不回退用户已有改动；
+4. 若工作区已有无关改动，只提交本次明确相关文件；
+5. commit message 使用可追溯前缀，例如 v06-graph、v06-mask、v06-wikitext-data；
+6. 每个 phase 完成后至少有一个对应 commit。
 ```
 
 远端若发生小修复，必须同步回本地并进入 git；远端不作为长期编辑主目录。
@@ -73,15 +100,13 @@ rsync -av --delete \
   --exclude '.git/' \
   --exclude '__pycache__/' \
   --exclude '.DS_Store' \
-  --exclude 'outputs/' \
-  --exclude 'logs/' \
-  --exclude 'datasets/' \
   --exclude 'cached_graphs/' \
   --exclude '*.pt' \
+  --exclude '*.pth' \
   ./ huiwei:/home/huiwei/ysx/zigzag_attention/
 ```
 
-结果同步使用任务手册中的具体 outputs/datasets/logs 路径。同步回本地后，报告中的所有数值必须能追溯到本地已保存的产物。
+结果同步使用任务手册中的具体 outputs/datasets/logs 路径。同步回本地后，报告中的所有数值必须能追溯到本地已保存且已进入 git 的产物；checkpoint 例外，但必须保留生成命令和路径记录。
 
 ## 3. 服务器规范
 
@@ -125,17 +150,18 @@ nvidia-smi --query-gpu=index,name,utilization.gpu,memory.used,memory.total --for
 启动任务规则：
 
 ```text
-1. 优先按 GPU3 -> GPU2 -> GPU1 的顺序考虑；
-2. 目标 GPU 当前 utilization.gpu < 50% 时，可以启动任务；
-3. 若 GPU3/2/1 的利用率都 >= 50%，或显存被未知进程大量占用，不启动实验；
-4. 默认不使用 GPU0，除非用户明确指定；
-5. 单个实验默认只占用一张 GPU；
-6. 正式记录必须写明 CUDA_VISIBLE_DEVICES、启动前 GPU 状态和实际 GPU 名称。
+1. 优先按 GPU3 -> GPU2 -> GPU1 -> GPU0 的顺序考虑；
+2. 目标 GPU 当前 utilization.gpu < 20% 时，可以启动任务；
+3. 若 GPU3/2/1/0 的利用率都 >= 20%，或显存被未知进程大量占用，不启动新任务；
+4. 可以同时使用最多 4 张 GPU，以提升整体实验效率；
+5. 不同 GPU 可以执行不同任务，例如 copy smoke、copy real、wikitext smoke、wikitext real 或不同 method；
+6. 单个训练进程默认只绑定一张 GPU，除非某个脚本明确实现并记录了多 GPU 训练；
+7. 正式记录必须写明每个任务的 CUDA_VISIBLE_DEVICES、启动前 GPU 状态和实际 GPU 名称。
 ```
 
-若 GPU3、GPU2、GPU1 中多张 GPU 都低于 `50%`，按 `3 -> 2 -> 1` 优先级选择；若优先级相同的人工判断场景出现，再选择显存占用更低的 GPU。
+若多张 GPU 都低于 `20%`，按 `3 -> 2 -> 1 -> 0` 优先级分配；若需要并行启动多个任务，按该顺序逐个分配空闲 GPU。若优先级相同的人工判断场景出现，再选择显存占用更低的 GPU。
 
-只有后续明确加入多 GPU 训练时，才允许同时设置多个 `CUDA_VISIBLE_DEVICES`。
+并行任务推荐使用多个 tmux window/session，每个任务设置一个单独的 `CUDA_VISIBLE_DEVICES=<gpu_id>`。只有后续明确加入多 GPU 训练时，才允许单个任务同时设置多个 GPU id。
 
 ## 5. 运行方式与日志
 
@@ -173,7 +199,7 @@ git status 本地干净或仅含本次明确改动；
 本地代码已 rsync 到远端；
 远端 configs/scripts/ref 文件存在；
 任务所需 graph/data artifact 已存在；
-nvidia-smi 按 GPU3 -> GPU2 -> GPU1 检查，确认目标 GPU 利用率低于 50%；
+nvidia-smi 按 GPU3 -> GPU2 -> GPU1 -> GPU0 检查，确认目标 GPU 利用率低于 20%；
 输出目录不会覆盖已有有效结果；
 日志路径已设置；
 config snapshot 会写入输出目录；
@@ -204,4 +230,4 @@ config snapshot
 是否需要改代码
 ```
 
-旧版本 outputs、reports、logs、configs 应归档到 `ref/archive_<version>_reports/`，不得混入新版本主结果表。
+旧版本 outputs、reports、logs、configs 和轻量 dataset/env 元数据应归档到 `ref/archive_<version>_reports/` 并进入 git；checkpoint/tensor 大文件不进入 git，但归档 README 必须记录外部保存路径或删除原因。旧版本产物不得混入新版本主结果表。
