@@ -223,9 +223,11 @@ def plot_training_curves(metrics_rows: list[dict], output_path: Path) -> None:
     panels = _curve_panels(metrics_rows)
     try:
         import matplotlib
-    except ModuleNotFoundError:
-        _fallback_training_curves_png(metrics_rows, output_path, panels)
-        return
+    except ModuleNotFoundError as exc:
+        raise RuntimeError(
+            "matplotlib is required to render training_curves.png. "
+            "Install matplotlib in the active experiment environment before plotting."
+        ) from exc
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -233,19 +235,46 @@ def plot_training_curves(metrics_rows: list[dict], output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     steps = [int(row["step"]) for row in metrics_rows]
     rows = max(1, math.ceil(len(panels) / 2))
-    fig, axes = plt.subplots(rows, 2, figsize=(11, max(3, 2.75 * rows)))
+    plt.style.use("seaborn-v0_8-whitegrid")
+    fig, axes = plt.subplots(
+        rows,
+        2,
+        figsize=(12.5, max(3.2, 3.0 * rows)),
+        constrained_layout=True,
+    )
+    fig.patch.set_facecolor("white")
     if not isinstance(axes, Iterable):
         axes = [axes]
     else:
         axes = [ax for row in axes for ax in (row if isinstance(row, Iterable) else [row])]
+    color = "#1f77b4"
+    marker = "o" if len(steps) <= 60 else None
     for ax, (key, title) in zip(axes, panels):
-        values = [float(row.get(key, 0.0) or 0.0) for row in metrics_rows]
-        ax.plot(steps, values, marker="o", linewidth=1.5)
-        ax.set_title(title)
+        values = []
+        for row in metrics_rows:
+            try:
+                value = float(row.get(key, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                value = 0.0
+            values.append(value if math.isfinite(value) else 0.0)
+        ax.plot(
+            steps,
+            values,
+            color=color,
+            marker=marker,
+            markersize=3.0,
+            linewidth=2.0,
+            alpha=0.95,
+        )
+        ax.set_title(title, fontsize=11, fontweight="semibold", pad=8)
         ax.set_xlabel("step")
-        ax.grid(True, alpha=0.3)
+        ax.tick_params(axis="both", labelsize=9)
+        ax.grid(True, color="#d9dee7", linewidth=0.8, alpha=0.8)
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#b8c0cc")
+        ax.spines["bottom"].set_color("#b8c0cc")
     for ax in axes[len(panels) :]:
         ax.axis("off")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=160)
+    fig.savefig(output_path, dpi=180, facecolor="white")
     plt.close(fig)
