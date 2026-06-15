@@ -1,0 +1,462 @@
+# Zig-Zag Sparse Attention Probe 实验执行手册 v0.8
+
+## 0. 文档定位
+
+v0.8 接在 v0.7 之后，不再继续 copy/WikiText 两任务主线。v0.7 的配置、输出、日志、报告和轻量环境快照已归档到：
+
+```text
+ref/archive_v07_reports/
+```
+
+v0.8 的唯一目标是：根据 `../expander_bench/data/probes/DEPLOYMENT_SUMMARY.md` 中已经验证通过的 6 个 probe 数据集，完成当前 expander/zigzag 代码对任务格式的适配、数据上传、每任务 smoke test、全量训练和评测。
+
+共享环境、GPU 选择、git 提交、checkpoint 忽略和远端同步规则统一见：
+
+```text
+ref/experiment_environment_and_version_control.md
+```
+
+## 1. v08 数据范围
+
+只允许读取 `status=validated` 且 `can_enter_main_eval=true` 的数据版本。以下目录来自 2026-06-15 的 probe 部署总结：
+
+| task | selected version directory | train / validation / test |
+|---|---|---|
+| copy | `../expander_bench/data/probes/copy/s4_copying_length_extrapolation/copy_s4_l0_m1024_a64_full_v2/` | 10000 / 1000 / 1000 |
+| selective_copy | `../expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1/` | 10000 / 1000 / 1000 |
+| induction_associative_recall | `../expander_bench/data/probes/induction_associative_recall/zoology_mqar_regenerated/mqar_vocab8192_len64_128_256_512_1024_full_v2/` | 180000 / 3000 / 4000 |
+| niah_kv_retrieval | `../expander_bench/data/probes/niah_kv_retrieval/ruler_niah_single_1/niah_ruler_noise_4k_full_v2/` | 10000 / 500 / 500 |
+| ruler | `../expander_bench/data/probes/ruler/ruler_official_nonqa_synthetic_suite/ruler_nonqa_suite_4k_full_v2/` | 12000 / 3000 / 3000 |
+| lra_listops | `../expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1/` | 96000 / 2000 / 2000 |
+
+以下数据不得进入 v08 主评测：
+
+```text
+lra_pathfinder
+lra_pathx
+任何 status!=validated 的 version
+任何 can_enter_main_eval!=true 的 version
+```
+
+每个 version 目录必须至少包含：
+
+```text
+README.md
+deployment_report.md
+dataset_card.json
+config.yaml
+source.lock
+train.jsonl
+validation.jsonl
+test.jsonl
+checksums.sha256
+deployment_status.yaml
+```
+
+## 2. 总体 Phase
+
+v0.8 分为 5 个 phase，必须按顺序推进：
+
+| Phase | 名称 | 目标 | 通过条件 |
+|---|---|---|---|
+| 1 | Probe Data Contract Audit | 读取 6 个数据版本，确认 schema、长度、词表/标签、metric、non-causal 标志和 checksum | `outputs/probes_v08_data_audit/summary.json` 完整，6 个 task 均 validated |
+| 2 | Code Adaptation | 修改训练/评测代码，支持 6 个 probe task 的 JSONL 输入、任务头、metric 和统一结果字段 | py_compile 通过，每个 task 可跑 tiny dry-run |
+| 3 | Data Upload and Remote Readiness | 把代码和 6 个 probe 数据上传到远端，保存远端路径、sha256、行数和环境快照 | 远端 readiness 检查通过，6 个 task 文件数/sha 与本地一致 |
+| 4 | Per-Task Smoke Test | 每个 task 跑 smoke train + eval | 6 个 task smoke 均无 NaN，能写 results/metrics/summary |
+| 5 | Full Train + Eval | 对 6 个 task 跑全量训练和测试评测 | 主结果表、每任务报告、失败审计和最终总报告完整 |
+
+v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度。每个 probe 的序列长度、词表大小、目标格式和 metric 必须由数据卡、config 或数据扫描结果驱动，再写入 resolved config。
+
+## 3. 任务适配要求
+
+所有 task 都从标准化 JSONL 读取样本。每行包含：
+
+```text
+id
+task
+variant
+input
+target
+metadata
+```
+
+Phase 1 必须自动扫描并记录：
+
+```text
+task
+version_path
+dataset_card.status
+dataset_card.can_enter_main_eval
+split row counts
+input type and representative shape
+target type and representative shape
+min/mean/max input length
+min/mean/max target length
+token/value vocabulary estimate
+metadata keys
+causal/non-causal contract
+recommended metric
+sha256 verification status
+```
+
+训练入口必须支持至少三类输出：
+
+```text
+sequence_generation:
+  copy, selective_copy
+
+key_value_or_token_retrieval:
+  induction_associative_recall, niah_kv_retrieval, ruler
+
+classification:
+  lra_listops
+```
+
+如果 `ruler` 的 6 个子任务在 `metadata` 中可区分，结果必须同时写 task-level 和 subtask-level metrics。
+
+## 4. 模型和 Method
+
+v08 的第一版目标是把 6 个 probe 跑完整、跑可复现、跑可比较。默认比较方法：
+
+```text
+dense
+local
+zigzag_certified
+random_regular
+```
+
+可选扩展方法：
+
+```text
+zigzag_certified_cosine
+zigzag_boolean
+```
+
+公平性约束：
+
+```text
+1. 同一 task 内所有 method 使用同一模型宽度、层数、训练步数、batch、seed 和数据 split；
+2. sparse method 的 attention budget 必须记录 min/mean/max K 和 pair count；
+3. random_regular 必须按 zigzag actual post-causal K 或同任务实际 sparse budget 对齐；
+4. 若某 task 是 non-causal contract，必须显式记录 causal=false 或 task-specific attention contract；
+5. 若临时只能先跑 dense/local 基线，主结果必须标记为 partial，不得冒充完整 v08。
+```
+
+默认模型配置先从 v07 小模型继承，后续只在 smoke 通过后调整：
+
+```text
+layers = 8
+d_model = 128
+heads = 4
+ffn_dim = 256
+dropout = 0.1
+seed = 0
+```
+
+OOM 降级顺序：
+
+```text
+batch_size 64 -> 32 -> 16 -> 8
+gradient_accumulation_steps 增加以保持等效 batch
+sequence bucketing 或 max_length 截断只允许用于 smoke，不允许悄悄进入 main
+```
+
+## 5. Phase 1: Probe Data Contract Audit
+
+新增或复用脚本：
+
+```text
+scripts/probe_data_audit.py
+```
+
+输出目录：
+
+```text
+outputs/probes_v08_data_audit/
+```
+
+必须输出：
+
+```text
+summary.json
+task_audit.csv
+task_audit.jsonl
+checksums_verification.json
+sample_preview.jsonl
+command.sh
+```
+
+通过条件：
+
+```text
+6 个 task 都能读取 train/validation/test；
+部署状态均为 validated/can_enter_main_eval=true；
+checksums.sha256 校验通过，或记录可解释的非内容性差异；
+每个 task 的 input/target schema 已明确；
+每个 task 的 metric 已明确；
+失败任务 lra_pathfinder/lra_pathx 未被纳入 main plan。
+```
+
+## 6. Phase 2: Code Adaptation
+
+训练和评测入口可以复用 `scripts/run_experiment.py`，也可以新增 probe 专用入口：
+
+```text
+scripts/run_probe_experiment.py
+scripts/probe_tasks.py
+scripts/probe_metrics.py
+```
+
+必须完成：
+
+```text
+1. 从 config 读取 task name、version path、split paths 和 metric；
+2. 支持 train/validation/test JSONL streaming 或 mmap-friendly 读取；
+3. 支持不同 task 的 tokenizer/value encoder/label encoder；
+4. 支持 sequence generation、retrieval、classification 三类 loss；
+5. 支持 validation early smoke eval 和 test final eval；
+6. 写 raw_config_snapshot.json 与 resolved_config_snapshot.json；
+7. 写 command.sh、metrics.jsonl、results.csv、results.jsonl、summary.json；
+8. 失败时写 error.log 和 status=failed summary；
+9. checkpoint/tensor 文件不进入 git。
+```
+
+Phase 2 tiny dry-run：
+
+```text
+每个 task 取 train<=32、validation<=16、test<=16；
+每个 method 至少 dense 或 local 跑 2-5 step；
+确认 forward/backward/eval 和结果写出。
+```
+
+通过条件：
+
+```bash
+python -m py_compile scripts/*.py scripts/synthetic_mvp_core/*.py
+```
+
+并且 6 个 task tiny dry-run 均能完成或给出明确代码待修项。
+
+## 7. Phase 3: Data Upload and Remote Readiness
+
+默认远端路径：
+
+```text
+remote code root: /home/huiwei/ysx/zigzag_attention
+remote probe data root: /home/huiwei/ysx/expander_bench/data/probes
+```
+
+同步命令建议：
+
+```bash
+rsync -av --delete \
+  --exclude '.git/' \
+  --exclude '__pycache__/' \
+  --exclude '.DS_Store' \
+  --exclude '.deps/' \
+  --exclude '*.pt' \
+  --exclude '*.pth' \
+  ./ huiwei:/home/huiwei/ysx/zigzag_attention/
+
+rsync -av ../expander_bench/data/probes/ \
+  huiwei:/home/huiwei/ysx/expander_bench/data/probes/
+```
+
+远端 readiness 输出：
+
+```text
+outputs/probes_v08_remote_readiness/
+  summary.json
+  remote_file_counts.csv
+  remote_checksums_verification.json
+  env_snapshot.txt
+  requirements_snapshot.txt
+  command.sh
+```
+
+通过条件：
+
+```text
+远端 6 个 selected version path 存在；
+train/validation/test 行数与本地 audit 一致；
+关键文件 sha256 与本地一致；
+远端 Python、torch、CUDA 可用；
+目标 GPU 空闲度符合环境文档。
+```
+
+## 8. Phase 4: Per-Task Smoke Test
+
+smoke 输出目录：
+
+```text
+outputs/probes_v08_smoke/<task>/<method>/
+```
+
+smoke 默认参数：
+
+```text
+train_examples_per_task = min(1024, full train size)
+validation_examples_per_task = min(256, full validation size)
+test_examples_per_task = min(256, full test size)
+steps = 100
+batch_size = 16
+eval_every = 25
+log_every = 10
+methods = dense, local, zigzag_certified, random_regular
+```
+
+每个 smoke run 必须写：
+
+```text
+summary.json
+results.csv
+results.jsonl
+metrics.jsonl
+command.sh
+raw_config_snapshot.json
+resolved_config_snapshot.json
+```
+
+通过条件：
+
+```text
+6 个 task 的所有 required methods 无 NaN；
+loss 能下降或至少保持有限值；
+validation/test metric 可计算；
+每个 task 的 input/target decode 检查通过；
+random_regular budget 对齐字段存在；
+失败 run 保留 error.log，不删除。
+```
+
+## 9. Phase 5: Full Train + Eval
+
+main 输出目录：
+
+```text
+outputs/probes_v08_main/<task>/<method>/
+```
+
+main 默认参数先采用单 seed：
+
+```text
+seed = 0
+methods = dense, local, zigzag_certified, random_regular
+batch_size = 64, OOM 时按规则降级
+eval_every = 500
+log_every = 100
+checkpoint_every = 1000
+```
+
+初始训练预算：
+
+| task | max_steps | validation eval | test eval |
+|---|---:|---:|---:|
+| copy | 5000 | full validation | full test |
+| selective_copy | 5000 | full validation | full test |
+| induction_associative_recall | 10000 | validation sample or full if affordable | full test |
+| niah_kv_retrieval | 5000 | full validation | full test |
+| ruler | 10000 | full validation | full test |
+| lra_listops | 10000 | validation sample or full if affordable | full test |
+
+如果 smoke 显示某 task 明显欠训，允许提高 max_steps，但必须对该 task 内所有 method 同步提高并记录原因。
+
+主结果必须输出：
+
+```text
+outputs/probes_v08_main/results_all.csv
+outputs/probes_v08_main/results_all.jsonl
+outputs/probes_v08_main/summary.json
+reports/v08_probe_main_eval_report.md
+```
+
+每行结果至少包含：
+
+```text
+run_id
+task
+subtask
+method
+seed
+status
+version_path
+train_examples
+validation_examples
+test_examples
+max_steps
+completed_steps
+batch_size
+gradient_accumulation_steps
+learning_rate
+lr_scheduler
+causal
+sequence_length_min
+sequence_length_mean
+sequence_length_max
+attention_k_min
+attention_k_mean
+attention_k_max
+attention_pair_count
+random_alignment_mode
+train_loss_final
+validation_loss_final
+test_loss
+primary_metric_name
+primary_metric_value
+secondary_metrics_json
+total_wall_time_sec
+train_wall_time_sec
+eval_wall_time_sec
+peak_allocated_gb
+peak_reserved_gb
+git_commit
+remote_host
+gpu_id
+error_log
+```
+
+## 10. Metrics
+
+默认 metric 口径：
+
+| task | primary metric | notes |
+|---|---|---|
+| copy | token_accuracy | also sequence_accuracy, eos_accuracy |
+| selective_copy | token_accuracy | also sequence_accuracy |
+| induction_associative_recall | exact_match or token_accuracy | choose by target schema after audit |
+| niah_kv_retrieval | exact_match | also token_accuracy if generated target has tokens |
+| ruler | exact_match | additionally subtask-level exact_match |
+| lra_listops | accuracy | 10-class classification |
+
+如果 audit 发现上表与数据 schema 不匹配，Phase 1 报告必须修正 metric，并以 Phase 1 结果为准。
+
+## 11. 报告与提交
+
+每个 phase 完成后至少写一份报告：
+
+```text
+reports/v08_phase1_probe_data_audit_report.md
+reports/v08_phase2_code_adaptation_report.md
+reports/v08_phase3_remote_readiness_report.md
+reports/v08_phase4_smoke_report.md
+reports/v08_probe_main_eval_report.md
+```
+
+提交建议：
+
+```text
+v08-doc-archive-v07
+v08-probe-data-audit
+v08-probe-code-adaptation
+v08-probe-smoke
+v08-probe-main-eval
+```
+
+提交前检查：
+
+```bash
+git status --short
+python -m py_compile scripts/*.py scripts/synthetic_mvp_core/*.py
+git ls-files -o --ignored --exclude-standard | rg '\\.(pt|pth|ckpt|safetensors)$' || true
+```
+
+当前版本不得把 checkpoint、tensor cache、大型原始缓存或 `.deps/` 提交到 git。若需要保留大型外部产物，在对应 archive README 或 phase report 中记录外部路径、文件数量、大小和原因。

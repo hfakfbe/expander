@@ -7,6 +7,11 @@ __pycache__/
 # Model checkpoints / tensor artifacts
 *.pt
 *.pth
+*.ckpt
+*.safetensors
+checkpoint*/
+checkpoints/
+cached_graphs/
 
 # Local editor / office lock files
 .~*
