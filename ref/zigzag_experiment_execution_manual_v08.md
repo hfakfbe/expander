@@ -65,17 +65,18 @@ deployment_status.yaml
 
 ## 2. 总体 Phase
 
-v0.8 分为 5 个 phase，必须按顺序推进：
+v0.8 分为 6 个 phase，必须按顺序推进：
 
 | Phase | 名称 | 目标 | 通过条件 |
 |---|---|---|---|
 | 1 | Probe Data Contract Audit | 读取 6 个数据版本，确认 schema、长度、词表/标签、metric、non-causal 标志和 checksum | `outputs/probes_v08_data_audit/summary.json` 完整，6 个 task 均 validated |
 | 2 | Code Adaptation | 修改训练/评测代码，支持 6 个 probe task 的 JSONL 输入、任务头、metric 和统一结果字段 | py_compile 通过，每个 task 可跑 tiny dry-run |
 | 3 | Data Upload and Remote Readiness | 把代码和 6 个 probe 数据上传到远端，保存远端路径、sha256、行数和环境快照 | 远端 readiness 检查通过，6 个 task 文件数/sha 与本地一致 |
-| 4 | Per-Task Smoke Test | 每个 task 跑 smoke train + eval | 6 个 task smoke 均无 NaN，能写 results/metrics/summary |
-| 5 | Full Train + Eval | 对 6 个 task 跑全量训练和测试评测 | 主结果表、每任务报告、失败审计和最终总报告完整 |
+| 4 | Task Parameter Selection | 按 task 决定长度、encoder、模型尺寸、图参数、batch、训练预算、评测预算和 checkpoint 策略 | `configs/probes_v08_task_parameters.json` 与参数选择报告完整 |
+| 5 | Per-Task Smoke Test | 读取 Phase 4 参数，对每个 task 跑 smoke train + eval | 6 个 task smoke 均无 NaN，能写 results/metrics/summary |
+| 6 | Full Train + Eval | 读取 Phase 4 冻结参数，对 6 个 task 跑全量训练和测试评测 | 主结果表、每任务报告、失败审计和最终总报告完整 |
 
-v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度，也不沿用 v07 的 causal attention contract。每个 probe 的序列长度、词表大小、目标格式和 metric 必须由数据卡、config 或数据扫描结果驱动，再写入 resolved config。
+v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度，也不沿用 v07 的 causal attention contract。每个 probe 的序列长度、词表大小、目标格式、metric、模型容量和训练预算必须由 Phase 1 audit、Phase 3 远端资源检查和 Phase 4 参数选择共同决定，再写入 resolved config。
 
 ## 3. 任务适配要求
 
@@ -126,7 +127,7 @@ classification:
 
 ## 4. 模型和 Method
 
-v08 的第一版目标是把 6 个 probe 跑完整、跑可复现、跑可比较。默认比较方法：
+v08 的第一版目标是把 6 个 probe 跑完整、跑可复现、跑可比较。候选方法池如下，具体每个 task 的 required/optional method 集合由 Phase 4 参数选择决定：
 
 ```text
 dense
@@ -168,24 +169,29 @@ zigzag_boolean
 5. 若临时只能先跑 dense/local 基线，主结果必须标记为 partial，不得冒充完整 v08。
 ```
 
-默认模型配置先从 v07 小模型继承，后续只在 smoke 通过后调整：
+模型、长度和训练配置不从 v07 继承默认值。Phase 4 必须按任务逐项选择并冻结：
 
 ```text
-layers = 8
-d_model = 128
-heads = 4
-ffn_dim = 256
-dropout = 0.1
-seed = 0
+input_length_policy
+target_length_policy
+token_or_value_encoder
+label_space
+loss_type
+model_family
+model_depth_width_heads
+graph_block_or_node_policy
+graph_degree_or_budget_policy
+effective_batch_policy
+optimizer_and_lr_policy
+train_budget_policy
+validation_eval_policy
+test_eval_policy
+checkpoint_policy
 ```
 
-OOM 降级顺序：
+任何参数变更都必须保持同一 task 内 method 间公平。若因为 OOM 或吞吐问题调整某 task 的 batch、长度、图预算或训练预算，必须对该 task 的所有 required methods 使用同一新参数，并在 Phase 4 参数清单和后续结果中记录原因。
 
-```text
-batch_size 64 -> 32 -> 16 -> 8
-gradient_accumulation_steps 增加以保持等效 batch
-sequence bucketing 或 max_length 截断只允许用于 smoke，不允许悄悄进入 main
-```
+手册不预先规定 `max_steps`、`batch_size`、`eval_every`、`checkpoint_every` 或具体长度截断值；这些都属于 Phase 4 的产物。上一个 v07 版本的经验只能作为背景参考，不能直接作为 v08 默认配置。
 
 ## 5. Phase 1: Probe Data Contract Audit
 
@@ -250,12 +256,12 @@ scripts/probe_metrics.py
 11. checkpoint/tensor 文件不进入 git。
 ```
 
-Phase 2 tiny dry-run：
+Phase 2 interface dry-run：
 
 ```text
-每个 task 取 train<=32、validation<=16、test<=16；
-每个 method 至少 dense 或 local 跑 2-5 step；
-确认 forward/backward/eval 和结果写出。
+使用最小化 fixture 或少量样本只验证代码路径；
+不在这里决定 task 长度、batch、模型尺寸或训练预算；
+确认 forward/backward/eval 和结果写出即可。
 ```
 
 通过条件：
@@ -264,7 +270,7 @@ Phase 2 tiny dry-run：
 python -m py_compile scripts/*.py scripts/synthetic_mvp_core/*.py
 ```
 
-并且 6 个 task tiny dry-run 均能完成或给出明确代码待修项。
+并且 6 个 task interface dry-run 均能完成或给出明确代码待修项。
 
 ## 7. Phase 3: Data Upload and Remote Readiness
 
@@ -313,7 +319,94 @@ train/validation/test 行数与本地 audit 一致；
 目标 GPU 空闲度符合环境文档。
 ```
 
-## 8. Phase 4: Per-Task Smoke Test
+## 8. Phase 4: Task Parameter Selection
+
+Phase 4 专门决定每个任务的完整实验参数。它必须发生在数据审计、代码适配和远端资源检查之后，不能在手册里提前用固定数值替代。
+
+输出文件：
+
+```text
+configs/probes_v08_task_parameters.json
+configs/probes_v08_smoke.json
+configs/probes_v08_main.json
+reports/v08_phase4_task_parameter_selection_report.md
+outputs/probes_v08_parameter_selection/summary.json
+outputs/probes_v08_parameter_selection/task_parameters.csv
+outputs/probes_v08_parameter_selection/task_parameters.jsonl
+```
+
+每个 task 必须独立确定并记录：
+
+```text
+task
+version_path
+attention_contract
+causal
+graph_directionality
+input_schema
+target_schema
+primary_metric
+secondary_metrics
+input_length_min_mean_max
+target_length_min_mean_max
+chosen_train_length_policy
+chosen_eval_length_policy
+encoder_or_tokenizer
+label_or_value_space
+loss_type
+model_family
+model_capacity
+graph_block_policy
+graph_degree_or_budget_policy
+required_methods
+optional_methods
+seed_policy
+train_split_policy
+validation_split_policy
+test_split_policy
+effective_batch_policy
+optimizer_policy
+lr_schedule_policy
+train_budget_policy
+validation_eval_policy
+test_eval_policy
+logging_policy
+checkpoint_policy
+oom_or_runtime_fallback_policy
+selection_reason
+```
+
+参数选择依据必须至少包括：
+
+```text
+Phase 1 的长度/schema/metric/data size audit；
+Phase 2 的代码能力和 dry-run 限制；
+Phase 3 的远端 GPU/内存/吞吐可用性；
+non-causal directed expander 的理论对齐要求；
+同一 task 内 method 间公平性；
+结果可复现性和总运行成本。
+```
+
+禁止事项：
+
+```text
+不在手册中硬编码 max_steps、batch_size、eval_every、checkpoint_every；
+不把 v07 的 copy/WikiText 经验直接当作 v08 默认参数；
+不在 smoke 或 main 阶段临时悄悄改变已冻结参数；
+不为某个 method 单独放宽长度、batch、训练预算或 eval budget。
+```
+
+通过条件：
+
+```text
+6 个 task 都有完整参数记录；
+smoke 和 main config 都由同一份 task parameter manifest 派生；
+每个参数选择都有来源或理由；
+主结果字段所需的参数均可从 manifest 追溯；
+attention_contract=non_causal、causal=false、graph_directionality=directed 已冻结。
+```
+
+## 9. Phase 5: Per-Task Smoke Test
 
 smoke 输出目录：
 
@@ -321,18 +414,14 @@ smoke 输出目录：
 outputs/probes_v08_smoke/<task>/<method>/
 ```
 
-smoke 默认参数：
+smoke 必须读取 Phase 4 产物：
 
 ```text
-train_examples_per_task = min(1024, full train size)
-validation_examples_per_task = min(256, full validation size)
-test_examples_per_task = min(256, full test size)
-steps = 100
-batch_size = 16
-eval_every = 25
-log_every = 10
-methods = dense, local, zigzag_certified, random_regular
+configs/probes_v08_task_parameters.json
+configs/probes_v08_smoke.json
 ```
+
+smoke 的样本数、步数、batch、eval/log 频率和 method 集合都由 Phase 4 决定。Smoke 只验证参数组合能否真实跑通，不重新选择参数。
 
 每个 smoke run 必须写：
 
@@ -358,7 +447,9 @@ summary/resolved config 明确写入 attention_contract=non_causal、causal=fals
 失败 run 保留 error.log，不删除。
 ```
 
-## 9. Phase 5: Full Train + Eval
+如果 smoke 暴露参数不可行，例如 OOM、训练入口 schema 错误或 metric 无法计算，必须回到 Phase 4 修改参数 manifest，记录变更原因，并重新生成 smoke/main config。不能只改命令行临时绕过。
+
+## 10. Phase 6: Full Train + Eval
 
 main 输出目录：
 
@@ -366,29 +457,14 @@ main 输出目录：
 outputs/probes_v08_main/<task>/<method>/
 ```
 
-main 默认参数先采用单 seed：
+main 必须读取 Phase 4 产物：
 
 ```text
-seed = 0
-methods = dense, local, zigzag_certified, random_regular
-batch_size = 64, OOM 时按规则降级
-eval_every = 500
-log_every = 100
-checkpoint_every = 1000
+configs/probes_v08_task_parameters.json
+configs/probes_v08_main.json
 ```
 
-初始训练预算：
-
-| task | max_steps | validation eval | test eval |
-|---|---:|---:|---:|
-| copy | 5000 | full validation | full test |
-| selective_copy | 5000 | full validation | full test |
-| induction_associative_recall | 10000 | validation sample or full if affordable | full test |
-| niah_kv_retrieval | 5000 | full validation | full test |
-| ruler | 10000 | full validation | full test |
-| lra_listops | 10000 | validation sample or full if affordable | full test |
-
-如果 smoke 显示某 task 明显欠训，允许提高 max_steps，但必须对该 task 内所有 method 同步提高并记录原因。
+main 的训练预算、validation/test 评测预算、checkpoint 策略和所有运行参数都由 Phase 4 冻结。若 smoke 之后需要改变任何主实验参数，必须更新 Phase 4 参数选择报告并重新提交对应 config。
 
 主结果必须输出：
 
@@ -412,10 +488,11 @@ version_path
 train_examples
 validation_examples
 test_examples
-max_steps
-completed_steps
-batch_size
-gradient_accumulation_steps
+train_budget_policy
+train_budget_value
+completed_train_units
+effective_batch_policy
+effective_batch_size
 learning_rate
 lr_scheduler
 attention_contract
@@ -448,9 +525,9 @@ error_log
 
 主结果中 `causal` 必须为 `false`，`attention_contract` 必须为 `non_causal`，`graph_directionality` 必须为 `directed`。若某行不满足这三项，只能进入 debug/failed/partial 表，不能进入 theory-aligned main comparison。
 
-## 10. Metrics
+## 11. Metrics
 
-默认 metric 口径：
+以下只是 metric 候选口径，不能跳过 Phase 1 audit 和 Phase 4 参数选择。最终每个 task 的 `primary_metric`、`secondary_metrics` 和 subtask aggregation 必须写入 `configs/probes_v08_task_parameters.json`：
 
 | task | primary metric | notes |
 |---|---|---|
@@ -461,9 +538,9 @@ error_log
 | ruler | exact_match | additionally subtask-level exact_match |
 | lra_listops | accuracy | 10-class classification |
 
-如果 audit 发现上表与数据 schema 不匹配，Phase 1 报告必须修正 metric，并以 Phase 1 结果为准。
+如果 audit 发现上表与数据 schema 不匹配，Phase 1 报告必须修正候选 metric；Phase 4 必须把最终 metric 选择和理由冻结到参数 manifest。
 
-## 11. 报告与提交
+## 12. 报告与提交
 
 每个 phase 完成后至少写一份报告：
 
@@ -471,7 +548,8 @@ error_log
 reports/v08_phase1_probe_data_audit_report.md
 reports/v08_phase2_code_adaptation_report.md
 reports/v08_phase3_remote_readiness_report.md
-reports/v08_phase4_smoke_report.md
+reports/v08_phase4_task_parameter_selection_report.md
+reports/v08_phase5_smoke_report.md
 reports/v08_probe_main_eval_report.md
 ```
 
@@ -481,6 +559,7 @@ reports/v08_probe_main_eval_report.md
 v08-doc-archive-v07
 v08-probe-data-audit
 v08-probe-code-adaptation
+v08-probe-task-parameters
 v08-probe-smoke
 v08-probe-main-eval
 ```
