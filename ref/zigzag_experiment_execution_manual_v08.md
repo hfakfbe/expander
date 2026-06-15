@@ -10,6 +10,16 @@ ref/archive_v07_reports/
 
 v0.8 的唯一目标是：根据 `../expander_bench/data/probes/DEPLOYMENT_SUMMARY.md` 中已经验证通过的 6 个 probe 数据集，完成当前 expander/zigzag 代码对任务格式的适配、数据上传、每任务 smoke test、全量训练和评测。
 
+重要前提：当前 expander 理论对齐只覆盖 `non-causal` 的有向图设定，probe 数据也是按 `causal=false` / `non-causal` contract 部署的。因此 v0.8 主实验默认且必须使用：
+
+```text
+attention_contract = non_causal
+causal = false
+graph_directionality = directed
+```
+
+本文档中若出现用户口头写法 `non-casual`，统一按 `non-causal` 理解。v0.8 不沿用 v0.7 的 causal LM mask 作为主实验设定；任何临时 causal debug run 都必须标记为 `debug_only`，不得进入主结果表或理论对齐结论。
+
 共享环境、GPU 选择、git 提交、checkpoint 忽略和远端同步规则统一见：
 
 ```text
@@ -18,7 +28,7 @@ ref/experiment_environment_and_version_control.md
 
 ## 1. v08 数据范围
 
-只允许读取 `status=validated` 且 `can_enter_main_eval=true` 的数据版本。以下目录来自 2026-06-15 的 probe 部署总结：
+只允许读取 `status=validated` 且 `can_enter_main_eval=true` 的数据版本。以下目录来自 2026-06-15 的 probe 部署总结。这 6 个数据版本的部署合同是 `non-causal`，主评测不得把它们改写成 causal next-token 任务：
 
 | task | selected version directory | train / validation / test |
 |---|---|---|
@@ -65,7 +75,7 @@ v0.8 分为 5 个 phase，必须按顺序推进：
 | 4 | Per-Task Smoke Test | 每个 task 跑 smoke train + eval | 6 个 task smoke 均无 NaN，能写 results/metrics/summary |
 | 5 | Full Train + Eval | 对 6 个 task 跑全量训练和测试评测 | 主结果表、每任务报告、失败审计和最终总报告完整 |
 
-v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度。每个 probe 的序列长度、词表大小、目标格式和 metric 必须由数据卡、config 或数据扫描结果驱动，再写入 resolved config。
+v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度，也不沿用 v07 的 causal attention contract。每个 probe 的序列长度、词表大小、目标格式和 metric 必须由数据卡、config 或数据扫描结果驱动，再写入 resolved config。
 
 ## 3. 任务适配要求
 
@@ -94,7 +104,7 @@ min/mean/max input length
 min/mean/max target length
 token/value vocabulary estimate
 metadata keys
-causal/non-causal contract
+non-causal contract and causal=false verification
 recommended metric
 sha256 verification status
 ```
@@ -125,6 +135,22 @@ zigzag_certified
 random_regular
 ```
 
+方法语义固定在 `non-causal directed graph` 上解释：
+
+```text
+dense:
+  non-causal dense attention reference。
+
+local:
+  non-causal block-local sparse baseline。
+
+zigzag_certified:
+  使用有向 expander / zigzag graph；这是当前唯一可写作 theory-aligned 的主方法。
+
+random_regular:
+  在同一 non-causal sparse budget 下的随机有向图 baseline。
+```
+
 可选扩展方法：
 
 ```text
@@ -137,8 +163,8 @@ zigzag_boolean
 ```text
 1. 同一 task 内所有 method 使用同一模型宽度、层数、训练步数、batch、seed 和数据 split；
 2. sparse method 的 attention budget 必须记录 min/mean/max K 和 pair count；
-3. random_regular 必须按 zigzag actual post-causal K 或同任务实际 sparse budget 对齐；
-4. 若某 task 是 non-causal contract，必须显式记录 causal=false 或 task-specific attention contract；
+3. random_regular 必须按 zigzag actual non-causal sparse K 或同任务实际 sparse budget 对齐；
+4. 所有主结果必须显式记录 attention_contract=non_causal、causal=false、graph_directionality=directed；
 5. 若临时只能先跑 dense/local 基线，主结果必须标记为 partial，不得冒充完整 v08。
 ```
 
@@ -194,6 +220,7 @@ command.sh
 checksums.sha256 校验通过，或记录可解释的非内容性差异；
 每个 task 的 input/target schema 已明确；
 每个 task 的 metric 已明确；
+每个 task 的 non-causal contract 已确认，且 resolved config 中 causal=false；
 失败任务 lra_pathfinder/lra_pathx 未被纳入 main plan。
 ```
 
@@ -218,7 +245,9 @@ scripts/probe_metrics.py
 6. 写 raw_config_snapshot.json 与 resolved_config_snapshot.json；
 7. 写 command.sh、metrics.jsonl、results.csv、results.jsonl、summary.json；
 8. 失败时写 error.log 和 status=failed summary；
-9. checkpoint/tensor 文件不进入 git。
+9. 默认 attention mask 为 non-causal；任何 causal mask 只能作为 debug-only 配置；
+10. directed graph artifact、mask diagnostics 和 budget 字段必须能证明使用的是有向 non-causal 设定；
+11. checkpoint/tensor 文件不进入 git。
 ```
 
 Phase 2 tiny dry-run：
@@ -324,7 +353,8 @@ resolved_config_snapshot.json
 loss 能下降或至少保持有限值；
 validation/test metric 可计算；
 每个 task 的 input/target decode 检查通过；
-random_regular budget 对齐字段存在；
+random_regular non-causal budget 对齐字段存在；
+summary/resolved config 明确写入 attention_contract=non_causal、causal=false；
 失败 run 保留 error.log，不删除。
 ```
 
@@ -388,7 +418,9 @@ batch_size
 gradient_accumulation_steps
 learning_rate
 lr_scheduler
+attention_contract
 causal
+graph_directionality
 sequence_length_min
 sequence_length_mean
 sequence_length_max
@@ -413,6 +445,8 @@ remote_host
 gpu_id
 error_log
 ```
+
+主结果中 `causal` 必须为 `false`，`attention_contract` 必须为 `non_causal`，`graph_directionality` 必须为 `directed`。若某行不满足这三项，只能进入 debug/failed/partial 表，不能进入 theory-aligned main comparison。
 
 ## 10. Metrics
 
