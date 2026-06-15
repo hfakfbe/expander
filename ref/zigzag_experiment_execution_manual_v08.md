@@ -169,6 +169,16 @@ zigzag_boolean
 5. 若临时只能先跑 dense/local 基线，主结果必须标记为 partial，不得冒充完整 v08。
 ```
 
+参数选择优化准则：
+
+```text
+1. Phase 4 的目标不是寻找最低成本能跑通配置，而是在 non-causal directed contract、公平性、远端资源和可复现成本约束下，让主方法 zigzag_certified 的验证/测试效果尽可能好；
+2. 长度覆盖、模型容量、sparse budget、训练预算和 eval budget 应优先服务主方法效果，只有在有明确 OOM、吞吐或总成本证据时才下调；
+3. 若资源不足，优先缩减 optional methods、额外 seeds 或非关键诊断频率，再考虑降低会影响主方法效果的长度、容量或训练预算；
+4. 对 required methods 的参数仍必须公平同步；如果为了主方法效果采用更强配置，dense/local/random_regular 也必须使用同一 task 级配置，除非该结果明确标记为 partial/diagnostic；
+5. 每个 task 的 selection_reason 必须说明为什么该配置有利于主方法效果，而不只是说明它能跑通。
+```
+
 模型、长度和训练配置不从 v07 继承默认值。Phase 4 必须按任务逐项选择并冻结：
 
 ```text
@@ -383,6 +393,7 @@ Phase 1 的长度/schema/metric/data size audit；
 Phase 2 的代码能力和 dry-run 限制；
 Phase 3 的远端 GPU/内存/吞吐可用性；
 non-causal directed expander 的理论对齐要求；
+主方法 zigzag_certified 的效果最大化目标；
 同一 task 内 method 间公平性；
 结果可复现性和总运行成本。
 ```
@@ -392,6 +403,7 @@ non-causal directed expander 的理论对齐要求；
 ```text
 不在手册中硬编码 max_steps、batch_size、eval_every、checkpoint_every；
 不把 v07 的 copy/WikiText 经验直接当作 v08 默认参数；
+不把“smoke 能跑通”当作 main 参数选择充分理由；
 不在 smoke 或 main 阶段临时悄悄改变已冻结参数；
 不为某个 method 单独放宽长度、batch、训练预算或 eval budget。
 ```
@@ -401,7 +413,7 @@ non-causal directed expander 的理论对齐要求；
 ```text
 6 个 task 都有完整参数记录；
 smoke 和 main config 都由同一份 task parameter manifest 派生；
-每个参数选择都有来源或理由；
+每个参数选择都有来源、理由和对主方法效果的预期影响；
 主结果字段所需的参数均可从 manifest 追溯；
 attention_contract=non_causal、causal=false、graph_directionality=directed 已冻结。
 ```
