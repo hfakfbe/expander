@@ -356,6 +356,7 @@ configs/probes_v08_smoke.json
 configs/probes_v08_main.json
 configs/probes_v08_result_field_contract.json
 reports/v08_phase4_task_parameter_selection_report.md
+reports/v08_parameter_glossary.md
 outputs/probes_v08_parameter_selection/summary.json
 outputs/probes_v08_parameter_selection/task_parameters.csv
 outputs/probes_v08_parameter_selection/task_parameters.jsonl
@@ -526,6 +527,7 @@ result field contract 已生成，且覆盖本文档第 11 节的全部字段；
 每个参数选择都有来源、理由和对主方法效果的预期影响；
 主结果字段所需的参数均可从 manifest 追溯；
 logging policy 已证明每个 run 的 planned logged train steps 满足 1% gate；
+参数说明已写入 `reports/v08_phase4_task_parameter_selection_report.md` 和 `reports/v08_parameter_glossary.md`；
 attention_contract=non_causal、causal=false、graph_directionality=directed 已冻结。
 ```
 
@@ -1101,6 +1103,40 @@ reports/v08_phase3_remote_readiness_report.md
 reports/v08_phase4_task_parameter_selection_report.md
 reports/v08_phase5_smoke_report.md
 reports/v08_probe_main_eval_report.md
+```
+
+报告语言和参数解释 gate：
+
+```text
+1. 所有 v08 报告必须使用中文撰写；英文参数名、method 名、metric 名可以保留原文，但解释必须是中文；
+2. 每份报告必须包含“参数说明”或“字段说明”小节；
+3. 报告中正文、表格、图注、命令摘要、结果摘要里出现的每个参数、字段、缩写、metric 和 resolved value，都必须在本报告的说明小节中简要解释；
+4. 参数说明至少包含：参数名、中文含义、单位或取值范围、来源、为什么要记录；
+5. 如果参数来自第 11 节字段契约，可以复用 `reports/v08_parameter_glossary.md` 的解释，但当前报告仍必须列出自己实际使用到的参数子集；
+6. 不允许只贴英文表头、JSON 字段或 CSV 字段而不解释含义；
+7. 不适用字段仍要解释为什么不适用，不能只写 not_applicable；
+8. 每份报告末尾必须有报告审计小节，列出 report_language=zh、explained_parameter_count、unexplained_parameters、english_only_sections。
+```
+
+每份报告的参数说明表建议使用以下列：
+
+```text
+参数名
+中文含义
+单位或取值
+来源
+记录原因
+不适用时的处理
+```
+
+通过条件：
+
+```text
+report_language = zh；
+unexplained_parameters = []；
+english_only_sections = []；
+报告中出现的所有表格列名都能在参数说明表中找到；
+关键参数如 attention_contract、causal、graph_directionality、train_budget_policy、log_every、actual_logged_train_step_count、primary_metric_value 均有中文解释。
 ```
 
 提交建议：
