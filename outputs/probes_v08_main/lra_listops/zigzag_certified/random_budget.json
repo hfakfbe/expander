@@ -1,0 +1,21 @@
+{
+  "actual_k_max_after_causal": "not_applicable",
+  "actual_k_max_noncausal": 127,
+  "actual_k_mean_after_causal": "not_applicable",
+  "actual_k_mean_noncausal": 120.57811737060547,
+  "actual_k_min_after_causal": "not_applicable",
+  "actual_k_min_noncausal": 106,
+  "attention_contract": "non_causal",
+  "attention_pair_count_after_causal": "not_applicable",
+  "attention_pair_count_noncausal": 725398,
+  "causal": false,
+  "duplicate_rate": 0.057983458042144775,
+  "method": "random_regular",
+  "random_alignment_mode": "per_query_noncausal_unique_k",
+  "random_k_aligned_to_zigzag": true,
+  "random_k_alignment_error_max": 0,
+  "random_k_alignment_error_mean": 0.0,
+  "random_target_k_source": "zigzag_actual_noncausal_per_query_unique_k",
+  "raw_k": 128,
+  "self_loop_rate": 0.9999999403953552
+}

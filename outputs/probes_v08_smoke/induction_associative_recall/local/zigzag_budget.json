@@ -1,0 +1,16 @@
+{
+  "actual_k_max_after_causal": "not_applicable",
+  "actual_k_max_noncausal": 127,
+  "actual_k_mean_after_causal": "not_applicable",
+  "actual_k_mean_noncausal": 119.78125,
+  "actual_k_min_after_causal": "not_applicable",
+  "actual_k_min_noncausal": 105,
+  "attention_contract": "non_causal",
+  "attention_pair_count_after_causal": "not_applicable",
+  "attention_pair_count_noncausal": 122656,
+  "causal": false,
+  "duplicate_rate": 0.064208984375,
+  "method": "zigzag_certified",
+  "raw_k": 128,
+  "self_loop_rate": 1.0
+}

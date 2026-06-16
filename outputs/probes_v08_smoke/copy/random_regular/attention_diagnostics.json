@@ -1,0 +1,24 @@
+{
+  "attention_backend": "split",
+  "attention_contract": "non_causal",
+  "causal": false,
+  "graph_directionality": "directed",
+  "method": "random_regular",
+  "metrics": {
+    "attention_pair_count": 740832,
+    "duplicate_rate": 0.0579833984375,
+    "duplicate_rate_estimate": 0.0579833984375,
+    "effective_k_max": 127,
+    "effective_k_mean": 120.578125,
+    "effective_k_min": 106,
+    "multiplicity_max": 1,
+    "multiplicity_mean_nonzero": 1.0,
+    "pre_causal_pair_count": 740832,
+    "pre_causal_unique_k_mean": 120.578125,
+    "raw_k": 128,
+    "self_loop_rate": 1.0,
+    "unique_k_max": 127,
+    "unique_k_mean": 120.578125,
+    "unique_k_min": 106
+  }
+}
