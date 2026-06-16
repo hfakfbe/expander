@@ -1,0 +1,11 @@
+{
+  "completed_runs": 18,
+  "expected_runs": 18,
+  "phase": "phase6_main",
+  "profile": "main",
+  "result_field_audits_passed": 18,
+  "result_field_audits_total": 18,
+  "status": "ok",
+  "timestamp_utc": "2026-06-16T08:10:44.803355+00:00",
+  "version": "v08"
+}

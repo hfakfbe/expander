@@ -1,0 +1,1 @@
+/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_probe_experiment.py --config configs/probes_v08_main.json --task selective_copy --device cuda
