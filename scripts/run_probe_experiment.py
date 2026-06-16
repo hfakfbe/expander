@@ -985,6 +985,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int)
     parser.add_argument("--device", choices=["auto", "cpu", "cuda"], default="auto")
     parser.add_argument("--aggregate-only", action="store_true")
+    parser.add_argument("--no-aggregate", action="store_true")
     args = parser.parse_args()
     config = load_config(args.config)
     manifest = load_manifest(config)
@@ -999,7 +1000,8 @@ def main() -> None:
         for method in methods:
             for seed in seeds:
                 run_one(config, manifest, task, method, int(seed), device)
-    aggregate(config)
+    if not args.no_aggregate:
+        aggregate(config)
 
 
 if __name__ == "__main__":
