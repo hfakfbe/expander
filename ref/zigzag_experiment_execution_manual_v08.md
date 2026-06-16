@@ -78,6 +78,18 @@ v0.8 分为 6 个 phase，必须按顺序推进：
 
 v08 不要求沿用 v07 的 `N=1024,B=32,q=32,d=8` 固定任务长度，也不沿用 v07 的 causal attention contract。每个 probe 的序列长度、词表大小、目标格式、metric、模型容量和训练预算必须由 Phase 1 audit、Phase 3 远端资源检查和 Phase 4 参数选择共同决定，再写入 resolved config。
 
+但是 v08 必须继承 v07 的字段严谨度。v07 已经强制记录过的运行参数、图证书、budget、timing、环境、sha256、失败原因和产物路径，v08 不得因为“参数由 Phase 4 决定”而省略。数值可以不在本文档中预先规定，但字段必须存在，且必须填入 Phase 4 和运行时解析得到的 resolved value。
+
+字段继承规则：
+
+```text
+1. v07 字段若在 v08 仍有同义含义，必须保留原字段名或给出明确 v08 replacement field；
+2. v07 字段若因任务变化确实不适用，结果中必须写 not_applicable，并提供 not_applicable_reason，不得留空；
+3. Phase 4 manifest、resolved_config_snapshot.json、summary.json、results.csv 和 results.jsonl 必须能相互追溯；
+4. 每个 main result row 必须能单独重建该 run 的数据版本、参数选择、模型配置、图 artifact、budget 对齐、训练预算、评测预算、环境和代码版本；
+5. 缺字段、空字段或只写 policy 不写 resolved value，均视为该 run 的 reporting failure。
+```
+
 ## 3. 任务适配要求
 
 所有 task 都从标准化 JSONL 读取样本。每行包含：
@@ -263,7 +275,10 @@ scripts/probe_metrics.py
 8. 失败时写 error.log 和 status=failed summary；
 9. 默认 attention mask 为 non-causal；任何 causal mask 只能作为 debug-only 配置；
 10. directed graph artifact、mask diagnostics 和 budget 字段必须能证明使用的是有向 non-causal 设定；
-11. checkpoint/tensor 文件不进入 git。
+11. 写 training_curves.png，且曲线只能从 metrics.jsonl 生成；
+12. 写 zigzag_budget.json、random_budget.json、attention_diagnostics.json 或等价 task/method 诊断文件；
+13. 写 result_field_audit.json，检查 v08 必需字段是否存在、是否为空、是否可追溯到 Phase 4；
+14. checkpoint/tensor 文件不进入 git，但 checkpoint_manifest.json 必须记录外部 checkpoint 路径、sha256、step 和保留策略。
 ```
 
 Phase 2 interface dry-run：
@@ -339,6 +354,7 @@ Phase 4 专门决定每个任务的完整实验参数。它必须发生在数据
 configs/probes_v08_task_parameters.json
 configs/probes_v08_smoke.json
 configs/probes_v08_main.json
+configs/probes_v08_result_field_contract.json
 reports/v08_phase4_task_parameter_selection_report.md
 outputs/probes_v08_parameter_selection/summary.json
 outputs/probes_v08_parameter_selection/task_parameters.csv
@@ -386,6 +402,83 @@ oom_or_runtime_fallback_policy
 selection_reason
 ```
 
+Phase 4 不得只写 policy 名称，还必须写 resolved values。每个 task 的参数记录至少包含以下 resolved 字段；字段值由 Phase 4 决定，不由本文档预设：
+
+```text
+resolved_input_length_policy
+resolved_target_length_policy
+resolved_sequence_length_min
+resolved_sequence_length_mean
+resolved_sequence_length_p95
+resolved_sequence_length_max
+resolved_train_examples
+resolved_validation_examples
+resolved_test_examples
+resolved_train_split_sha256
+resolved_validation_split_sha256
+resolved_test_split_sha256
+resolved_encoder_type
+resolved_tokenizer_or_encoder_path
+resolved_tokenizer_or_encoder_sha256
+resolved_vocab_or_value_space_size
+resolved_label_space
+resolved_loss_type
+resolved_model_family
+resolved_layers
+resolved_d_model
+resolved_heads
+resolved_ffn_dim
+resolved_dropout
+resolved_parameter_count
+resolved_attention_backend
+resolved_graph_id
+resolved_graph_seed
+resolved_graph_generation_algorithm
+resolved_graph_block_size
+resolved_graph_num_blocks_or_nodes
+resolved_graph_degree_or_budget
+resolved_B_alias_if_applicable
+resolved_q_alias_if_applicable
+resolved_d_alias_if_applicable
+resolved_required_methods
+resolved_optional_methods
+resolved_seeds
+resolved_optimizer
+resolved_learning_rate
+resolved_base_learning_rate
+resolved_lr_scheduler
+resolved_warmup_ratio
+resolved_warmup_steps
+resolved_min_lr_ratio
+resolved_min_learning_rate
+resolved_weight_decay
+resolved_grad_clip_norm
+resolved_batch_size
+resolved_gradient_accumulation_steps
+resolved_effective_batch_size
+resolved_eval_batch_size
+resolved_train_budget_unit
+resolved_train_budget_value
+resolved_steps_planned_if_step_budget
+resolved_epochs_planned_if_epoch_budget
+resolved_log_every
+resolved_eval_every
+resolved_checkpoint_every
+resolved_checkpoint_policy
+resolved_validation_eval_budget
+resolved_test_eval_budget
+resolved_oom_fallback_sequence
+```
+
+如果某个 v07 兼容字段无法直接映射，例如 `N_total/B/q/d`，必须写入 replacement 字段和原因：
+
+```text
+v07_field_name
+v08_replacement_field
+replacement_reason
+resolved_value
+```
+
 参数选择依据必须至少包括：
 
 ```text
@@ -413,6 +506,7 @@ non-causal directed expander 的理论对齐要求；
 ```text
 6 个 task 都有完整参数记录；
 smoke 和 main config 都由同一份 task parameter manifest 派生；
+result field contract 已生成，且覆盖本文档第 11 节的全部字段；
 每个参数选择都有来源、理由和对主方法效果的预期影响；
 主结果字段所需的参数均可从 manifest 追溯；
 attention_contract=non_causal、causal=false、graph_directionality=directed 已冻结。
@@ -442,9 +536,21 @@ summary.json
 results.csv
 results.jsonl
 metrics.jsonl
+training_curves.png
 command.sh
 raw_config_snapshot.json
 resolved_config_snapshot.json
+phase4_task_parameter_record.json
+result_field_audit.json
+checkpoint_manifest.json
+artifacts/graph/selected_graph.json
+artifacts/graph/graph_certificate.json
+artifacts/graph/graph_generation.json
+artifacts/graph/graph_artifact.sha256
+zigzag_budget.json
+random_budget.json
+attention_diagnostics.json
+error.log if failed
 ```
 
 通过条件：
@@ -456,6 +562,7 @@ validation/test metric 可计算；
 每个 task 的 input/target decode 检查通过；
 random_regular non-causal budget 对齐字段存在；
 summary/resolved config 明确写入 attention_contract=non_causal、causal=false；
+result_field_audit.json 显示缺字段数量为 0；
 失败 run 保留 error.log，不删除。
 ```
 
@@ -484,10 +591,370 @@ main 的训练预算、validation/test 评测预算、checkpoint 策略和所有
 outputs/probes_v08_main/results_all.csv
 outputs/probes_v08_main/results_all.jsonl
 outputs/probes_v08_main/summary.json
+outputs/probes_v08_main/result_field_audit.json
 reports/v08_probe_main_eval_report.md
 ```
 
-每行结果至少包含：
+每个 main run 目录必须包含：
+
+```text
+summary.json
+results.csv
+results.jsonl
+metrics.jsonl
+training_curves.png
+command.sh
+raw_config_snapshot.json
+resolved_config_snapshot.json
+phase4_task_parameter_record.json
+result_field_audit.json
+checkpoint_manifest.json
+artifacts/graph/selected_graph.json
+artifacts/graph/graph_certificate.json
+artifacts/graph/graph_generation.json
+artifacts/graph/graph_artifact.sha256
+zigzag_budget.json
+random_budget.json
+attention_diagnostics.json
+error.log if failed
+```
+
+每行结果至少包含第 11 节的完整字段集合，不得只写简化表。
+
+主结果中 `causal` 必须为 `false`，`attention_contract` 必须为 `non_causal`，`graph_directionality` 必须为 `directed`。若某行不满足这三项，只能进入 debug/failed/partial 表，不能进入 theory-aligned main comparison。
+
+## 11. 输出字段和反偷懒审计
+
+v08 的输出字段继承 v07 的强约束，并扩展到 6 个 probe task。以下字段是 `summary.json`、`results.csv`、`results.jsonl` 和合并后的 `results_all.*` 的最低字段集合。字段值必须来自 Phase 1 audit、Phase 4 manifest、resolved config、运行时测量或 artifact sha256，不能由报告阶段手填猜测。
+
+### 11.1 通用 provenance 字段
+
+```text
+version
+experiment_version
+phase
+task
+subtask
+variant
+run_id
+status
+failure_reason
+timestamp_utc
+host
+remote_host
+local_or_remote
+command
+command_sha256
+log_path
+error_log
+CUDA_VISIBLE_DEVICES
+gpu_id
+gpu_name
+python_version
+torch_version
+cuda_version
+git_commit
+git_dirty
+config_sha256
+phase4_manifest_path
+phase4_manifest_sha256
+phase4_task_parameter_record_path
+phase4_task_parameter_record_sha256
+artifact_dir
+external_artifact_manifest_path
+```
+
+### 11.2 数据和任务字段
+
+```text
+version_path
+dataset
+dataset_source
+dataset_revision_or_hash
+dataset_cache_or_local_path
+dataset_card_path
+dataset_card_sha256
+deployment_status_path
+deployment_status_sha256
+source_lock_path
+source_lock_sha256
+checksums_path
+checksums_sha256
+train_path
+train_sha256
+validation_path
+validation_sha256
+test_path
+test_sha256
+train_examples
+validation_examples
+test_examples
+train_examples_used
+validation_examples_used
+test_examples_used
+train_split_policy
+validation_split_policy
+test_split_policy
+input_schema
+target_schema
+metadata_keys
+encoder_or_tokenizer
+data_readiness_path
+data_readiness_sha256
+tokenization_summary_path
+tokenization_summary_sha256
+wikitext_data_phase_dir
+tokenized_train_path
+tokenized_train_sha256
+tokenized_test_path
+tokenized_test_sha256
+tokenizer_or_encoder_path
+tokenizer_or_encoder_sha256
+tokenizer
+tokenizer_algorithm
+tokenizer_train_split
+tokenizer_path
+tokenizer_sha256
+tokenizer_min_frequency
+tokenizer_special_tokens
+pad_token
+eos_token
+unk_token
+vocab_size
+train_nonempty_rows
+test_nonempty_rows
+train_token_count
+train_block_count
+test_token_count
+test_block_count
+label_or_value_space
+loss_type
+primary_metric_name
+secondary_metric_names
+sequence_length_min
+sequence_length_mean
+sequence_length_p95
+sequence_length_max
+target_length_min
+target_length_mean
+target_length_p95
+target_length_max
+```
+
+### 11.3 模型、训练和评测字段
+
+```text
+method
+method_role
+required_or_optional_method
+seed
+model_family
+layers
+d_model
+heads
+ffn_dim
+dropout
+parameter_count
+optimizer
+steps
+steps_planned
+steps_completed
+train_epochs
+train_epochs_planned
+train_epochs_completed
+train_steps
+train_budget_policy
+train_budget_unit
+train_budget_value
+completed_train_units
+train_examples_seen
+train_tokens_seen
+batch_size
+gradient_accumulation_steps
+effective_batch_size
+eval_batch_size
+validation_eval_budget
+test_eval_budget
+eval_batches
+learning_rate
+base_learning_rate
+lr_scheduler
+warmup_ratio
+warmup_steps
+min_lr_ratio
+min_learning_rate
+cosine_total_steps
+weight_decay
+grad_clip_norm
+log_every
+eval_every
+checkpoint_every
+checkpoint_policy
+checkpoint_manifest_path
+```
+
+### 11.4 Attention、graph 和 budget 字段
+
+```text
+attention_contract
+causal
+graph_directionality
+attention_backend
+graph_id
+graph_seed
+graph_generation_algorithm
+canonical_graph_dir
+canonical_graph_artifact_path
+canonical_graph_artifact_sha256
+canonical_graph_seed
+canonical_graph_generation_algorithm
+graph_generation_status
+graph_generation_attempts
+graph_artifact_path
+graph_generation_path
+graph_certificate_path
+selected_graph_sha256
+graph_artifact_sha256
+graph_artifact_sha256_matches_canonical
+graph_certificate_sha256
+graph_block_policy
+graph_degree_or_budget_policy
+graph_block_size
+graph_num_blocks_or_nodes
+graph_degree
+N_total
+B
+q
+d
+N_total_v07_alias
+B_v07_alias
+q_v07_alias
+d_v07_alias
+v07_alias_replacement_reason
+G_type
+H_type
+allow_multiedges
+multiplicity_mode
+lambda_G
+mu_H
+rho_zigzag_bound
+rho_zigzag_certified
+rho_zigzag_exact
+rot_g_is_bijection
+P_G_row_stochastic_error
+P_G_col_stochastic_error
+P_H_row_stochastic_error
+P_H_col_stochastic_error
+graph_certified
+implementation_certified
+theory_aligned_method
+duplicate_rate
+self_loop_rate
+remote_local_overlap_mean
+collision_count_mean
+zigzag_actual_k_min_after_causal
+zigzag_actual_k_mean_after_causal
+zigzag_actual_k_max_after_causal
+zigzag_attention_pair_count_after_causal
+zigzag_actual_k_min_noncausal
+zigzag_actual_k_mean_noncausal
+zigzag_actual_k_max_noncausal
+zigzag_attention_pair_count_noncausal
+random_target_k_source
+random_actual_k_min_after_causal
+random_actual_k_mean_after_causal
+random_actual_k_max_after_causal
+random_attention_pair_count_after_causal
+random_actual_k_min_noncausal
+random_actual_k_mean_noncausal
+random_actual_k_max_noncausal
+random_attention_pair_count_noncausal
+random_k_alignment_error_mean
+random_k_alignment_error_max
+random_alignment_mode
+random_k_aligned_to_zigzag
+attention_pair_count_after_causal
+attention_k_min
+attention_k_mean
+attention_k_max
+attention_pair_count
+attention_diagnostics_path
+zigzag_budget_path
+random_budget_path
+```
+
+字段名必须使用 `noncausal` 或 `non_causal`，并在 result field audit 中检查无 `noncaual/non-casual` 拼写残留。上表语义对应的实际字段名必须在 `configs/probes_v08_result_field_contract.json` 中固定。
+
+### 11.5 指标、时间和资源字段
+
+```text
+train_loss_final
+validation_loss_final
+test_loss
+primary_metric_value
+secondary_metrics_json
+task_metrics_json
+final_train_loss
+test_perplexity
+validation_perplexity_if_applicable
+test_perplexity_if_applicable
+train_tokens_per_sec
+validation_tokens_per_sec
+test_tokens_per_sec
+train_examples_per_sec
+validation_examples_per_sec
+test_examples_per_sec
+total_wall_time_sec
+train_wall_time_sec
+eval_wall_time_sec
+data_prep_wall_time_sec
+seconds_since_prev_log_mean
+seconds_since_prev_log_max
+peak_allocated_gb
+peak_reserved_gb
+oom_fallback_applied
+oom_fallback_reason
+training_curves_path
+metrics_path
+summary_path
+raw_config_snapshot_path
+resolved_config_snapshot_path
+result_field_audit_path
+```
+
+### 11.6 Task-specific 字段
+
+```text
+copy_token_accuracy
+copy_sequence_accuracy
+copy_eos_accuracy
+copy_source_length
+eval_token_accuracy
+eval_sequence_accuracy
+eval_eos_accuracy
+target_in_1hop_rate
+target_in_2hop_rate
+target_in_Lhop_rate
+average_shortest_path
+unreachable_rate
+selective_copy_token_accuracy
+selective_copy_sequence_accuracy
+retrieval_exact_match
+retrieval_token_accuracy
+retrieval_answer_format
+ruler_subtask
+ruler_subtask_exact_match
+ruler_subtask_token_accuracy
+listops_accuracy
+listops_macro_accuracy
+listops_class_count
+```
+
+不相关任务的 task-specific 字段和 v07 compatibility 字段仍必须存在，值写 `not_applicable`，并由 `task_metrics_json` 或 `v07_alias_replacement_reason` 写明原因。不得因为任务不同而生成互不兼容的结果表。
+
+### 11.7 metrics.jsonl 字段
+
+`metrics.jsonl` 每行至少包含：
 
 ```text
 run_id
@@ -495,49 +962,75 @@ task
 subtask
 method
 seed
-status
-version_path
-train_examples
-validation_examples
-test_examples
-train_budget_policy
-train_budget_value
-completed_train_units
-effective_batch_policy
-effective_batch_size
-learning_rate
-lr_scheduler
-attention_contract
-causal
-graph_directionality
-sequence_length_min
-sequence_length_mean
-sequence_length_max
-attention_k_min
-attention_k_mean
-attention_k_max
-attention_pair_count
-random_alignment_mode
-train_loss_final
-validation_loss_final
-test_loss
+timestamp_utc
+step
+epoch
+elapsed_sec_total
+seconds_since_prev_log
+split
+phase
+train_loss
+running_train_loss
+eval_loss
+running_eval_loss
 primary_metric_name
 primary_metric_value
 secondary_metrics_json
-total_wall_time_sec
-train_wall_time_sec
-eval_wall_time_sec
+learning_rate
+lr_scheduler
+grad_norm
+tokens_per_sec
+examples_per_sec
 peak_allocated_gb
 peak_reserved_gb
-git_commit
-remote_host
-gpu_id
-error_log
+nonfinite_loss_detected
+nan_detected
 ```
 
-主结果中 `causal` 必须为 `false`，`attention_contract` 必须为 `non_causal`，`graph_directionality` 必须为 `directed`。若某行不满足这三项，只能进入 debug/failed/partial 表，不能进入 theory-aligned main comparison。
+`training_curves.png` 必须从 `metrics.jsonl` 生成，至少包含：
 
-## 11. Metrics
+```text
+train loss vs step
+validation/test loss vs step or final marker
+primary metric vs step
+learning rate vs step
+seconds_since_prev_log vs step
+tokens/sec or examples/sec vs step
+peak memory vs step
+```
+
+### 11.8 字段审计 gate
+
+每个 smoke/main run 结束后必须生成 `result_field_audit.json`：
+
+```text
+expected_field_count
+present_field_count
+missing_fields
+empty_fields
+not_applicable_fields
+not_applicable_reasons
+phase4_trace_missing_fields
+resolved_config_trace_missing_fields
+forbidden_spelling_hits
+manual_only_policy_fields_without_resolved_value
+status
+```
+
+通过条件：
+
+```text
+missing_fields = []
+phase4_trace_missing_fields = []
+resolved_config_trace_missing_fields = []
+manual_only_policy_fields_without_resolved_value = []
+forbidden_spelling_hits = []
+status = passed
+```
+
+任何字段审计未通过的 run 可以保留为 failed/diagnostic，但不得进入 main comparison。
+
+## 12. Metrics
 
 以下只是 metric 候选口径，不能跳过 Phase 1 audit 和 Phase 4 参数选择。最终每个 task 的 `primary_metric`、`secondary_metrics` 和 subtask aggregation 必须写入 `configs/probes_v08_task_parameters.json`：
 
@@ -552,7 +1045,7 @@ error_log
 
 如果 audit 发现上表与数据 schema 不匹配，Phase 1 报告必须修正候选 metric；Phase 4 必须把最终 metric 选择和理由冻结到参数 manifest。
 
-## 12. 报告与提交
+## 13. 报告与提交
 
 每个 phase 完成后至少写一份报告：
 
