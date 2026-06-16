@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 935, in <module>
+    main()
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 930, in main
+    run_one(config, manifest, task, method, int(seed), device)
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 700, in run_one
+    split_stores = stores(task_record)
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 96, in stores
+    "train": JsonlStore(version_path / "train.jsonl"),
+  File "/home/huiwei/ysx/zigzag_attention/scripts/probe_tasks.py", line 143, in __init__
+    with path.open("rb") as fp:
+  File "/home/huiwei/miniconda3/envs/ysx_base/lib/python3.10/pathlib.py", line 1117, in open
+    return self._accessor.open(self, mode, buffering, encoding, errors,
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/sxye/Documents/expander_bench/data/probes/copy/s4_copying_length_extrapolation/copy_s4_l0_m1024_a64_full_v2/train.jsonl'
