@@ -462,12 +462,27 @@ resolved_train_budget_value
 resolved_steps_planned_if_step_budget
 resolved_epochs_planned_if_epoch_budget
 resolved_log_every
+resolved_log_step_policy
+resolved_min_logged_train_step_count
+resolved_planned_logged_train_step_count
+resolved_log_coverage_ratio_min
 resolved_eval_every
 resolved_checkpoint_every
 resolved_checkpoint_policy
 resolved_validation_eval_budget
 resolved_test_eval_budget
 resolved_oom_fallback_sequence
+```
+
+logging policy 硬约束：
+
+```text
+1. Phase 4 必须把每个 task/method/seed 的 planned_train_step_count 解析成明确整数；若训练预算按 epoch、example 或 token 表达，也必须先换算出用于 logging gate 的 planned train steps；
+2. 若 planned_train_step_count < 100，metrics.jsonl 必须记录每一个训练 step；
+3. 若 planned_train_step_count >= 100，实际记录的训练 step 数不得少于 ceil(planned_train_step_count * 0.01)；
+4. final train step 必须记录，即使它不落在 log_every 间隔上；
+5. 若使用 log_every 作为间隔，resolved_log_every 必须保证 planned_logged_train_step_count 满足上面的下限；
+6. logging gate 对 smoke 和 main 都生效，不能因为 smoke 短、main 长或训练很稳而放宽。
 ```
 
 如果某个 v07 兼容字段无法直接映射，例如 `N_total/B/q/d`，必须写入 replacement 字段和原因：
@@ -497,6 +512,7 @@ non-causal directed expander 的理论对齐要求；
 不在手册中硬编码 max_steps、batch_size、eval_every、checkpoint_every；
 不把 v07 的 copy/WikiText 经验直接当作 v08 默认参数；
 不把“smoke 能跑通”当作 main 参数选择充分理由；
+不把 log_every 设到导致记录 step 数少于总 train step 1%；
 不在 smoke 或 main 阶段临时悄悄改变已冻结参数；
 不为某个 method 单独放宽长度、batch、训练预算或 eval budget。
 ```
@@ -509,6 +525,7 @@ smoke 和 main config 都由同一份 task parameter manifest 派生；
 result field contract 已生成，且覆盖本文档第 11 节的全部字段；
 每个参数选择都有来源、理由和对主方法效果的预期影响；
 主结果字段所需的参数均可从 manifest 追溯；
+logging policy 已证明每个 run 的 planned logged train steps 满足 1% gate；
 attention_contract=non_causal、causal=false、graph_directionality=directed 已冻结。
 ```
 
@@ -563,6 +580,7 @@ validation/test metric 可计算；
 random_regular non-causal budget 对齐字段存在；
 summary/resolved config 明确写入 attention_contract=non_causal、causal=false；
 result_field_audit.json 显示缺字段数量为 0；
+actual_logged_train_step_count 满足 logging gate；若总训练步数不足 100，则每一步都已记录；
 失败 run 保留 error.log，不删除。
 ```
 
@@ -622,6 +640,16 @@ error.log if failed
 每行结果至少包含第 11 节的完整字段集合，不得只写简化表。
 
 主结果中 `causal` 必须为 `false`，`attention_contract` 必须为 `non_causal`，`graph_directionality` 必须为 `directed`。若某行不满足这三项，只能进入 debug/failed/partial 表，不能进入 theory-aligned main comparison。
+
+main comparison 额外 gate：
+
+```text
+result_field_audit.json status=passed；
+actual_logged_train_step_count >= ceil(logging_reference_train_steps * 0.01)；
+若 logging_reference_train_steps < 100，则 actual_logged_train_step_count = logging_reference_train_steps；
+final train step 已记录在 metrics.jsonl；
+training_curves.png 覆盖 metrics.jsonl 中的全部记录点。
+```
 
 ## 11. 输出字段和反偷懒审计
 
@@ -787,6 +815,13 @@ cosine_total_steps
 weight_decay
 grad_clip_norm
 log_every
+log_step_policy
+logging_reference_train_steps
+min_logged_train_step_count
+planned_logged_train_step_count
+actual_logged_train_step_count
+log_coverage_ratio
+log_policy_satisfied
 eval_every
 checkpoint_every
 checkpoint_policy
@@ -987,6 +1022,8 @@ nonfinite_loss_detected
 nan_detected
 ```
 
+若 `split=train`，metrics 行数必须满足 Phase 4 的 logging policy。字段审计必须用 `metrics.jsonl` 实际行数计算 `actual_logged_train_step_count`，不能只信 config 中的 `log_every`。
+
 `training_curves.png` 必须从 `metrics.jsonl` 生成，至少包含：
 
 ```text
@@ -1014,6 +1051,12 @@ phase4_trace_missing_fields
 resolved_config_trace_missing_fields
 forbidden_spelling_hits
 manual_only_policy_fields_without_resolved_value
+logging_reference_train_steps
+min_logged_train_step_count
+actual_logged_train_step_count
+log_coverage_ratio
+log_policy_satisfied
+final_train_step_logged
 status
 ```
 
@@ -1025,6 +1068,8 @@ phase4_trace_missing_fields = []
 resolved_config_trace_missing_fields = []
 manual_only_policy_fields_without_resolved_value = []
 forbidden_spelling_hits = []
+log_policy_satisfied = true
+final_train_step_logged = true
 status = passed
 ```
 
