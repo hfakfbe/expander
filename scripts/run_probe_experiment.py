@@ -21,6 +21,7 @@ from probe_common import (
     EXPERIMENT_VERSION,
     FIELD_CONTRACT,
     GRAPH_DIRECTIONALITY,
+    SELECTED_PROBES,
     audit_result_row,
     command_string,
     default_result_row,
@@ -67,6 +68,31 @@ def task_records(manifest: dict) -> dict[str, dict]:
     return {row["task"]: row for row in manifest["tasks"]}
 
 
+def probe_relative_path(task: str) -> Path:
+    return Path(SELECTED_PROBES[task]["version_path"]).relative_to("../expander_bench/data/probes")
+
+
+def resolve_version_dir(task_record: dict) -> Path:
+    manifest_path = Path(task_record["version_path"])
+    if manifest_path.exists():
+        return manifest_path
+    rel = probe_relative_path(task_record["task"])
+    candidates = []
+    if os.environ.get("PROBE_V08_DATA_ROOT"):
+        candidates.append(Path(os.environ["PROBE_V08_DATA_ROOT"]) / rel)
+    candidates.extend(
+        [
+            Path("../expander_bench/data/probes") / rel,
+            Path("/home/huiwei/ysx/expander_bench/data/probes") / rel,
+        ]
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate.resolve()
+    checked = [str(manifest_path), *(str(candidate) for candidate in candidates)]
+    raise FileNotFoundError(f"could not resolve v08 probe data path for {task_record['task']}: checked {checked}")
+
+
 def select_device(requested: str) -> torch.device:
     if requested == "cuda":
         return torch.device("cuda")
@@ -91,7 +117,7 @@ def run_profile(task_record: dict, profile: str) -> dict:
 
 
 def stores(task_record: dict) -> dict[str, JsonlStore]:
-    version_path = Path(task_record["version_path"])
+    version_path = resolve_version_dir(task_record)
     return {
         "train": JsonlStore(version_path / "train.jsonl"),
         "validation": JsonlStore(version_path / "validation.jsonl"),
@@ -363,7 +389,7 @@ def build_result_row(
     started: float,
 ) -> dict:
     row = default_result_row()
-    version_dir = Path(task_record["version_path"])
+    version_dir = resolve_version_dir(task_record)
     cert = task_record["graph_artifacts"]["certificate"]
     elapsed = max(time.perf_counter() - started, 1e-9)
     train_log_rows = [item for item in metrics_rows if item.get("split") == "train"]
