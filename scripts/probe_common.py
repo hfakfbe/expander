@@ -6,6 +6,7 @@ import json
 import os
 import shlex
 import socket
+import struct
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -574,6 +575,24 @@ def audit_result_row(row: dict[str, Any], metrics_rows: list[dict], phase4_recor
     min_logged = train_steps if train_steps < 100 else int((train_steps + 99) // 100)
     final_logged = any(int(item.get("step", -1)) == train_steps and item.get("split") == "train" for item in metrics_rows)
     log_ok = actual_logged >= min_logged and final_logged
+    curve_path = Path(str(row.get("training_curves_path") or ""))
+    curve_width = 0
+    curve_height = 0
+    curve_size = 0
+    curve_error = "not_applicable"
+    if curve_path.exists():
+        try:
+            data = curve_path.read_bytes()
+            curve_size = len(data)
+            if len(data) >= 24 and data[:8] == b"\x89PNG\r\n\x1a\n":
+                curve_width, curve_height = struct.unpack(">II", data[16:24])
+            else:
+                curve_error = "not_png"
+        except Exception as exc:
+            curve_error = f"read_failed:{type(exc).__name__}"
+    else:
+        curve_error = "missing"
+    curve_ok = curve_width >= 320 and curve_height >= 240 and curve_size > 1024
     phase4_trace_missing = [
         key
         for key in [
@@ -604,6 +623,7 @@ def audit_result_row(row: dict[str, Any], metrics_rows: list[dict], phase4_recor
         and not resolved_trace_missing
         and not manual_only
         and log_ok
+        and curve_ok
         else "failed"
     )
     return {
@@ -623,5 +643,11 @@ def audit_result_row(row: dict[str, Any], metrics_rows: list[dict], phase4_recor
         "log_coverage_ratio": actual_logged / max(train_steps, 1),
         "log_policy_satisfied": log_ok,
         "final_train_step_logged": final_logged,
+        "training_curves_path": str(curve_path),
+        "training_curves_png_width": curve_width,
+        "training_curves_png_height": curve_height,
+        "training_curves_png_size_bytes": curve_size,
+        "training_curves_png_error": curve_error,
+        "training_curves_png_satisfied": curve_ok,
         "status": status,
     }

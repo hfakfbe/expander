@@ -415,6 +415,8 @@ def build_result_row(
     elapsed = max(time.perf_counter() - started, 1e-9)
     train_log_rows = [item for item in metrics_rows if item.get("split") == "train"]
     since_values = [float(item.get("seconds_since_prev_log", 0.0) or 0.0) for item in train_log_rows]
+    train_examples_seen = int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"])
+    train_equivalent_epochs = profile_cfg.get("train_equivalent_epochs", "not_applicable")
     row.update(
         {
             "version": EXPERIMENT_VERSION,
@@ -471,7 +473,7 @@ def build_result_row(
             "train_examples": task_record["resolved_train_examples"],
             "validation_examples": task_record["resolved_validation_examples"],
             "test_examples": task_record["resolved_test_examples"],
-            "train_examples_used": min(int(task_record["resolved_train_examples"]), int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"])),
+            "train_examples_used": train_examples_seen,
             "validation_examples_used": int(profile_cfg["validation_examples"]),
             "test_examples_used": int(profile_cfg["test_examples"]),
             "train_split_policy": task_record["train_split_policy"],
@@ -523,16 +525,16 @@ def build_result_row(
             "steps": int(profile_cfg["steps"]),
             "steps_planned": int(profile_cfg["steps"]),
             "steps_completed": int(profile_cfg["steps"]),
-            "train_epochs": "not_applicable",
-            "train_epochs_planned": "not_applicable",
-            "train_epochs_completed": "not_applicable",
+            "train_epochs": train_equivalent_epochs,
+            "train_epochs_planned": train_equivalent_epochs,
+            "train_epochs_completed": train_equivalent_epochs,
             "train_steps": int(profile_cfg["steps"]),
             "train_budget_policy": task_record["train_budget_policy"],
             "train_budget_unit": "steps",
             "train_budget_value": int(profile_cfg["steps"]),
             "completed_train_units": int(profile_cfg["steps"]),
-            "train_examples_seen": int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"]),
-            "train_tokens_seen": int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"]) * int(task_record["resolved_padded_sequence_length"]),
+            "train_examples_seen": train_examples_seen,
+            "train_tokens_seen": train_examples_seen * int(task_record["resolved_padded_sequence_length"]),
             "batch_size": task_record["resolved_batch_size"],
             "gradient_accumulation_steps": task_record["resolved_gradient_accumulation_steps"],
             "effective_batch_size": task_record["resolved_effective_batch_size"],
@@ -657,10 +659,10 @@ def build_result_row(
             "test_perplexity": "not_applicable",
             "validation_perplexity_if_applicable": "not_applicable",
             "test_perplexity_if_applicable": "not_applicable",
-            "train_tokens_per_sec": (int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"]) * int(task_record["resolved_padded_sequence_length"])) / elapsed,
+            "train_tokens_per_sec": (train_examples_seen * int(task_record["resolved_padded_sequence_length"])) / elapsed,
             "validation_tokens_per_sec": validation_result["tokens_per_sec"],
             "test_tokens_per_sec": test_result["tokens_per_sec"],
-            "train_examples_per_sec": (int(profile_cfg["steps"]) * int(task_record["resolved_effective_batch_size"])) / elapsed,
+            "train_examples_per_sec": train_examples_seen / elapsed,
             "validation_examples_per_sec": validation_result["examples_per_sec"],
             "test_examples_per_sec": test_result["examples_per_sec"],
             "total_wall_time_sec": elapsed,

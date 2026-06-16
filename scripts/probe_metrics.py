@@ -99,15 +99,7 @@ def aggregate_metric_rows(rows: list[dict], primary_metric: str) -> dict:
 
 def write_training_curves(metrics_rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except Exception:
-        path.write_bytes(_blank_png())
-        return
-
+    train_rows = [row for row in metrics_rows if row.get("split") == "train"]
     panels = [
         ("train_loss", "train loss"),
         ("eval_loss", "eval loss"),
@@ -118,10 +110,18 @@ def write_training_curves(metrics_rows: list[dict], path: Path) -> None:
         ("tokens_per_sec", "tokens/sec"),
         ("peak_allocated_gb", "peak allocated GB"),
     ]
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception:
+        _fallback_training_curves_png(train_rows, path, panels)
+        return
+
     rows = max(1, math.ceil(len(panels) / 2))
     fig, axes = plt.subplots(rows, 2, figsize=(12.0, 3.0 * rows), constrained_layout=True)
     axes_flat = axes.flatten() if hasattr(axes, "flatten") else [axes]
-    train_rows = [row for row in metrics_rows if row.get("split") == "train"]
     steps = [int(row.get("step", index + 1)) for index, row in enumerate(train_rows)]
     for ax, (key, title) in zip(axes_flat, panels):
         values = []
@@ -140,12 +140,9 @@ def write_training_curves(metrics_rows: list[dict], path: Path) -> None:
     plt.close(fig)
 
 
-def _blank_png() -> bytes:
+def _write_png_rgb(path: Path, width: int, height: int, pixels: bytearray) -> None:
     import struct
     import zlib
-
-    width, height = 1, 1
-    raw = b"\x00\xff\xff\xff"
 
     def chunk(name: bytes, payload: bytes) -> bytes:
         return (
@@ -155,12 +152,90 @@ def _blank_png() -> bytes:
             + struct.pack(">I", zlib.crc32(name + payload) & 0xFFFFFFFF)
         )
 
-    return (
+    stride = width * 3
+    raw = bytearray()
+    for y in range(height):
+        raw.append(0)
+        raw.extend(pixels[y * stride : (y + 1) * stride])
+    path.write_bytes(
         b"\x89PNG\r\n\x1a\n"
         + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(raw))
+        + chunk(b"IDAT", zlib.compress(bytes(raw), level=6))
         + chunk(b"IEND", b"")
     )
+
+
+def _fallback_training_curves_png(metrics_rows: list[dict], path: Path, panels: list[tuple[str, str]]) -> None:
+    cols = 2
+    panel_w = 540
+    panel_h = 240
+    rows = max(1, math.ceil(len(panels) / cols))
+    width = cols * panel_w
+    height = rows * panel_h
+    pixels = bytearray([255] * width * height * 3)
+
+    def put(x: int, y: int, color: tuple[int, int, int]) -> None:
+        if 0 <= x < width and 0 <= y < height:
+            idx = (y * width + x) * 3
+            pixels[idx : idx + 3] = bytes(color)
+
+    def line(x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]) -> None:
+        dx = abs(x1 - x0)
+        dy = -abs(y1 - y0)
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx + dy
+        while True:
+            put(x0, y0, color)
+            if x0 == x1 and y0 == y1:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x0 += sx
+            if e2 <= dx:
+                err += dx
+                y0 += sy
+
+    steps = [int(row.get("step", idx + 1) or idx + 1) for idx, row in enumerate(metrics_rows)]
+    for idx, (key, _title) in enumerate(panels):
+        ox = (idx % cols) * panel_w
+        oy = (idx // cols) * panel_h
+        left, top = ox + 48, oy + 28
+        right, bottom = ox + panel_w - 24, oy + panel_h - 32
+        line(left, bottom, right, bottom, (40, 40, 40))
+        line(left, top, left, bottom, (40, 40, 40))
+        line(right, top, right, bottom, (220, 220, 220))
+        line(left, top, right, top, (220, 220, 220))
+        values = []
+        for row in metrics_rows:
+            try:
+                value = float(row.get(key, 0.0) or 0.0)
+            except (TypeError, ValueError):
+                value = 0.0
+            values.append(value if math.isfinite(value) else 0.0)
+        if not values:
+            continue
+        vmin = min(values)
+        vmax = max(values)
+        if vmax <= vmin:
+            vmax = vmin + 1.0
+        smin = min(steps)
+        smax = max(steps)
+        if smax <= smin:
+            smax = smin + 1
+        points = []
+        for step, value in zip(steps, values):
+            x = left + round((step - smin) * (right - left) / (smax - smin))
+            y = bottom - round((value - vmin) * (bottom - top) / (vmax - vmin))
+            points.append((x, y))
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            line(x0, y0, x1, y1, (31, 119, 180))
+        for x, y in points:
+            for dy in range(-2, 3):
+                for dx in range(-2, 3):
+                    put(x + dx, y + dy, (214, 39, 40))
+    _write_png_rgb(path, width, height, pixels)
 
 
 def json_metric(value: Any) -> str:
