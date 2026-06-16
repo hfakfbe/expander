@@ -1,0 +1,241 @@
+{
+  "B": 16,
+  "G": {
+    "arrival_port": "identity",
+    "max_parallel_edges_per_block_pair": null,
+    "permutations": [
+      [
+        3,
+        2,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        0
+      ],
+      [
+        3,
+        2,
+        0,
+        1
+      ],
+      [
+        2,
+        3,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        3,
+        2,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        3,
+        2,
+        0,
+        1
+      ],
+      [
+        2,
+        3,
+        1,
+        0
+      ],
+      [
+        2,
+        3,
+        1,
+        0
+      ],
+      [
+        3,
+        2,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        3,
+        2
+      ],
+      [
+        3,
+        2,
+        0,
+        1
+      ]
+    ],
+    "require_derangement": true,
+    "type": "permutation_regular"
+  },
+  "H": {
+    "allow_self_port": false,
+    "permutations": [
+      [
+        14,
+        10,
+        15,
+        12,
+        0,
+        3,
+        1,
+        5,
+        2,
+        6,
+        9,
+        13,
+        11,
+        4,
+        8,
+        7
+      ],
+      [
+        14,
+        15,
+        1,
+        13,
+        9,
+        7,
+        3,
+        2,
+        4,
+        8,
+        0,
+        12,
+        10,
+        11,
+        6,
+        5
+      ],
+      [
+        10,
+        15,
+        3,
+        13,
+        12,
+        0,
+        8,
+        14,
+        11,
+        7,
+        1,
+        4,
+        6,
+        2,
+        9,
+        5
+      ],
+      [
+        4,
+        6,
+        11,
+        12,
+        8,
+        3,
+        14,
+        5,
+        9,
+        1,
+        7,
+        15,
+        0,
+        2,
+        13,
+        10
+      ]
+    ],
+    "type": "permutation_regular"
+  },
+  "N_task": 64,
+  "T": 64,
+  "T_raw": 64,
+  "certificate": {
+    "B": 16,
+    "G_type": "permutation_regular",
+    "H_type": "permutation_regular",
+    "N_task": 64,
+    "P_G_col_stochastic_error": 0.0,
+    "P_G_row_stochastic_error": 0.0,
+    "P_H_col_stochastic_error": 0.0,
+    "P_H_row_stochastic_error": 0.0,
+    "T": 64,
+    "T_raw": 64,
+    "certified": false,
+    "col_degree_max_boolean": 31,
+    "col_degree_min_boolean": 23,
+    "collision_count_max": 9.0,
+    "collision_count_mean": 4.375,
+    "collision_count_min": 1.0,
+    "d": 4,
+    "graph_id": "v08_B16_d4_s0_c4e2f9155b7d5483",
+    "graph_seed": 0,
+    "lambda_G": 0.375,
+    "local_labelled_K": 16,
+    "mu_H": 0.854681498204222,
+    "q": 4,
+    "raw_K": 32,
+    "remote_labelled_K": 16,
+    "remote_local_overlap_max": 0.0,
+    "remote_local_overlap_mean": 0.0,
+    "remote_local_overlap_min": 0.0,
+    "remote_unique_K_max": 15.0,
+    "remote_unique_K_mean": 11.625,
+    "remote_unique_K_min": 7.0,
+    "resample_reason": "rho_bound_not_lt_threshold",
+    "rho_bound": 1.2242802422580596,
+    "rho_exact": 0.7057951781529899,
+    "rho_zigzag_bound": 1.2242802422580596,
+    "rho_zigzag_certified": false,
+    "rho_zigzag_exact": 0.7057951781529899,
+    "rot_g_is_bijection": true,
+    "row_degree_max_boolean": 31,
+    "row_degree_min_boolean": 23,
+    "simple_condition_lhs": 1.601585926745227,
+    "stationary_l2_to_uniform_boolean": 0.010548409357205378,
+    "unique_total_K_max": 31.0,
+    "unique_total_K_mean": 27.625,
+    "unique_total_K_min": 23.0,
+    "version": "v08"
+  },
+  "d": 4,
+  "graph_id": "v08_B16_d4_s0_c4e2f9155b7d5483",
+  "graph_seed": 0,
+  "q": 4,
+  "version": "v08"
+}

@@ -1,0 +1,108 @@
+{
+  "command": "/Users/sxye/miniconda3/bin/python scripts/probe_phase2_dryrun.py --device cpu",
+  "phase": "phase2_code_adaptation_interface_dryrun",
+  "rows": [
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        80
+      ],
+      "loss": 4.321714401245117,
+      "status": "ok",
+      "target_positions_shape": [
+        2,
+        8
+      ],
+      "task": "copy",
+      "wall_time_sec": 0.1385157499462366
+    },
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        80
+      ],
+      "loss": 3.791667938232422,
+      "status": "ok",
+      "target_positions_shape": [
+        2,
+        8
+      ],
+      "task": "selective_copy",
+      "wall_time_sec": 0.09712004102766514
+    },
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        64
+      ],
+      "loss": 9.234271049499512,
+      "status": "ok",
+      "target_positions_shape": [
+        2,
+        4
+      ],
+      "task": "induction_associative_recall",
+      "wall_time_sec": 0.10817095800302923
+    },
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        144
+      ],
+      "loss": 5.8187103271484375,
+      "status": "ok",
+      "target_positions_shape": [
+        2,
+        12
+      ],
+      "task": "niah_kv_retrieval",
+      "wall_time_sec": 0.08231441699899733
+    },
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        144
+      ],
+      "loss": 5.908755779266357,
+      "status": "ok",
+      "target_positions_shape": [
+        2,
+        12
+      ],
+      "task": "ruler",
+      "wall_time_sec": 0.11139120801817626
+    },
+    {
+      "attention_contract": "non_causal",
+      "causal": false,
+      "graph_directionality": "directed",
+      "input_batch_shape": [
+        2,
+        128
+      ],
+      "loss": 2.4313788414001465,
+      "status": "ok",
+      "target_positions_shape": "classification",
+      "task": "lra_listops",
+      "wall_time_sec": 8.999506124993786
+    }
+  ],
+  "status": "ok",
+  "timestamp_utc": "2026-06-16T07:38:49.075993+00:00",
+  "version": "v08"
+}

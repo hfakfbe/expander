@@ -1,0 +1,7 @@
+task,status,loss,attention_contract,causal,graph_directionality,input_batch_shape,target_positions_shape,wall_time_sec
+copy,ok,4.321714401245117,non_causal,False,directed,"[2, 80]","[2, 8]",0.1385157499462366
+selective_copy,ok,3.791667938232422,non_causal,False,directed,"[2, 80]","[2, 8]",0.09712004102766514
+induction_associative_recall,ok,9.234271049499512,non_causal,False,directed,"[2, 64]","[2, 4]",0.10817095800302923
+niah_kv_retrieval,ok,5.8187103271484375,non_causal,False,directed,"[2, 144]","[2, 12]",0.08231441699899733
+ruler,ok,5.908755779266357,non_causal,False,directed,"[2, 144]","[2, 12]",0.11139120801817626
+lra_listops,ok,2.4313788414001465,non_causal,False,directed,"[2, 128]",classification,8.999506124993786
