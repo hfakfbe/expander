@@ -156,7 +156,10 @@
       "missing_fields": [],
       "not_applicable_fields": [
         "failure_reason",
+        "log_path",
         "error_log",
+        "CUDA_VISIBLE_DEVICES",
+        "cuda_version",
         "data_readiness_path",
         "data_readiness_sha256",
         "tokenization_summary_path",
@@ -207,7 +210,7 @@
         "listops_macro_accuracy",
         "listops_class_count"
       ],
-      "not_applicable_reasons": "{\"subtasks\": {\"s4_copying_length_extrapolation\": {\"copy_sequence_accuracy\": 0.0, \"copy_token_accuracy\": 0.0159912109375, \"exact_match\": 0.0, \"token_accuracy\": 0.0159912109375}}}",
+      "not_applicable_reasons": "{\"subtasks\": {\"s4_copying_length_extrapolation\": {\"copy_sequence_accuracy\": 0.0, \"copy_token_accuracy\": 0.01727294921875, \"exact_match\": 0.0, \"token_accuracy\": 0.01727294921875}}}",
       "phase4_trace_missing_fields": [],
       "present_field_count": 298,
       "resolved_config_trace_missing_fields": [],

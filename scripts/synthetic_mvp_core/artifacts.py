@@ -381,6 +381,35 @@ def build_random_rows_aligned_to_zigzag(seq_len: int, args) -> list[Counter[int]
             random_rows[src][dst] += 1
     return random_rows
 
+def build_random_remote_rows_aligned_to_zigzag_noncausal(seq_len: int, args) -> list[Counter[int]]:
+    """Remote random rows whose non-causal unique K matches zigzag per query."""
+    zigzag_rows = build_method_counts("zigzag_certified", seq_len, args)
+    if zigzag_rows is None:
+        raise ValueError("zigzag rows are required for random budget alignment")
+
+    import random
+
+    rng = random.Random(
+        f"random_aligned_noncausal|{getattr(args, 'seed', 0)}|{seq_len}|{args.block_size}|{args.degree}"
+    )
+    random_remote_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    block_size = int(args.block_size)
+    for src, zigzag_counts in enumerate(zigzag_rows):
+        block_start = (src // block_size) * block_size
+        local_keys = set(range(block_start, block_start + block_size))
+        local_unique = len(local_keys)
+        target_total = len(zigzag_counts)
+        remote_target = max(0, target_total - local_unique)
+        candidates = [dst for dst in range(seq_len) if dst not in local_keys]
+        if remote_target > len(candidates):
+            raise ValueError(
+                f"cannot align random non-causal K for row {src}: "
+                f"need {remote_target}, have {len(candidates)}"
+            )
+        for dst in rng.sample(candidates, remote_target):
+            random_remote_rows[src][dst] += 1
+    return random_remote_rows
+
 def budget_diagnostics(seq_len: int, args) -> tuple[dict, dict, list[Counter[int]]]:
     zigzag_rows = build_method_counts("zigzag_certified", seq_len, args)
     random_rows = build_random_rows_aligned_to_zigzag(seq_len, args)

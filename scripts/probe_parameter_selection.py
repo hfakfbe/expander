@@ -73,18 +73,21 @@ def _select_model(task: str, max_seq: int) -> dict:
 
 def _select_batch(task: str, max_seq: int) -> dict:
     if max_seq >= 4096:
-        return {"batch_size": 1, "gradient_accumulation_steps": 4, "eval_batch_size": 2}
+        return {"batch_size": 8, "gradient_accumulation_steps": 1, "eval_batch_size": 8}
     if task == "induction_associative_recall":
-        return {"batch_size": 8, "gradient_accumulation_steps": 2, "eval_batch_size": 16}
+        return {"batch_size": 16, "gradient_accumulation_steps": 1, "eval_batch_size": 32}
     return {"batch_size": 4, "gradient_accumulation_steps": 2, "eval_batch_size": 8}
 
 
-def _select_steps(task: str, max_seq: int) -> int:
-    if max_seq >= 4096:
-        return 80
-    if task == "induction_associative_recall":
-        return 120
-    return 100
+def _select_steps(train_rows: int, effective_batch: int) -> int:
+    return max(1, math.ceil(int(train_rows) / max(int(effective_batch), 1)))
+
+
+def _select_log_every(steps: int) -> int:
+    if steps < 100:
+        return 1
+    min_logs = math.ceil(steps * 0.01)
+    return max(1, steps // min_logs)
 
 
 def _task_lengths(audit_row: dict, version_dir: Path, loss_type: str) -> tuple[int, int, int]:
@@ -199,9 +202,13 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
     encoder = _encoder(task, version_dir, output_dir)
     model = _select_model(task, T)
     batch = _select_batch(task, T)
-    main_steps = _select_steps(task, T)
+    train_rows = int(audit_row["train_rows"])
+    validation_rows = int(audit_row["validation_rows"])
+    test_rows = int(audit_row["test_rows"])
+    effective_batch = batch["batch_size"] * batch["gradient_accumulation_steps"]
+    main_steps = _select_steps(train_rows, effective_batch)
     smoke_steps = 3
-    log_every = 1 if main_steps < 100 else max(1, main_steps // 100)
+    log_every = _select_log_every(main_steps)
     smoke_log_every = 1
     graph = _write_graph(task, raw_length, B, d, seed=0, output_dir=output_dir)
     param_count_estimate = (
@@ -217,9 +224,6 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
         "ruler": ["retrieval_token_accuracy", "ruler_subtask_exact_match", "ruler_subtask_token_accuracy"],
         "lra_listops": ["listops_macro_accuracy"],
     }[task]
-    train_rows = int(audit_row["train_rows"])
-    validation_rows = int(audit_row["validation_rows"])
-    test_rows = int(audit_row["test_rows"])
     record = {
         "task": task,
         "version_path": str(version_dir),
@@ -257,8 +261,11 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
         "checkpoint_policy": "no_tensor_checkpoint_for_v08_first_sweep",
         "oom_or_runtime_fallback_policy": "drop_optional_dense_first_then_reduce_batch_for_all_required_methods",
         "selection_reason": (
-            "该配置保留 non-causal directed zigzag_certified 主方法，并用 local/random_regular 做同预算对照；"
-            "长度覆盖 Phase 1 的最大 validation/test 合同，训练预算优先保证每个任务有完整可复现主扫。"
+            "该配置在 non-causal directed contract 下保留完整 Phase 1 最大长度，不截断 validation/test 合同；"
+            f"main 训练预算解析为 ceil(train_rows/effective_batch)={main_steps} steps，"
+            f"每个 required method 至少覆盖 {train_rows} 个训练样本的一轮 full-train sweep；"
+            "batch 和模型容量按 Phase 3 A100 80GB 资源、Phase 5 smoke 可行性和长序列显存成本选择，"
+            "优先保证 zigzag_certified 有足够更新步数学习主指标；local/random_regular 使用同一 task 级长度、模型、batch、optimizer、seed 和 steps。"
         ),
         "resolved_input_length_policy": "max_phase1_input_length",
         "resolved_target_length_policy": "max_phase1_target_length_or_position_targets",
@@ -320,7 +327,7 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
         "resolved_grad_clip_norm": 1.0,
         "resolved_batch_size": batch["batch_size"],
         "resolved_gradient_accumulation_steps": batch["gradient_accumulation_steps"],
-        "resolved_effective_batch_size": batch["batch_size"] * batch["gradient_accumulation_steps"],
+        "resolved_effective_batch_size": effective_batch,
         "resolved_eval_batch_size": batch["eval_batch_size"],
         "resolved_train_budget_unit": "steps",
         "resolved_train_budget_value": main_steps,
@@ -378,11 +385,20 @@ def write_reports(rows: list[dict], output_dir: Path) -> None:
 
 ## 结论
 
-Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，并生成 smoke/main 配置、字段契约、编码器和每任务 directed non-causal graph artifact。required methods 为 `{', '.join(REQUIRED_METHODS)}`；`dense` 暂列 optional，原因是 4k/8k 长上下文 dense reference 会显著挤占本轮主方法验证预算，v08 第一轮优先完成 theory-aligned zigzag_certified 与同预算 local/random_regular 对照。
+Phase 4 已在 Phase 1 数据审计、Phase 2 dry-run 和 Phase 3 A100 80GB 远端 readiness 基础上重新冻结 6 个 probe task 的参数，并生成 smoke/main 配置、字段契约、编码器和每任务 directed non-causal graph artifact。required methods 为 `{', '.join(REQUIRED_METHODS)}`；`dense` 暂列 optional，原因是 4k/8k 长上下文 dense reference 会显著挤占本轮主方法验证预算，v08 主线优先完成 theory-aligned zigzag_certified 与同预算 local/random_regular 对照。
 
 | task | padded T | B/d | 模型 | effective batch | main steps | primary metric |
 |---|---:|---:|---:|---:|---:|---|
 {chr(10).join(table_rows)}
+
+## 选择依据
+
+1. 长度策略：`resolved_padded_sequence_length` 保留 Phase 1 记录的最大输入/读出长度并按 `resolved_graph_block_size=64` 补齐；copy、selective_copy、niah、ruler、listops 均不把 validation/test 合同裁短。
+2. 训练预算：`resolved_train_budget_value` 统一按 `ceil(resolved_train_examples / resolved_effective_batch_size)` 解析，表示每个 required method 至少看完一个完整 train split 的 full-train sweep，而不是 smoke 式固定步数。
+3. zigzag 主方法效果：`resolved_layers`、`resolved_d_model` 和 `resolved_effective_batch_size` 按任务长度与 A100 80GB 显存选择，目标是在不降长度的前提下给 `zigzag_certified` 更多参数容量和足够更新步数。
+4. 公平性：同一 task 内 `local`、`zigzag_certified`、`random_regular` 使用相同长度、模型、batch、optimizer、learning rate、seed、steps、validation budget 和 test budget。
+5. random 对齐：`random_regular` 在运行入口按 `zigzag_actual_noncausal_per_query_unique_k` 生成 per-query 对齐的随机 remote rows；`random_k_alignment_error_max` 必须为 0，才能进入 main comparison。
+6. 日志 gate：`resolved_log_every` 由 `resolved_train_budget_value` 和 1% logging gate 反推，`resolved_planned_logged_train_step_count` 不低于 `resolved_min_logged_train_step_count`，final step 必须记录。
 
 ## 参数说明
 
@@ -395,19 +411,26 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | resolved_layers | Transformer 层数 | 层 | Phase 4 选择 | 记录模型容量 | 无 |
 | resolved_d_model | hidden 维度 | 维度 | Phase 4 选择 | 记录模型容量 | 无 |
 | resolved_effective_batch_size | 梯度累积后的有效 batch | 样本数 | batch_size * gradient_accumulation_steps | 保证 method 间公平 | 无 |
-| resolved_train_budget_value | main 训练步数 | steps | Phase 4 选择 | 复现实验预算 | smoke 使用 smoke.steps 并记录 |
-| resolved_log_every | 训练日志间隔 | steps | logging gate | 满足 1% 日志覆盖 | 无 |
+| resolved_train_examples | 训练集样本数 | 样本数 | Phase 1 audit | 计算 full-train sweep 步数 | 无 |
+| resolved_train_budget_value | main 训练步数 | steps | ceil(train examples/effective batch) | 复现实验预算并证明不是短扫 | smoke 使用 smoke.steps 并记录 |
+| resolved_log_every | 训练日志间隔 | steps | logging gate 反推 | 满足 1% 日志覆盖 | 无 |
+| resolved_planned_logged_train_step_count | 计划记录的训练日志点数 | 行数 | Phase 4 公式 | 预先证明 logging gate 可满足 | 无 |
+| resolved_min_logged_train_step_count | 最少训练日志点数 | 行数 | v08 手册 1% gate | 审计 metrics.jsonl 覆盖率 | 无 |
+| random_k_alignment_error_max | random 与 zigzag 每 query K 最大误差 | token/key 数 | run 后 budget 诊断 | 验证 random_regular 同预算公平性 | 非 random run 写 not_applicable |
+| random_target_k_source | random 对齐目标来源 | zigzag_actual_noncausal_per_query_unique_k | Phase 4/运行入口 | 说明 random budget 对齐口径 | 非 random run 写 not_applicable |
 | attention_contract | 注意力合同 | non_causal | v08 手册 | 保证理论对齐 | 不满足则不得进入主结果 |
 | causal | 是否 causal mask | false | v08 手册 | 防止 LM 化 | 不满足则不得进入主结果 |
 | graph_directionality | 图方向性 | directed | v08 手册和 graph artifact | 对齐 directed expander | 无 |
 | primary_metric | 每个 task 主指标 | metric 名称 | Phase 1 schema 与手册 | 主比较字段 | 无 |
+| required_methods | 必跑方法集合 | local/zigzag_certified/random_regular | v08 手册和 Phase 4 | 定义 main comparison | 无 |
+| optional_methods | 可选方法集合 | dense | Phase 4 资源取舍 | 说明未纳入主比较的方法 | 未运行写 not_applicable |
 
 ## 报告审计
 
 | 字段 | 值 |
 |---|---|
 | report_language | zh |
-| explained_parameter_count | 13 |
+| explained_parameter_count | 20 |
 | unexplained_parameters | [] |
 | english_only_sections | [] |
 """,
@@ -429,13 +452,17 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | log_every | 日志间隔 | steps | Phase 4 logging gate | 审计 metrics.jsonl 覆盖率 | 无 |
 | actual_logged_train_step_count | 实际训练日志行数 | 行数 | run 后 metrics.jsonl | 验证 1% gate | 无 |
 | primary_metric_value | 主指标值 | task-specific | eval | 排序和比较主结果 | 无 |
+| random_target_k_source | random budget 对齐来源 | zigzag_actual_noncausal_per_query_unique_k | Phase 4/运行入口 | 验证 random_regular 同预算 | 非 random run 写 not_applicable |
+| random_k_alignment_error_max | random 与 zigzag 每 query K 最大误差 | key 数 | run 后 budget 诊断 | 必须为 0 才算对齐 | 非 random run 写 not_applicable |
+| resolved_train_examples | 训练样本总数 | 样本数 | Phase 1 audit | 计算 full-train sweep | 无 |
+| resolved_effective_batch_size | 有效 batch | 样本数 | batch_size * gradient_accumulation_steps | 计算训练步数和吞吐 | 无 |
 
 ## 报告审计
 
 | 字段 | 值 |
 |---|---|
 | report_language | zh |
-| explained_parameter_count | 10 |
+| explained_parameter_count | 14 |
 | unexplained_parameters | [] |
 | english_only_sections | [] |
 """,

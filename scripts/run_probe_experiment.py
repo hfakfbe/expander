@@ -53,7 +53,11 @@ from probe_tasks import (
     make_probe_batch,
     parameter_count,
 )
-from synthetic_mvp_core.artifacts import make_attention_artifacts, resolve_attention_backend
+from synthetic_mvp_core.artifacts import (
+    build_random_remote_rows_aligned_to_zigzag_noncausal,
+    make_attention_artifacts,
+    resolve_attention_backend,
+)
 
 
 def load_config(path: Path) -> dict:
@@ -143,10 +147,16 @@ def artifact_args(task_record: dict, method: str, seed: int) -> SimpleNamespace:
     )
 
 
-def build_model_and_artifacts(task_record: dict, method: str, seed: int, device: torch.device):
+def build_model_and_artifacts(
+    task_record: dict,
+    method: str,
+    seed: int,
+    device: torch.device,
+    artifact_namespace: SimpleNamespace | None = None,
+):
     encoder = load_encoder(Path(task_record["resolved_tokenizer_or_encoder_path"]))
     backend = resolve_attention_backend(str(task_record["resolved_attention_backend"]), method)
-    args = artifact_args(task_record, method, seed)
+    args = artifact_namespace or artifact_args(task_record, method, seed)
     artifacts = make_attention_artifacts(method, int(task_record["resolved_padded_sequence_length"]), args, device, backend)
     class_count = 10 if task_record["task"] == "lra_listops" else max(2, int(task_record["resolved_vocab_or_value_space_size"]))
     model = ProbeTransformer(
@@ -163,6 +173,14 @@ def build_model_and_artifacts(task_record: dict, method: str, seed: int, device:
         block_size=int(task_record["resolved_graph_block_size"]),
     ).to(device)
     return encoder, model, artifacts, backend
+
+
+def build_aligned_random_args(task_record: dict, seed: int, seq_len: int) -> SimpleNamespace:
+    args = artifact_args(task_record, "random_regular", seed)
+    args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(seq_len, args)
+    args.random_alignment_mode = "per_query_noncausal_unique_k"
+    args.random_target_k_source = "zigzag_actual_noncausal_per_query_unique_k"
+    return args
 
 
 def forward_loss_and_metrics(model, artifacts, batch, task_record: dict) -> tuple[torch.Tensor, dict, list[dict]]:
@@ -308,13 +326,16 @@ def budget_payload(method: str, artifacts, task_record: dict, zigzag_artifacts=N
     }
     if method == "random_regular" and zigzag_artifacts is not None:
         z = zigzag_artifacts.metrics
+        random_k = artifacts.mask.sum(dim=-1).detach().cpu().tolist()
+        zigzag_k = zigzag_artifacts.mask.sum(dim=-1).detach().cpu().tolist()
+        errors = [abs(int(a) - int(b)) for a, b in zip(random_k, zigzag_k)]
         payload.update(
             {
-                "random_target_k_source": "zigzag_actual_noncausal",
-                "random_alignment_mode": "mean_noncausal_budget",
-                "random_k_alignment_error_mean": abs(float(metrics.get("effective_k_mean", 0.0)) - float(z.get("effective_k_mean", 0.0))),
-                "random_k_alignment_error_max": abs(int(metrics.get("effective_k_max", 0)) - int(z.get("effective_k_max", 0))),
-                "random_k_aligned_to_zigzag": abs(float(metrics.get("effective_k_mean", 0.0)) - float(z.get("effective_k_mean", 0.0))) < 1.0,
+                "random_target_k_source": "zigzag_actual_noncausal_per_query_unique_k",
+                "random_alignment_mode": "per_query_noncausal_unique_k",
+                "random_k_alignment_error_mean": sum(errors) / max(len(errors), 1),
+                "random_k_alignment_error_max": max(errors) if errors else 0,
+                "random_k_aligned_to_zigzag": bool(max(errors) == 0) if errors else True,
             }
         )
     return payload
@@ -724,18 +745,40 @@ def run_one(config: dict, manifest: dict, task: str, method: str, seed: int, dev
     )
     graph_paths = copy_graph_artifacts(task_record, run_dir)
     split_stores = stores(task_record)
-    encoder, model, artifacts, backend = build_model_and_artifacts(task_record, method, seed, device)
+    seq_len = int(task_record["resolved_padded_sequence_length"])
+    method_artifact_args = (
+        build_aligned_random_args(task_record, seed, seq_len)
+        if method == "random_regular"
+        else artifact_args(task_record, method, seed)
+    )
+    encoder, model, artifacts, backend = build_model_and_artifacts(
+        task_record,
+        method,
+        seed,
+        device,
+        method_artifact_args,
+    )
     args_for_zigzag = artifact_args(task_record, "zigzag_certified", seed)
     zigzag_backend = resolve_attention_backend(str(task_record["resolved_attention_backend"]), "zigzag_certified")
     zigzag_artifacts = make_attention_artifacts(
         "zigzag_certified",
-        int(task_record["resolved_padded_sequence_length"]),
+        seq_len,
         args_for_zigzag,
         device,
         zigzag_backend,
     )
     zigzag_budget = budget_payload("zigzag_certified", zigzag_artifacts, task_record)
-    random_budget = budget_payload(method, artifacts, task_record, zigzag_artifacts) if method == "random_regular" else budget_payload("random_regular", make_attention_artifacts("random_regular", int(task_record["resolved_padded_sequence_length"]), artifact_args(task_record, "random_regular", seed), device, resolve_attention_backend(str(task_record["resolved_attention_backend"]), "random_regular")), task_record, zigzag_artifacts)
+    if method == "random_regular":
+        random_artifacts = artifacts
+    else:
+        random_artifacts = make_attention_artifacts(
+            "random_regular",
+            seq_len,
+            build_aligned_random_args(task_record, seed, seq_len),
+            device,
+            resolve_attention_backend(str(task_record["resolved_attention_backend"]), "random_regular"),
+        )
+    random_budget = budget_payload("random_regular", random_artifacts, task_record, zigzag_artifacts)
     write_json(run_dir / "zigzag_budget.json", zigzag_budget)
     write_json(run_dir / "random_budget.json", random_budget)
     write_json(

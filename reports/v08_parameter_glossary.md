@@ -12,12 +12,16 @@
 | log_every | 日志间隔 | steps | Phase 4 logging gate | 审计 metrics.jsonl 覆盖率 | 无 |
 | actual_logged_train_step_count | 实际训练日志行数 | 行数 | run 后 metrics.jsonl | 验证 1% gate | 无 |
 | primary_metric_value | 主指标值 | task-specific | eval | 排序和比较主结果 | 无 |
+| random_target_k_source | random budget 对齐来源 | zigzag_actual_noncausal_per_query_unique_k | Phase 4/运行入口 | 验证 random_regular 同预算 | 非 random run 写 not_applicable |
+| random_k_alignment_error_max | random 与 zigzag 每 query K 最大误差 | key 数 | run 后 budget 诊断 | 必须为 0 才算对齐 | 非 random run 写 not_applicable |
+| resolved_train_examples | 训练样本总数 | 样本数 | Phase 1 audit | 计算 full-train sweep | 无 |
+| resolved_effective_batch_size | 有效 batch | 样本数 | batch_size * gradient_accumulation_steps | 计算训练步数和吞吐 | 无 |
 
 ## 报告审计
 
 | 字段 | 值 |
 |---|---|
 | report_language | zh |
-| explained_parameter_count | 10 |
+| explained_parameter_count | 14 |
 | unexplained_parameters | [] |
 | english_only_sections | [] |
