@@ -1,0 +1,9 @@
+{
+  "python_version": "Python 3.10.0",
+  "torch_cuda": "2.10.0+cu128\nTrue\nNVIDIA A100-SXM4-80GB"
+}
+
+0, NVIDIA A100-SXM4-80GB, 0 %, 10 MiB, 81920 MiB
+1, NVIDIA A100-SXM4-80GB, 0 %, 10 MiB, 81920 MiB
+2, NVIDIA A100-SXM4-80GB, 0 %, 10 MiB, 81920 MiB
+3, NVIDIA A100-SXM4-80GB, 0 %, 10 MiB, 81920 MiB

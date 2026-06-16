@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -84,6 +85,7 @@ env = {{}}
 for cmd, key in [
     ([sys.executable, '-V'], 'python_version'),
     ([sys.executable, '-c', "import torch; print(torch.__version__); print(torch.cuda.is_available()); print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'cpu')"], 'torch_cuda'),
+    ([sys.executable, '-m', 'pip', 'freeze'], 'pip_freeze'),
 ]:
     p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     env[key] = p.stdout.strip()
@@ -92,9 +94,28 @@ print(json.dumps({{'rows': rows, 'env': env, 'gpu': gpu.stdout}}, sort_keys=True
 """
 
 
-def run_remote(host: str, remote_data_root: str) -> dict:
+def remote_python_command(env_name: str) -> str:
+    body = f"""
+set -e
+if command -v conda >/dev/null 2>&1; then
+  eval "$(conda shell.bash hook)"
+else
+  for f in "$HOME/miniconda3/etc/profile.d/conda.sh" "$HOME/anaconda3/etc/profile.d/conda.sh"; do
+    if [ -f "$f" ]; then
+      . "$f"
+      break
+    fi
+  done
+fi
+conda activate {shlex.quote(env_name)}
+python -
+""".strip()
+    return "bash -lc " + shlex.quote(body)
+
+
+def run_remote(host: str, remote_data_root: str, env_name: str) -> dict:
     proc = subprocess.run(
-        ["ssh", host, "python -"],
+        ["ssh", host, remote_python_command(env_name)],
         input=remote_probe_script(remote_data_root),
         text=True,
         stdout=subprocess.PIPE,
@@ -108,11 +129,13 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="huiwei")
     parser.add_argument("--remote-data-root", default="/home/huiwei/ysx/expander_bench/data/probes")
+    parser.add_argument("--remote-env", default="ysx_base")
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/probes_v08_remote_readiness"))
     args = parser.parse_args()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     local = local_rows()
-    remote = run_remote(args.host, args.remote_data_root)
+    remote = run_remote(args.host, args.remote_data_root, args.remote_env)
+    env_snapshot = {key: value for key, value in remote["env"].items() if key != "pip_freeze"}
     remote_by_task = {row["task"]: row for row in remote["rows"]}
     rows = []
     checksum_rows = []
@@ -149,16 +172,18 @@ def main() -> None:
         "status": "ok" if all_ok else "failed",
         "remote_host": args.host,
         "remote_data_root": args.remote_data_root,
+        "remote_env": args.remote_env,
         "gpu_status": remote["gpu"],
-        "env": remote["env"],
+        "env": env_snapshot,
+        "requirements_snapshot_path": str(args.output_dir / "requirements_snapshot.txt"),
         "command": command_string(),
         "rows": rows,
     }
     write_json(args.output_dir / "summary.json", summary)
     write_csv(args.output_dir / "remote_file_counts.csv", rows)
     write_json(args.output_dir / "remote_checksums_verification.json", checksum_rows)
-    (args.output_dir / "env_snapshot.txt").write_text(json.dumps(remote["env"], indent=2) + "\n\n" + remote["gpu"], encoding="utf-8")
-    (args.output_dir / "requirements_snapshot.txt").write_text("Captured on remote via project readiness; full pip freeze is saved separately when requested.\n", encoding="utf-8")
+    (args.output_dir / "env_snapshot.txt").write_text(json.dumps(env_snapshot, indent=2) + "\n\n" + remote["gpu"], encoding="utf-8")
+    (args.output_dir / "requirements_snapshot.txt").write_text(remote["env"].get("pip_freeze", "") + "\n", encoding="utf-8")
     write_command(args.output_dir / "command.sh")
     if not all_ok:
         raise SystemExit(1)

@@ -1,0 +1,170 @@
+[
+  {
+    "field": "train_sha256",
+    "local": "a5a4aa651a5bdec25075930d1f59b7d0358e29dcca0fdd8f8dc897d55ee3de1c",
+    "remote": "a5a4aa651a5bdec25075930d1f59b7d0358e29dcca0fdd8f8dc897d55ee3de1c",
+    "status": "ok",
+    "task": "copy"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "e5f48fc67dd3b4c41c39a224b3a01c5f01de7023425fe951875c029c04d82abd",
+    "remote": "e5f48fc67dd3b4c41c39a224b3a01c5f01de7023425fe951875c029c04d82abd",
+    "status": "ok",
+    "task": "copy"
+  },
+  {
+    "field": "test_sha256",
+    "local": "50de40e9b6f7c53af8a912cf0967ae1129e84028bcc7f90c14a94620d0760fac",
+    "remote": "50de40e9b6f7c53af8a912cf0967ae1129e84028bcc7f90c14a94620d0760fac",
+    "status": "ok",
+    "task": "copy"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "05fa2d72a501713d8ebc376f8ac7c7f1ced5a19e54b65d1017c97d45725cd5a7",
+    "remote": "05fa2d72a501713d8ebc376f8ac7c7f1ced5a19e54b65d1017c97d45725cd5a7",
+    "status": "ok",
+    "task": "copy"
+  },
+  {
+    "field": "train_sha256",
+    "local": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd",
+    "remote": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd",
+    "status": "ok",
+    "task": "selective_copy"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+    "remote": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+    "status": "ok",
+    "task": "selective_copy"
+  },
+  {
+    "field": "test_sha256",
+    "local": "a087af8a447c01dd0d03581dfd95635a29a971d552c01a8bc06f9671876a8fc4",
+    "remote": "a087af8a447c01dd0d03581dfd95635a29a971d552c01a8bc06f9671876a8fc4",
+    "status": "ok",
+    "task": "selective_copy"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "2c11cc40a9c2379ebf809c4d9c7e7fed102811423348bdf94f4ac7f42e0e7bc3",
+    "remote": "2c11cc40a9c2379ebf809c4d9c7e7fed102811423348bdf94f4ac7f42e0e7bc3",
+    "status": "ok",
+    "task": "selective_copy"
+  },
+  {
+    "field": "train_sha256",
+    "local": "200080ef2fa57868104fa842fd044aaa9469e74920b947ebfbe064c0f1278659",
+    "remote": "200080ef2fa57868104fa842fd044aaa9469e74920b947ebfbe064c0f1278659",
+    "status": "ok",
+    "task": "induction_associative_recall"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+    "remote": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+    "status": "ok",
+    "task": "induction_associative_recall"
+  },
+  {
+    "field": "test_sha256",
+    "local": "8dd27359cd9255fd1ddf6e9f46a47fcc0e15d5794fc8aac359c8a0815db9abf8",
+    "remote": "8dd27359cd9255fd1ddf6e9f46a47fcc0e15d5794fc8aac359c8a0815db9abf8",
+    "status": "ok",
+    "task": "induction_associative_recall"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "df5988d7bc08e2e6cfcd936fc3f22e91f137f4c8fc603300967059df8420e107",
+    "remote": "df5988d7bc08e2e6cfcd936fc3f22e91f137f4c8fc603300967059df8420e107",
+    "status": "ok",
+    "task": "induction_associative_recall"
+  },
+  {
+    "field": "train_sha256",
+    "local": "a1b7c5d604fd909d604a19016be082edb1552b46a11a4062ff004db28037c370",
+    "remote": "a1b7c5d604fd909d604a19016be082edb1552b46a11a4062ff004db28037c370",
+    "status": "ok",
+    "task": "niah_kv_retrieval"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "dc1f8c2e15d1ca405b3f434db31fc9ee97a578f46798514c444a7b5684a140b2",
+    "remote": "dc1f8c2e15d1ca405b3f434db31fc9ee97a578f46798514c444a7b5684a140b2",
+    "status": "ok",
+    "task": "niah_kv_retrieval"
+  },
+  {
+    "field": "test_sha256",
+    "local": "a463101d16c5714987db904a18cad3f1d43a657a8c6aa1a0dc183f4e44a17a61",
+    "remote": "a463101d16c5714987db904a18cad3f1d43a657a8c6aa1a0dc183f4e44a17a61",
+    "status": "ok",
+    "task": "niah_kv_retrieval"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "14cffe7c9d84a245abfd70e21476f54e37abcaab1edbff3da1790af168e2c718",
+    "remote": "14cffe7c9d84a245abfd70e21476f54e37abcaab1edbff3da1790af168e2c718",
+    "status": "ok",
+    "task": "niah_kv_retrieval"
+  },
+  {
+    "field": "train_sha256",
+    "local": "bdd8dc646bac34fec1c32050beb9e86fb30918787f429dc0ddedcf88e75f97b3",
+    "remote": "bdd8dc646bac34fec1c32050beb9e86fb30918787f429dc0ddedcf88e75f97b3",
+    "status": "ok",
+    "task": "ruler"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "77922a1bd2fbe34b804a4ea834227e4f351896f400a1258768b676b5f625f8d1",
+    "remote": "77922a1bd2fbe34b804a4ea834227e4f351896f400a1258768b676b5f625f8d1",
+    "status": "ok",
+    "task": "ruler"
+  },
+  {
+    "field": "test_sha256",
+    "local": "7c67a82c89ecc3f2db6db29ec5cbd1d011502108fde648490df15bc5e0436fd5",
+    "remote": "7c67a82c89ecc3f2db6db29ec5cbd1d011502108fde648490df15bc5e0436fd5",
+    "status": "ok",
+    "task": "ruler"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "7c64dad7c19415263e63af398a97383a9f4b5764786e0291abc322acc50a9ddf",
+    "remote": "7c64dad7c19415263e63af398a97383a9f4b5764786e0291abc322acc50a9ddf",
+    "status": "ok",
+    "task": "ruler"
+  },
+  {
+    "field": "train_sha256",
+    "local": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41",
+    "remote": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41",
+    "status": "ok",
+    "task": "lra_listops"
+  },
+  {
+    "field": "validation_sha256",
+    "local": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "remote": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "status": "ok",
+    "task": "lra_listops"
+  },
+  {
+    "field": "test_sha256",
+    "local": "be1ed0adc0760d328d778c44248f8df07ecb96d0ecb25df8bc708d1b5568c134",
+    "remote": "be1ed0adc0760d328d778c44248f8df07ecb96d0ecb25df8bc708d1b5568c134",
+    "status": "ok",
+    "task": "lra_listops"
+  },
+  {
+    "field": "dataset_card_sha256",
+    "local": "01295a3da0cf000815b7bcd2f196daeb24993ce88b7048d75720da30584cfcf5",
+    "remote": "01295a3da0cf000815b7bcd2f196daeb24993ce88b7048d75720da30584cfcf5",
+    "status": "ok",
+    "task": "lra_listops"
+  }
+]

@@ -477,6 +477,18 @@ def write_command(path: Path, command: str | None = None) -> None:
     path.chmod(0o755)
 
 
+def deployed_git_commit(cwd: Path | None = None) -> str | None:
+    start = Path(cwd or repo_root()).resolve()
+    if start.is_file():
+        start = start.parent
+    for parent in [start, *start.parents]:
+        marker = parent / f".deployed_git_commit_{EXPERIMENT_VERSION}"
+        if marker.exists():
+            value = marker.read_text(encoding="utf-8").strip()
+            return value or None
+    return None
+
+
 def git_commit(cwd: Path | None = None) -> str:
     try:
         return subprocess.check_output(
@@ -486,7 +498,7 @@ def git_commit(cwd: Path | None = None) -> str:
             stderr=subprocess.DEVNULL,
         ).strip()
     except Exception:
-        return "unknown"
+        return deployed_git_commit(cwd) or "unknown"
 
 
 def git_dirty(cwd: Path | None = None) -> bool:
@@ -499,7 +511,7 @@ def git_dirty(cwd: Path | None = None) -> bool:
         )
         return bool(out.strip())
     except Exception:
-        return True
+        return deployed_git_commit(cwd) is None
 
 
 def host_name() -> str:
