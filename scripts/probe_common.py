@@ -557,11 +557,13 @@ def default_result_row() -> dict[str, Any]:
 
 def audit_result_row(row: dict[str, Any], metrics_rows: list[dict], phase4_record: dict, resolved: dict) -> dict:
     missing = [field for field in FIELD_CONTRACT if field not in row]
-    empty = [
-        field
-        for field in FIELD_CONTRACT
-        if field in row and row[field] in {"", None, []}
-    ]
+    empty = []
+    for field in FIELD_CONTRACT:
+        if field not in row:
+            continue
+        value = row[field]
+        if value is None or value == "" or value == []:
+            empty.append(field)
     forbidden_hits = []
     payload = json.dumps(row, ensure_ascii=False, sort_keys=True)
     for spelling in ["noncaual", "non-casual"]:
