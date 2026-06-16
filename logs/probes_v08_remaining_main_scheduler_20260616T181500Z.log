@@ -1,0 +1,101 @@
+2026-06-16T18:14:56Z remaining scheduler start
+2026-06-16T18:14:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:14:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:15:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:15:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:16:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:16:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:17:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:17:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:18:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:18:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:19:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:19:56Z waiting existing session v08_main_selective_copy_random_regular
+2026-06-16T18:20:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:20:56Z launch gpu=3 niah_kv_retrieval/zigzag_certified log=logs/probes_v08_main_niah_kv_retrieval_zigzag_certified_multiepoch_curves_20260616T181500Z.log
+2026-06-16T18:21:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:22:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:23:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:24:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:25:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:26:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:27:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:28:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:29:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:30:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:31:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:32:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:33:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:34:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:35:56Z waiting existing session v08_main_selective_copy_zigzag_certified
+2026-06-16T18:36:56Z launch gpu=2 niah_kv_retrieval/local log=logs/probes_v08_main_niah_kv_retrieval_local_multiepoch_curves_20260616T181500Z.log
+2026-06-16T18:37:56Z done niah_kv_retrieval/zigzag_certified
+2026-06-16T18:37:56Z launch gpu=3 ruler/local log=logs/probes_v08_main_ruler_local_multiepoch_curves_20260616T181500Z.log
+2026-06-16T18:40:57Z done niah_kv_retrieval/local
+2026-06-16T18:40:57Z launch gpu=2 niah_kv_retrieval/random_regular log=logs/probes_v08_main_niah_kv_retrieval_random_regular_multiepoch_curves_20260616T181500Z.log
+2026-06-16T18:42:57Z done ruler/local
+2026-06-16T18:42:57Z launch gpu=3 ruler/random_regular log=logs/probes_v08_main_ruler_random_regular_multiepoch_curves_20260616T181500Z.log
+2026-06-16T18:57:57Z done niah_kv_retrieval/random_regular
+2026-06-16T18:57:57Z launch gpu=2 ruler/zigzag_certified log=logs/probes_v08_main_ruler_zigzag_certified_multiepoch_curves_20260616T181500Z.log
+2026-06-16T19:03:57Z done ruler/random_regular
+2026-06-16T19:03:57Z launch gpu=3 lra_listops/local log=logs/probes_v08_main_lra_listops_local_multiepoch_curves_20260616T181500Z.log
+2026-06-16T19:19:57Z done ruler/zigzag_certified
+2026-06-16T19:19:57Z launch gpu=2 induction_associative_recall/local log=logs/probes_v08_main_induction_associative_recall_local_multiepoch_curves_20260616T181500Z.log
+2026-06-16T19:50:57Z done induction_associative_recall/local
+2026-06-16T19:53:57Z done lra_listops/local
+2026-06-16T19:53:57Z lanes finished status2=0 status3=0
+2026-06-16T19:53:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:54:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:55:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:56:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:57:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:58:57Z waiting remaining v08_main tmux sessions
+2026-06-16T19:59:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:00:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:01:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:02:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:03:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:04:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:05:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:06:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:07:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:08:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:09:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:10:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:11:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:12:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:13:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:14:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:15:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:16:57Z waiting remaining v08_main tmux sessions
+2026-06-16T20:17:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:18:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:19:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:20:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:21:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:22:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:23:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:24:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:25:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:26:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:27:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:28:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:29:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:30:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:31:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:32:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:33:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:34:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:35:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:36:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:37:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:38:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:39:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:40:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:41:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:42:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:43:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:44:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:45:58Z waiting remaining v08_main tmux sessions
+2026-06-16T20:46:58Z aggregate start
+2026-06-16T20:47:00Z aggregate done

@@ -1,0 +1,18 @@
+{
+  "B": 64,
+  "N_task": 1024,
+  "T": 1024,
+  "T_raw": 1024,
+  "canonical_graph_artifact_sha256": "0b8d4445cab00cfdaba22bdc958c1443311dbdcf060b39df17fb39a23a6fc0ba",
+  "command": "/Users/sxye/miniconda3/bin/python scripts/probe_parameter_selection.py",
+  "d": 8,
+  "generation_attempts": 1,
+  "graph_certificate_path": "outputs/probes_v08_parameter_selection/graphs/induction_associative_recall/graph_certificate.json",
+  "graph_generation_algorithm": "zigzag_v08_task_parameter_selection",
+  "graph_seed": 0,
+  "max_parallel_edges_per_block_pair": null,
+  "q": 16,
+  "selected_graph_path": "outputs/probes_v08_parameter_selection/graphs/induction_associative_recall/selected_graph.json",
+  "status": "ok",
+  "timestamp_utc": "2026-06-16T14:52:42.606255+00:00"
+}

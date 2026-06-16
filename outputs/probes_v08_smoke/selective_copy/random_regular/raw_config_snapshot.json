@@ -1,0 +1,23 @@
+{
+  "methods": [
+    "local",
+    "zigzag_certified",
+    "random_regular"
+  ],
+  "output_root": "outputs/probes_v08_smoke",
+  "phase": "phase5_smoke",
+  "profile": "smoke",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/probes_v08_task_parameters.json",
+  "tasks": [
+    "copy",
+    "selective_copy",
+    "induction_associative_recall",
+    "niah_kv_retrieval",
+    "ruler",
+    "lra_listops"
+  ],
+  "version": "v08"
+}
