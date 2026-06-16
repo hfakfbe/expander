@@ -130,12 +130,14 @@ def _encoder(task: str, version_dir: Path, output_dir: Path) -> dict:
 def _write_graph(task: str, raw_length: int, B: int, d: int, seed: int, output_dir: Path) -> dict:
     graph_dir = output_dir / "graphs" / task
     graph_dir.mkdir(parents=True, exist_ok=True)
+    g_config = {"max_parallel_edges_per_block_pair": None}
     artifact = build_graph_artifact(
         N_task=raw_length,
         T_raw=raw_length,
         block_size=B,
         degree=d,
         graph_seed=seed,
+        g_config=g_config,
         version=EXPERIMENT_VERSION,
     )
     artifact["allow_multiedges"] = True
@@ -167,6 +169,7 @@ def _write_graph(task: str, raw_length: int, B: int, d: int, seed: int, output_d
         "q": int(artifact["q"]),
         "B": int(B),
         "d": int(d),
+        "max_parallel_edges_per_block_pair": g_config["max_parallel_edges_per_block_pair"],
         "generation_attempts": 1,
         "canonical_graph_artifact_sha256": sha,
         "selected_graph_path": str(graph_dir / "selected_graph.json"),
@@ -237,7 +240,7 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
         "model_family": "probe_transformer_encoder_readout",
         "model_capacity": model,
         "graph_block_policy": "padded_sequence_blocks",
-        "graph_degree_or_budget_policy": "B64_d8_for_long_tasks_or_B32_d8_for_short_tasks",
+        "graph_degree_or_budget_policy": "B64_d8_for_long_tasks_or_B32_d8_for_short_tasks_with_no_artificial_parallel_edge_cap",
         "required_methods": REQUIRED_METHODS,
         "optional_methods": OPTIONAL_METHODS,
         "seed_policy": "single_seed_0_for_v08_first_complete_sweep",
@@ -298,6 +301,7 @@ def build_task_record(task: str, audit_row: dict, output_dir: Path) -> dict:
         "resolved_graph_block_size": B,
         "resolved_graph_num_blocks_or_nodes": int(T // B),
         "resolved_graph_degree_or_budget": d,
+        "resolved_graph_max_parallel_edges_per_block_pair": "not_capped",
         "resolved_B_alias_if_applicable": B,
         "resolved_q_alias_if_applicable": int(T // B),
         "resolved_d_alias_if_applicable": d,
@@ -387,6 +391,7 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | resolved_padded_sequence_length | 图和位置编码使用的补齐后长度 | token 数 | Phase 1 长度与 B 补齐 | 决定 attention mask 尺寸 | 无 |
 | resolved_graph_block_size | zigzag/local 的 block 大小 | token 数 | Phase 4 选择 | 控制局部预算和 q | 无 |
 | resolved_graph_degree_or_budget | zigzag H 图 degree | 整数 | Phase 4 选择 | 控制稀疏远程边预算 | 无 |
+| resolved_graph_max_parallel_edges_per_block_pair | G 图 block-pair 并行边上限 | not_capped | Phase 4 选择 | 避免对小 q 大 B 任务施加数学上不可满足的人为上限；实际重复率由 graph certificate 记录 | 无 |
 | resolved_layers | Transformer 层数 | 层 | Phase 4 选择 | 记录模型容量 | 无 |
 | resolved_d_model | hidden 维度 | 维度 | Phase 4 选择 | 记录模型容量 | 无 |
 | resolved_effective_batch_size | 梯度累积后的有效 batch | 样本数 | batch_size * gradient_accumulation_steps | 保证 method 间公平 | 无 |
@@ -402,7 +407,7 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | 字段 | 值 |
 |---|---|
 | report_language | zh |
-| explained_parameter_count | 12 |
+| explained_parameter_count | 13 |
 | unexplained_parameters | [] |
 | english_only_sections | [] |
 """,
@@ -417,6 +422,7 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | attention_contract | 注意力合同 | non_causal | v08 手册 | 判定是否进入主评测 | 不满足则失败 |
 | causal | 是否使用 causal mask | false | v08 手册 | 防止 next-token LM 混入 | 不满足则失败 |
 | graph_directionality | 图方向性 | directed | v08 手册 | 理论对齐要求 | 不满足则失败 |
+| resolved_graph_max_parallel_edges_per_block_pair | G 图 block-pair 并行边上限 | not_capped | Phase 4 | 小 q 任务无法满足固定 2 上限，故不人为裁剪；由证书审计实际图性质 | 无 |
 | required_methods | 必跑方法集合 | local/zigzag_certified/random_regular | Phase 4 | 定义主比较 | 无 |
 | optional_methods | 可选方法集合 | dense | Phase 4 | 记录未优先运行的参考方法 | 未运行时写 not_applicable |
 | train_budget_policy | 训练预算表达方式 | step_budget | Phase 4 | 复现训练长度 | 无 |
@@ -429,7 +435,7 @@ Phase 4 已在 Phase 1 数据审计基础上冻结 6 个 probe task 的参数，
 | 字段 | 值 |
 |---|---|
 | report_language | zh |
-| explained_parameter_count | 9 |
+| explained_parameter_count | 10 |
 | unexplained_parameters | [] |
 | english_only_sections | [] |
 """,
