@@ -1,0 +1,74 @@
+{
+  "attention_contract": "non_causal",
+  "audit_status": "passed_with_sampling_caveat",
+  "dense_mask": {
+    "all_true": true,
+    "backend": "dense_mask",
+    "causal": false,
+    "pair_count": 37748736,
+    "shape": [
+      6144,
+      6144
+    ],
+    "symmetric": true
+  },
+  "encoder": "integer_shift",
+  "loss_type": "sequence_cross_entropy",
+  "padded_sequence_length": 6144,
+  "readout_start": 4096,
+  "sanity_stop_reason": "M and L both completed 625 steps but validation copy_token_accuracy remained below 0.03",
+  "splits": {
+    "test": {
+      "input_length": 4096,
+      "rows": 1000,
+      "target_length": 2048,
+      "target_position_max": 6143,
+      "target_position_min": 4096,
+      "target_positions_contiguous": true,
+      "target_values_match_integer_shifted_json": true,
+      "valid_target_count": 2048
+    },
+    "train": {
+      "input_length": 2048,
+      "rows": 10000,
+      "target_length": 1024,
+      "target_position_max": 5119,
+      "target_position_min": 4096,
+      "target_positions_contiguous": true,
+      "target_values_match_integer_shifted_json": true,
+      "valid_target_count": 1024
+    },
+    "validation": {
+      "input_length": 2048,
+      "rows": 1000,
+      "target_length": 1024,
+      "target_position_max": 5119,
+      "target_position_min": 4096,
+      "target_positions_contiguous": true,
+      "target_values_match_integer_shifted_json": true,
+      "valid_target_count": 1024
+    }
+  },
+  "training_sampling": {
+    "coverage_ratio": 0.6333,
+    "draws": 10000,
+    "examples_never_seen": 3667,
+    "examples_seen_once": 3707,
+    "max_repeat_count": 6,
+    "sampling_with_replacement": true,
+    "unique_examples": 6333
+  },
+  "trials_completed": [
+    "dcopy_1ep_M_lr1em4",
+    "dcopy_1ep_L_lr1em4"
+  ],
+  "trials_not_started_by_stop_rule": [
+    "dcopy_1ep_M_lr3em4",
+    "dcopy_1ep_M_lr3em5",
+    "dcopy_1ep_L_lr3em4",
+    "dcopy_1ep_L_lr3em5",
+    "dcopy_1ep_S_lr3em4",
+    "dcopy_1ep_S_lr1em4",
+    "dcopy_1ep_S_lr3em5"
+  ]
+}

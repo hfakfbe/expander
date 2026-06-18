@@ -1,0 +1,11 @@
+{
+  "completed_runs": 1,
+  "expected_runs": 1,
+  "phase": "phase_dense_copy_1epoch_tuning",
+  "profile": "main",
+  "result_field_audits_passed": 1,
+  "result_field_audits_total": 1,
+  "status": "ok",
+  "timestamp_utc": "2026-06-18T05:38:35.004817+00:00",
+  "version": "v08"
+}

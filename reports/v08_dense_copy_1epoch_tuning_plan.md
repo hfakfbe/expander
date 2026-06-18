@@ -51,7 +51,7 @@
 只训 1 个 train-equivalent epoch：
 
 ```text
-effective_batch_size = batch_size * gradient_accumulation_steps = 16 * 1 = 16
+effective_batch_size = batch_size * gradient_accumulation_steps = 2 * 8 = 16
 strict_one_epoch_steps = ceil(train_examples / effective_batch_size) = ceil(10000 / 16) = 625
 manual_budget_steps = 625
 train_examples_seen_planned = 625 * 16 = 10000
@@ -66,10 +66,10 @@ train_equivalent_epochs_actual = 10000 / 10000 = 1.0
 | train_budget_value | `625` | 严格 1 epoch |
 | steps_planned_if_step_budget | `625` | logging gate 使用 |
 | train_equivalent_epochs | `1` | 严格 1 epoch |
-| batch_size | `16` | dense 6144 长度下先保守避免 OOM |
-| gradient_accumulation_steps | `1` | 用户手动参数优先 |
-| effective_batch_size | `16` | `16 * 1` |
-| eval_batch_size | `16` | dense full attention 评测同样保守 |
+| batch_size | `2` | dense 6144 长度下使用小 micro-batch 控制显存 |
+| gradient_accumulation_steps | `8` | 累积 8 次以保持 effective batch 不变 |
+| effective_batch_size | `16` | `2 * 8` |
+| eval_batch_size | `2` | 与 dense micro-batch 对齐，降低评测显存峰值 |
 | optimizer | `adamw` | 沿用 v08 |
 | lr_scheduler | `const` | 目标语义为恒定学习率；注意当前 runner 还需要代码支持，见下方实现审计 |
 | warmup_ratio | `0.1` | 若 runner 未修改，实际仍会按 warmup+cosine 使用该值 |
@@ -211,10 +211,10 @@ copy.resolved_heads = <grid value>
 copy.resolved_ffn_dim = <grid value>
 copy.resolved_dropout = 0.0
 copy.resolved_parameter_count = <estimated or runtime-confirmed value>
-copy.resolved_batch_size = 16
-copy.resolved_gradient_accumulation_steps = 1
+copy.resolved_batch_size = 2
+copy.resolved_gradient_accumulation_steps = 8
 copy.resolved_effective_batch_size = 16
-copy.resolved_eval_batch_size = 16
+copy.resolved_eval_batch_size = 2
 copy.resolved_train_budget_unit = "steps"
 copy.resolved_train_budget_value = 625
 copy.resolved_steps_planned_if_step_budget = 625
