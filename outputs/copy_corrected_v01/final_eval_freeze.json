@@ -1,0 +1,67 @@
+{
+  "version": "copy_corrected_v01",
+  "status": "frozen_before_final_eval",
+  "frozen_at_utc": "2026-06-18T16:49:00Z",
+  "worktree_path": "/Users/sxye/Documents/expander-copy-corrected-v01",
+  "remote_worktree_path": "/home/huiwei/ysx/zigzag_attention_copy_corrected_v01",
+  "branch_name": "codex/copy-corrected-v01",
+  "branch_point_commit": "64845eb22b149fa5496dacecdfcdb610fbdc1cbb",
+  "code_commit_for_training": "498a465e6e5386d49e98f620d6418a9f57f12264",
+  "code_commit_for_final_eval": "498a465e6e5386d49e98f620d6418a9f57f12264",
+  "config_path": "configs/copy_corrected_v01.json",
+  "config_sha256": "dfd68a7e37a8f349d73a6f44b7c472d01bb32f2a9bb1f79a3ee007dc4960e37c",
+  "task_manifest_path": "configs/copy_corrected_v01_task_parameters.json",
+  "task_manifest_sha256": "1a75cf886043fda11e8bcbc9ad38b14f09e48976411ab12867ce66871270e1c9",
+  "selected_graph_path": "outputs/copy_corrected_v01/graphs/copy/selected_graph.json",
+  "selected_graph_sha256": "dde460290819f1c1271488560b7866f6708315f605a8ca10ef92d20c5dab8d60",
+  "reachability_artifact_path": "outputs/copy_corrected_v01/graphs/copy/reachability.json",
+  "reachability_artifact_sha256": "db30daa09d9baa06ac868918bac3614b9c1ccff2b90006fb5e3ca32cbd17694e",
+  "train_sha256": "eb43507820dab41759c14f71a935060a729ad8ace1c4063957968e33146c68a7",
+  "test_sha256": "f3aa817cc1433c5d3d566f47c794c9c4daeb4c2360833797de045e147c8c9910",
+  "train_content_sha256": "ed34c697ccc4a7d50c233ecb6dbbd4cfad4fcf6faa21bfff5308d9ea5cf50a5e",
+  "test_content_sha256": "72be289c8982d76b110d256985efd10edbb8514e8c341be256f1a1559a49fbba",
+  "trial_id": "gate",
+  "seeds": [0],
+  "methods": [
+    "dense",
+    "local",
+    "random_regular",
+    "zigzag_certified"
+  ],
+  "checkpoint_selection_rule": {
+    "name": "train_final_step625_for_each_method_seed",
+    "description": "Use each method/seed train run's latest checkpoint from checkpoint_manifest.json, which is the 1-epoch train_final_step625.pt checkpoint. Do not select by final test, do not select the best train diagnostic checkpoint, do not add epochs, do not alter model/data/graph/config.",
+    "uses_test_data": false,
+    "uses_train_metric_for_selection": false
+  },
+  "frozen_checkpoints": {
+    "dense/seed0": {
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/train_final_step625.pt",
+      "sha256": "54a0c197a9bde8a38779079c793fe7d7f01d849272119d1ca5d5977a161c7098"
+    },
+    "local/seed0": {
+      "path": "outputs/copy_corrected_v01/runs/gate/local/seed0/checkpoints/train_final_step625.pt",
+      "sha256": "bafe0b9d9d68d17cfe4be5e9b936a4cf131c8615c10455598b8741ea57a400f8"
+    },
+    "random_regular/seed0": {
+      "path": "outputs/copy_corrected_v01/runs/gate/random_regular/seed0/checkpoints/train_final_step625.pt",
+      "sha256": "16ef630b82c184986cf309aa7e84b69b4c875c4621c10fb2f1560fd92f63fbb8"
+    },
+    "zigzag_certified/seed0": {
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/train_final_step625.pt",
+      "sha256": "b7326f2441c9d97d496de0cf348dedd52b1cbabc756793e20ac44d2ca788efc0"
+    }
+  },
+  "gate4_diagnostic_status": {
+    "dense": "passed_training_diagnostic",
+    "local": "expected_structural_negative_control_unreachable",
+    "random_regular": "completed_training_diagnostic_but_not_solved_in_one_epoch",
+    "zigzag_certified": "completed_training_diagnostic_but_not_solved_in_one_epoch"
+  },
+  "test_policy": {
+    "split": "datasets/copy/test.jsonl",
+    "source": "old validation split",
+    "run_once_per_frozen_method_seed": true,
+    "read_only_in_mode": "final-eval"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 625,
+    "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/train_final_step625.pt",
+    "permutation_position": 0,
+    "sha256": "b7326f2441c9d97d496de0cf348dedd52b1cbabc756793e20ac44d2ca788efc0"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 100,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step100.pt",
+      "permutation_position": 1600,
+      "sha256": "47ee16227f91fa0956a376f57d8e5ebb87036380765d16ca414df465809921f8"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 200,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step200.pt",
+      "permutation_position": 3200,
+      "sha256": "ea6e69bda2484a464678989c631bcfad87c2ff30e6698cf2dd0519de51ebcfe6"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 300,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step300.pt",
+      "permutation_position": 4800,
+      "sha256": "0a95ca4ce23303af527d106136f7063c27d8c87773157ec80ebe4f06c3b7cddd"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 400,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step400.pt",
+      "permutation_position": 6400,
+      "sha256": "5dfd2647900f6f927b69c49da15611b7d9ef1c871e1537d0e52027395da1acec"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 8000,
+      "sha256": "8348c8338f8f013322dcb1052dd6c527accc559bdedcac085596f288b47a0493"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 600,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step600.pt",
+      "permutation_position": 9600,
+      "sha256": "c103ec2d756afb2500b2bf3560961e3e0a5383420b95a4ef477ae0a9295342ea"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 625,
+      "path": "outputs/copy_corrected_v01/runs/gate/zigzag_certified/seed0/checkpoints/train_final_step625.pt",
+      "permutation_position": 0,
+      "sha256": "b7326f2441c9d97d496de0cf348dedd52b1cbabc756793e20ac44d2ca788efc0"
+    }
+  ]
+}

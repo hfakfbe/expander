@@ -1,0 +1,70 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 625,
+    "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/train_final_step625.pt",
+    "permutation_position": 0,
+    "sha256": "54a0c197a9bde8a38779079c793fe7d7f01d849272119d1ca5d5977a161c7098"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 100,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step100.pt",
+      "permutation_position": 1600,
+      "sha256": "5df82e0798498333bec4398aa7770e0a7e9997737a1564d19bf1c14389e582ca"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 200,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step200.pt",
+      "permutation_position": 3200,
+      "sha256": "ae0f2b11754d154666968d8d9c643bfa5dffe9a18861cabd8765eb553ef861ba"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 300,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step300.pt",
+      "permutation_position": 4800,
+      "sha256": "bef3d0d376a75523b1c4d743e1cd1fdd031f087f7aaf6937d647176f9b94c656"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 400,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step400.pt",
+      "permutation_position": 6400,
+      "sha256": "4f967010096df43302876d4ec499ca1c5565cb16c706c5f996dbd034de931ae3"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 8000,
+      "sha256": "dee8d390de840b076ed919b882312509c4cb4d05690858eff08ad93f0d05a4bb"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 600,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/checkpoint_step600.pt",
+      "permutation_position": 9600,
+      "sha256": "c38ffe0bb0479ee9cc8c300b17c3c24a345d1e4babc415b5e0a8829ccba4976f"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 625,
+      "path": "outputs/copy_corrected_v01/runs/gate/dense/seed0/checkpoints/train_final_step625.pt",
+      "permutation_position": 0,
+      "sha256": "54a0c197a9bde8a38779079c793fe7d7f01d849272119d1ca5d5977a161c7098"
+    }
+  ]
+}
