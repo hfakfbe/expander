@@ -1,0 +1,16 @@
+{
+  "methods": [
+    "dense"
+  ],
+  "output_root": "outputs/probes_v08_dense_copy_1epoch/dcopy_1ep_L_lr1em4",
+  "phase": "phase_dense_copy_1epoch_tuning",
+  "profile": "main",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/probes_v08_dense_copy_1epoch/dcopy_1ep_L_lr1em4_task_parameters.json",
+  "tasks": [
+    "copy"
+  ],
+  "version": "v08_dense_copy_1epoch"
+}

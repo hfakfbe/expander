@@ -1,0 +1,66 @@
+experiment=v08_dense_copy_1epoch
+trial=dcopy_1ep_M_lr1em4
+git_commit=f146357
+host=hhpc
+started_at=2026-06-18T12:21:56+08:00
+gpu_id=3
+3, NVIDIA A100-SXM4-80GB, 0 %, 10 MiB, 81920 MiB
+command=CUDA_VISIBLE_DEVICES=3 python scripts/run_probe_experiment.py --config configs/probes_v08_dense_copy_1epoch/dcopy_1ep_M_lr1em4.json --task copy --method dense --seed 0
+/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Traceback (most recent call last):
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 1030, in <module>
+    main()
+    ~~~~^^
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 1016, in main
+    run_one(config, manifest, task, method, int(seed), device)
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 845, in run_one
+    loss, _batch_metrics, _per_sample = forward_loss_and_metrics(model, artifacts, batch, task_record)
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/huiwei/ysx/zigzag_attention/scripts/run_probe_experiment.py", line 199, in forward_loss_and_metrics
+    token_logits, class_logits = model(
+                                 ~~~~~^
+        batch.tokens,
+        ^^^^^^^^^^^^^
+    ...<7 lines>...
+        artifacts.neighbor_log_m,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/huiwei/ysx/zigzag_attention/scripts/probe_tasks.py", line 310, in forward
+    h = block(
+        h,
+    ...<6 lines>...
+        neighbor_log_m,
+    )
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/huiwei/ysx/zigzag_attention/scripts/synthetic_mvp_core/model.py", line 134, in forward
+    x = x + self.attn(
+            ~~~~~~~~~^
+        self.ln1(x),
+        ^^^^^^^^^^^^
+    ...<6 lines>...
+        neighbor_log_m,
+        ^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/home/huiwei/miniconda3/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/huiwei/ysx/zigzag_attention/scripts/synthetic_mvp_core/model.py", line 47, in forward
+    scores = torch.matmul(q, k.transpose(-1, -2)) * (self.head_dim ** -0.5)
+             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 18.00 GiB. GPU 0 has a total capacity of 79.25 GiB of which 5.13 GiB is free. Including non-PyTorch memory, this process has 74.10 GiB memory in use. Of the allocated memory 59.72 GiB is allocated by PyTorch, and 13.89 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+finished_at=2026-06-18T12:22:08+08:00 status=1
