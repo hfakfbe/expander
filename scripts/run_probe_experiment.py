@@ -8,6 +8,7 @@ import os
 import shutil
 import sys
 import time
+import traceback
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -105,7 +106,18 @@ def select_device(requested: str) -> torch.device:
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def schedule_lr(base_lr: float, min_lr: float, warmup_steps: int, total_steps: int, step: int) -> float:
+def schedule_lr(
+    scheduler: str,
+    base_lr: float,
+    min_lr: float,
+    warmup_steps: int,
+    total_steps: int,
+    step: int,
+) -> float:
+    if scheduler == "const":
+        return base_lr
+    if scheduler != "cosine":
+        raise ValueError(f"unsupported lr scheduler={scheduler!r}")
     if warmup_steps > 0 and step <= warmup_steps:
         return base_lr * step / max(warmup_steps, 1)
     progress = min(max((step - warmup_steps) / max(total_steps - warmup_steps, 1), 0.0), 1.0)
@@ -810,6 +822,7 @@ def run_one(config: dict, manifest: dict, task: str, method: str, seed: int, dev
     batch_size = int(task_record["resolved_batch_size"])
     for step in range(1, total_steps + 1):
         lr = schedule_lr(
+            str(task_record["resolved_lr_scheduler"]),
             float(task_record["resolved_base_learning_rate"]),
             float(task_record["resolved_min_learning_rate"]),
             max(1, int(round(total_steps * float(task_record["resolved_warmup_ratio"])))),
@@ -999,7 +1012,16 @@ def main() -> None:
     for task in tasks:
         for method in methods:
             for seed in seeds:
-                run_one(config, manifest, task, method, int(seed), device)
+                try:
+                    run_one(config, manifest, task, method, int(seed), device)
+                except Exception:
+                    run_dir = Path(config["output_root"]) / task / method
+                    run_dir.mkdir(parents=True, exist_ok=True)
+                    (run_dir / "error.log").write_text(
+                        "".join(traceback.format_exception(*sys.exc_info())),
+                        encoding="utf-8",
+                    )
+                    raise
     if not args.no_aggregate:
         aggregate(config)
 
