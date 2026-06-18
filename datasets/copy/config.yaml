@@ -1,0 +1,13 @@
+version: copy_corrected_v01
+variant: s4_copying_iid_m1024_marker_readout
+source_length: 1024
+marker_length: 1024
+target_length: 1024
+raw_sequence_length: 2048
+marker_token_id: 63
+vocab_size: 64
+token_output_size: 64
+encoding: identity_integer
+validation_split: absent
+test_source: old_validation_jsonl
+discarded_old_test: blocked

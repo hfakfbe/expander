@@ -43,6 +43,7 @@ from probe_metrics import (
     classification_metrics,
     json_metric,
     masked_sequence_loss,
+    masked_sequence_loss_sum,
     sequence_metrics,
     write_training_curves,
 )
@@ -183,6 +184,9 @@ def build_model_and_artifacts(
         dropout=float(task_record["resolved_dropout"]),
         attention_backend=backend,
         block_size=int(task_record["resolved_graph_block_size"]),
+        position_encoding=str(task_record.get("position_encoding", "learned_absolute")),
+        rope_theta=float(task_record.get("rope_theta", 10000.0)),
+        use_class_head=not bool(task_record.get("copy_corrected_v01", False)),
     ).to(device)
     return encoder, model, artifacts, backend
 
@@ -212,8 +216,16 @@ def forward_loss_and_metrics(model, artifacts, batch, task_record: dict) -> tupl
     per_sample = []
     if loss_type in {"sequence_cross_entropy", "retrieval_sequence_cross_entropy", "mqar_position_cross_entropy"}:
         assert batch.target_positions is not None and batch.targets is not None and batch.target_mask is not None
-        selected = gather_position_logits(token_logits, batch.target_positions)
-        loss = masked_sequence_loss(selected, batch.targets, batch.target_mask)
+        if bool(task_record.get("copy_corrected_v01", False)):
+            expected = torch.arange(1024, 2048, device=batch.target_positions.device).repeat(batch.target_positions.shape[0], 1)
+            if not bool(torch.equal(batch.target_positions, expected)):
+                raise ValueError("copy_corrected_v01 target_positions must be exactly 1024..2047")
+            selected = token_logits[:, 1024:2048, :]
+        else:
+            selected = gather_position_logits(token_logits, batch.target_positions)
+        loss_sum = masked_sequence_loss_sum(selected, batch.targets, batch.target_mask)
+        token_count = int(batch.target_mask.sum().item())
+        loss = loss_sum / max(token_count, 1)
         metrics = sequence_metrics(selected, batch.targets, batch.target_mask)
         pred = selected.argmax(dim=-1)
         for index, subtask in enumerate(batch.subtasks):
@@ -221,10 +233,16 @@ def forward_loss_and_metrics(model, artifacts, batch, task_record: dict) -> tupl
             token_total = int(mask.sum().item())
             token_correct = int(((pred[index] == batch.targets[index]) & mask).sum().item())
             exact = bool((((pred[index] == batch.targets[index]) | ~mask).all()).item())
+            sample_loss_sum = F.cross_entropy(
+                selected[index][mask],
+                batch.targets[index][mask],
+                reduction="sum",
+            )
             row = {
                 "examples": 1,
                 "tokens": token_total,
-                "loss": float(loss.item()),
+                "loss": float(sample_loss_sum.item()) / max(token_total, 1),
+                "loss_sum": float(sample_loss_sum.item()),
                 "subtask": subtask,
                 "token_accuracy": token_correct / max(token_total, 1),
                 "exact_match": 1.0 if exact else 0.0,
@@ -284,9 +302,7 @@ def evaluate(model, artifacts, encoder, task_record: dict, store: JsonlStore, li
     with torch.no_grad():
         for raw_rows in store.batches(batch_size, limit=limit):
             batch = make_probe_batch(raw_rows, task_record, encoder, device)
-            loss, _metrics, per_sample = forward_loss_and_metrics(model, artifacts, batch, task_record)
-            for item in per_sample:
-                item["loss"] = float(loss.item())
+            _loss, _metrics, per_sample = forward_loss_and_metrics(model, artifacts, batch, task_record)
             rows.extend(per_sample)
     elapsed = max(time.perf_counter() - start, 1e-9)
     agg = aggregate_metric_rows(rows, task_record["primary_metric"])

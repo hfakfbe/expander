@@ -6,6 +6,39 @@ import torch.nn as nn
 from .attention import local_blockpair_attention, local_cross_attention
 
 
+def rotate_half(x: torch.Tensor) -> torch.Tensor:
+    if x.shape[-1] % 2 != 0:
+        raise ValueError("RoPE head_dim must be even")
+    first, second = x.chunk(2, dim=-1)
+    return torch.cat((-second, first), dim=-1)
+
+
+def apply_rotary_pos_emb(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    return (q * cos) + (rotate_half(q) * sin), (k * cos) + (rotate_half(k) * sin)
+
+
+class RotaryEmbedding(nn.Module):
+    def __init__(self, head_dim: int, theta: float = 10000.0):
+        super().__init__()
+        if int(head_dim) % 2 != 0:
+            raise ValueError("RoPE requires an even head_dim")
+        inv_freq = 1.0 / (float(theta) ** (torch.arange(0, int(head_dim), 2, dtype=torch.float32) / int(head_dim)))
+        self.register_buffer("inv_freq", inv_freq, persistent=False)
+
+    def forward(self, seq_len: int, device: torch.device, dtype: torch.dtype) -> tuple[torch.Tensor, torch.Tensor]:
+        positions = torch.arange(int(seq_len), device=device, dtype=torch.float32)
+        freqs = torch.outer(positions, self.inv_freq.to(device=device, dtype=torch.float32))
+        emb = torch.cat((freqs, freqs), dim=-1)
+        cos = emb.cos()[None, None, :, :].to(dtype=dtype)
+        sin = emb.sin()[None, None, :, :].to(dtype=dtype)
+        return cos, sin
+
+
 class MaskedSelfAttention(nn.Module):
     def __init__(
         self,
@@ -14,6 +47,8 @@ class MaskedSelfAttention(nn.Module):
         dropout: float,
         attention_backend: str,
         block_size: int,
+        position_encoding: str = "learned_absolute",
+        rope_theta: float = 10000.0,
     ):
         super().__init__()
         if d_model % num_heads != 0:
@@ -22,9 +57,11 @@ class MaskedSelfAttention(nn.Module):
         self.head_dim = d_model // num_heads
         self.attention_backend = attention_backend
         self.block_size = block_size
+        self.position_encoding = position_encoding
         self.qkv = nn.Linear(d_model, d_model * 3)
         self.out = nn.Linear(d_model, d_model)
         self.dropout = nn.Dropout(dropout)
+        self.rotary_emb = RotaryEmbedding(self.head_dim, theta=rope_theta) if position_encoding == "rope" else None
 
     def forward(
         self,
@@ -43,6 +80,9 @@ class MaskedSelfAttention(nn.Module):
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
         v = v.transpose(1, 2)
+        if self.rotary_emb is not None:
+            cos, sin = self.rotary_emb(seq_len, q.device, q.dtype)
+            q, k = apply_rotary_pos_emb(q, k, cos, sin)
         if self.attention_backend == "dense_mask":
             scores = torch.matmul(q, k.transpose(-1, -2)) * (self.head_dim ** -0.5)
             scores = scores.masked_fill(~mask[None, None, :, :], torch.finfo(scores.dtype).min)
@@ -107,10 +147,20 @@ class Block(nn.Module):
         dropout: float,
         attention_backend: str,
         block_size: int,
+        position_encoding: str = "learned_absolute",
+        rope_theta: float = 10000.0,
     ):
         super().__init__()
         self.ln1 = nn.LayerNorm(d_model)
-        self.attn = MaskedSelfAttention(d_model, num_heads, dropout, attention_backend, block_size)
+        self.attn = MaskedSelfAttention(
+            d_model,
+            num_heads,
+            dropout,
+            attention_backend,
+            block_size,
+            position_encoding=position_encoding,
+            rope_theta=rope_theta,
+        )
         self.ln2 = nn.LayerNorm(d_model)
         self.ffn = nn.Sequential(
             nn.Linear(d_model, ffn_dim),
@@ -156,13 +206,27 @@ class Transformer(nn.Module):
         dropout: float,
         attention_backend: str,
         block_size: int,
+        position_encoding: str = "learned_absolute",
+        rope_theta: float = 10000.0,
     ):
         super().__init__()
+        if position_encoding not in {"learned_absolute", "rope"}:
+            raise ValueError(f"unknown position_encoding={position_encoding!r}")
         self.token = nn.Embedding(vocab_size, d_model)
-        self.pos = nn.Embedding(seq_len, d_model)
+        self.position_encoding = position_encoding
+        self.pos = nn.Embedding(seq_len, d_model) if position_encoding == "learned_absolute" else None
         self.blocks = nn.ModuleList(
             [
-                Block(d_model, num_heads, ffn_dim, dropout, attention_backend, block_size)
+                Block(
+                    d_model,
+                    num_heads,
+                    ffn_dim,
+                    dropout,
+                    attention_backend,
+                    block_size,
+                    position_encoding=position_encoding,
+                    rope_theta=rope_theta,
+                )
                 for _ in range(num_layers)
             ]
         )
@@ -180,8 +244,10 @@ class Transformer(nn.Module):
         local_log_m: torch.Tensor | None = None,
         neighbor_log_m: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        pos = torch.arange(x.shape[1], device=x.device)
-        h = self.token(x) + self.pos(pos)[None, :, :]
+        h = self.token(x)
+        if self.pos is not None:
+            pos = torch.arange(x.shape[1], device=x.device)
+            h = h + self.pos(pos)[None, :, :]
         for block in self.blocks:
             h = block(
                 h,

@@ -13,6 +13,9 @@ checkpoint*/
 checkpoints/
 cached_graphs/
 
+# Corrected Copy raw data is materialized locally and tracked by checksums/scripts.
+datasets/copy/*.jsonl
+
 # Local editor / office lock files
 .~*
 *.tmp

@@ -19,6 +19,15 @@ def masked_sequence_loss(logits: torch.Tensor, targets: torch.Tensor, target_mas
     return F.cross_entropy(flat_logits[flat_mask], flat_targets[flat_mask])
 
 
+def masked_sequence_loss_sum(logits: torch.Tensor, targets: torch.Tensor, target_mask: torch.Tensor) -> torch.Tensor:
+    flat_logits = logits.reshape(-1, logits.shape[-1])
+    flat_targets = targets.reshape(-1)
+    flat_mask = target_mask.reshape(-1)
+    if not bool(flat_mask.any()):
+        raise ValueError("sequence target mask is empty")
+    return F.cross_entropy(flat_logits[flat_mask], flat_targets[flat_mask], reduction="sum")
+
+
 def sequence_metrics(logits: torch.Tensor, targets: torch.Tensor, target_mask: torch.Tensor) -> dict[str, float]:
     pred = logits.argmax(dim=-1)
     correct = (pred == targets) & target_mask
@@ -30,6 +39,9 @@ def sequence_metrics(logits: torch.Tensor, targets: torch.Tensor, target_mask: t
         "sequence_accuracy": float(per_seq_ok.float().mean().item()) if pred.shape[0] else 0.0,
         "exact_match": float(per_seq_ok.float().mean().item()) if pred.shape[0] else 0.0,
         "token_count": token_total,
+        "token_correct": token_correct,
+        "example_count": int(pred.shape[0]),
+        "exact_count": int(per_seq_ok.sum().item()),
     }
 
 
@@ -61,18 +73,31 @@ def aggregate_metric_rows(rows: list[dict], primary_metric: str) -> dict:
         }
     examples = sum(int(row.get("examples", 0)) for row in rows)
     tokens = sum(int(row.get("tokens", 0)) for row in rows)
-    loss_numer = sum(float(row.get("loss", 0.0)) * max(int(row.get("tokens", 0)), int(row.get("examples", 0)), 1) for row in rows)
-    loss_denom = sum(max(int(row.get("tokens", 0)), int(row.get("examples", 0)), 1) for row in rows)
+    explicit_loss_sum = any("loss_sum" in row for row in rows)
+    if explicit_loss_sum:
+        loss_numer = sum(float(row.get("loss_sum", 0.0)) for row in rows)
+        loss_denom = sum(int(row.get("tokens", 0)) for row in rows)
+    else:
+        loss_numer = sum(float(row.get("loss", 0.0)) * max(int(row.get("tokens", 0)), int(row.get("examples", 0)), 1) for row in rows)
+        loss_denom = sum(max(int(row.get("tokens", 0)), int(row.get("examples", 0)), 1) for row in rows)
     merged: dict[str, float] = {}
     weights: dict[str, int] = {}
     for row in rows:
-        weight = max(int(row.get("tokens", 0)), int(row.get("examples", 0)), 1)
+        token_weight = max(int(row.get("tokens", 0)), 1)
+        example_weight = max(int(row.get("examples", 0)), 1)
         for key, value in row.items():
-            if key in {"loss", "examples", "tokens", "subtask"}:
+            if key in {"loss", "loss_sum", "examples", "tokens", "subtask"}:
                 continue
             if isinstance(value, (int, float)) and math.isfinite(float(value)):
-                merged[key] = merged.get(key, 0.0) + float(value) * weight
-                weights[key] = weights.get(key, 0) + weight
+                if key.endswith("token_accuracy") or key == "token_accuracy":
+                    merged[key] = merged.get(key, 0.0) + float(value) * token_weight
+                    weights[key] = weights.get(key, 0) + token_weight
+                elif key.endswith("sequence_accuracy") or key in {"sequence_accuracy", "exact_match", "accuracy", "listops_accuracy", "listops_macro_accuracy", "retrieval_exact_match", "ruler_subtask_exact_match"}:
+                    merged[key] = merged.get(key, 0.0) + float(value) * example_weight
+                    weights[key] = weights.get(key, 0) + example_weight
+                else:
+                    merged[key] = merged.get(key, 0.0) + float(value) * example_weight
+                    weights[key] = weights.get(key, 0) + example_weight
     averaged = {key: merged[key] / max(weights[key], 1) for key in merged}
     subtask_rows: dict[str, list[dict]] = defaultdict(list)
     for row in rows:

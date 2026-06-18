@@ -1,0 +1,80 @@
+{
+  "dense": {
+    "average_shortest_path": 1.0,
+    "direction_definition": "mask[marker_query_position, source_key_position] == true; multi-hop follows query-to-key rows backward through layers",
+    "layers": 4,
+    "method": "dense",
+    "per_target_shortest_path_histogram": {
+      "1": 1024,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 1.0,
+    "target_in_2hop_rate": 1.0,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "unreachable_rate": 0.0
+  },
+  "local": {
+    "average_shortest_path": null,
+    "direction_definition": "mask[marker_query_position, source_key_position] == true; multi-hop follows query-to-key rows backward through layers",
+    "layers": 4,
+    "method": "local",
+    "per_target_shortest_path_histogram": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "unreachable": 1024
+    },
+    "target_in_1hop_rate": 0.0,
+    "target_in_2hop_rate": 0.0,
+    "target_in_3hop_rate": 0.0,
+    "target_in_4hop_rate": 0.0,
+    "target_in_Lhop_rate": 0.0,
+    "unreachable_rate": 1.0
+  },
+  "random_regular": {
+    "average_shortest_path": 1.9716796875,
+    "direction_definition": "mask[marker_query_position, source_key_position] == true; multi-hop follows query-to-key rows backward through layers",
+    "layers": 4,
+    "method": "random_regular",
+    "per_target_shortest_path_histogram": {
+      "1": 34,
+      "2": 985,
+      "3": 5,
+      "4": 0,
+      "unreachable": 0
+    },
+    "random_k_alignment_error_max": 0,
+    "random_k_alignment_error_mean": 0.0,
+    "target_in_1hop_rate": 0.033203125,
+    "target_in_2hop_rate": 0.9951171875,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "unreachable_rate": 0.0
+  },
+  "zigzag_certified": {
+    "average_shortest_path": 2.1435546875,
+    "direction_definition": "mask[marker_query_position, source_key_position] == true; multi-hop follows query-to-key rows backward through layers",
+    "layers": 4,
+    "method": "zigzag_certified",
+    "per_target_shortest_path_histogram": {
+      "1": 28,
+      "2": 821,
+      "3": 175,
+      "4": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 0.02734375,
+    "target_in_2hop_rate": 0.8291015625,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "unreachable_rate": 0.0
+  }
+}

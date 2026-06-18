@@ -29,8 +29,10 @@ class ProbeEncoder:
         self.payload = dict(payload)
         self.encoder_type = str(payload["encoder_type"])
         self.pad_token_id = int(payload.get("pad_token_id", PAD_TOKEN_ID))
-        self.eos_token_id = int(payload.get("eos_token_id", EOS_TOKEN_ID))
-        self.unk_token_id = int(payload.get("unk_token_id", UNK_TOKEN_ID))
+        eos_value = payload.get("eos_token_id", EOS_TOKEN_ID)
+        unk_value = payload.get("unk_token_id", UNK_TOKEN_ID)
+        self.eos_token_id = None if eos_value is None else int(eos_value)
+        self.unk_token_id = None if unk_value is None else int(unk_value)
         self.token_to_id = {str(k): int(v) for k, v in payload.get("token_to_id", {}).items()}
         self.vocab_size = int(payload["vocab_size"])
 
@@ -42,9 +44,13 @@ class ProbeEncoder:
             tokens = [self.token_to_id.get(str(item), self.unk_token_id) for item in list(value)]
         elif self.encoder_type == "integer_shift":
             tokens = [int(item) + 1 for item in list(value)]
+        elif self.encoder_type == "identity_integer":
+            tokens = [int(item) for item in list(value)]
         else:
             raise ValueError(f"unknown encoder_type={self.encoder_type!r}")
         if add_eos:
+            if self.eos_token_id is None:
+                raise ValueError(f"encoder_type={self.encoder_type!r} has no EOS token")
             tokens.append(self.eos_token_id)
         return tokens
 
@@ -59,6 +65,10 @@ class ProbeEncoder:
             if isinstance(value, list):
                 return [int(item) + 1 for item in value]
             return [int(value) + 1]
+        if self.encoder_type == "identity_integer":
+            if isinstance(value, list):
+                return [int(item) for item in value]
+            return [int(value)]
         raise ValueError(f"unknown encoder_type={self.encoder_type!r}")
 
     def decode(self, values: list[int]) -> str:
@@ -68,6 +78,8 @@ class ProbeEncoder:
         inv = {value: key for key, value in self.token_to_id.items()}
         if inv:
             return " ".join(inv.get(int(value), "<unk>") for value in values)
+        if self.encoder_type == "identity_integer":
+            return " ".join(str(int(value)) for value in values)
         return " ".join(str(int(value) - 1) for value in values)
 
 
@@ -117,6 +129,19 @@ def integer_encoder(max_value: int, output_path: Path) -> dict:
         "eos_token_id": EOS_TOKEN_ID,
         "unk_token_id": UNK_TOKEN_ID,
         "integer_shift": 1,
+    }
+    write_encoder(output_path, payload)
+    return payload
+
+
+def identity_integer_encoder(vocab_size: int, output_path: Path) -> dict:
+    payload = {
+        "encoder_type": "identity_integer",
+        "vocab_size": int(vocab_size),
+        "pad_token_id": PAD_TOKEN_ID,
+        "eos_token_id": None,
+        "unk_token_id": None,
+        "integer_shift": 0,
     }
     write_encoder(output_path, payload)
     return payload
@@ -191,6 +216,8 @@ def _target_entries(row: dict) -> tuple[list[int], list[int]]:
 
 
 def make_probe_batch(rows: list[dict], task_record: dict, encoder: ProbeEncoder, device: torch.device) -> ProbeBatch:
+    if bool(task_record.get("copy_corrected_v01", False)):
+        return make_copy_corrected_batch(rows, task_record, encoder, device)
     loss_type = str(task_record["resolved_loss_type"])
     input_limit = int(task_record["resolved_runtime_input_length"])
     target_limit = int(task_record["resolved_runtime_target_length"])
@@ -264,6 +291,51 @@ def make_probe_batch(rows: list[dict], task_record: dict, encoder: ProbeEncoder,
     )
 
 
+def make_copy_corrected_batch(rows: list[dict], task_record: dict, encoder: ProbeEncoder, device: torch.device) -> ProbeBatch:
+    if encoder.encoder_type != "identity_integer":
+        raise ValueError("copy_corrected_v01 requires identity_integer encoder")
+    batch_size = len(rows)
+    input_len = int(task_record.get("resolved_runtime_input_length", 2048))
+    target_len = int(task_record.get("resolved_runtime_target_length", 1024))
+    padded_len = int(task_record.get("resolved_padded_sequence_length", 2048))
+    marker_id = int(task_record.get("marker_token_id", 63))
+    if (input_len, target_len, padded_len) != (2048, 1024, 2048):
+        raise ValueError(
+            "copy_corrected_v01 requires input/target/T=(2048,1024,2048), "
+            f"got {(input_len, target_len, padded_len)}"
+        )
+    tokens = torch.empty((batch_size, 2048), dtype=torch.long)
+    targets = torch.empty((batch_size, 1024), dtype=torch.long)
+    target_positions = torch.arange(1024, 2048, dtype=torch.long).repeat(batch_size, 1)
+    target_mask = torch.ones((batch_size, 1024), dtype=torch.bool)
+    valid_token_mask = torch.ones((batch_size, 2048), dtype=torch.bool)
+    subtasks: list[str] = []
+    for index, row in enumerate(rows):
+        input_ids = encoder.encode_input(row.get("input"), add_eos=False)
+        target_ids = encoder.encode_target(row.get("target"), add_eos=False)
+        if len(input_ids) != 2048 or len(target_ids) != 1024:
+            raise ValueError(f"copy_corrected_v01 row has lengths input={len(input_ids)} target={len(target_ids)}")
+        if input_ids[:1024] != target_ids:
+            raise ValueError("copy_corrected_v01 row source prefix does not equal target")
+        if input_ids[1024:] != [marker_id] * 1024:
+            raise ValueError("copy_corrected_v01 row marker suffix is invalid")
+        tokens[index] = torch.tensor(input_ids, dtype=torch.long)
+        targets[index] = torch.tensor(target_ids, dtype=torch.long)
+        meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        subtasks.append(str(meta.get("ruler_task") or row.get("variant") or "copy_corrected_v01"))
+    return ProbeBatch(
+        tokens=tokens.to(device),
+        target_positions=target_positions.to(device),
+        targets=targets.to(device),
+        target_mask=target_mask.to(device),
+        class_targets=None,
+        pad_mask=valid_token_mask.to(device),
+        subtasks=subtasks,
+        example_count=batch_size,
+        token_count=batch_size * 2048,
+    )
+
+
 class ProbeTransformer(nn.Module):
     def __init__(
         self,
@@ -278,19 +350,34 @@ class ProbeTransformer(nn.Module):
         dropout: float,
         attention_backend: str,
         block_size: int,
+        position_encoding: str = "learned_absolute",
+        rope_theta: float = 10000.0,
+        use_class_head: bool = True,
     ):
         super().__init__()
+        if position_encoding not in {"learned_absolute", "rope"}:
+            raise ValueError(f"unknown position_encoding={position_encoding!r}")
         self.token = nn.Embedding(vocab_size, d_model)
-        self.pos = nn.Embedding(seq_len, d_model)
+        self.position_encoding = position_encoding
+        self.pos = nn.Embedding(seq_len, d_model) if position_encoding == "learned_absolute" else None
         self.blocks = nn.ModuleList(
             [
-                Block(d_model, heads, ffn_dim, dropout, attention_backend, block_size)
+                Block(
+                    d_model,
+                    heads,
+                    ffn_dim,
+                    dropout,
+                    attention_backend,
+                    block_size,
+                    position_encoding=position_encoding,
+                    rope_theta=rope_theta,
+                )
                 for _ in range(layers)
             ]
         )
         self.norm = nn.LayerNorm(d_model)
         self.token_head = nn.Linear(d_model, token_output_size)
-        self.class_head = nn.Linear(d_model, class_count)
+        self.class_head = nn.Linear(d_model, class_count) if use_class_head else None
 
     def forward(
         self,
@@ -304,8 +391,10 @@ class ProbeTransformer(nn.Module):
         local_log_m: torch.Tensor | None = None,
         neighbor_log_m: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        pos = torch.arange(tokens.shape[1], device=tokens.device)
-        h = self.token(tokens) + self.pos(pos)[None, :, :]
+        h = self.token(tokens)
+        if self.pos is not None:
+            pos = torch.arange(tokens.shape[1], device=tokens.device)
+            h = h + self.pos(pos)[None, :, :]
         for block in self.blocks:
             h = block(
                 h,
@@ -319,6 +408,8 @@ class ProbeTransformer(nn.Module):
             )
         h = self.norm(h)
         token_logits = self.token_head(h)
+        if self.class_head is None:
+            return token_logits, token_logits.new_empty((tokens.shape[0], 0))
         weights = pad_mask.float()
         pooled = (h * weights[:, :, None]).sum(dim=1) / weights.sum(dim=1).clamp_min(1.0)[:, None]
         class_logits = self.class_head(pooled)
