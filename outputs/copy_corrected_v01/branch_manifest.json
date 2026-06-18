@@ -1,0 +1,18 @@
+{
+  "base_branch": "main",
+  "branch_head_commit": "64845eb22b149fa5496dacecdfcdb610fbdc1cbb",
+  "branch_name": "codex/copy-corrected-v01",
+  "branch_point_commit": "64845eb22b149fa5496dacecdfcdb610fbdc1cbb",
+  "completed_at": null,
+  "created_at": "2026-06-18T15:57:38.808125+00:00",
+  "dataset_materialization_script_sha256": null,
+  "final_report_path": null,
+  "final_status": "initialized",
+  "merge_back_to_main": false,
+  "remote_run_root": "/home/huiwei/ysx/zigzag_attention_copy_corrected_v01",
+  "test_content_sha256": null,
+  "test_sha256": null,
+  "train_content_sha256": null,
+  "train_sha256": null,
+  "worktree_path": "/Users/sxye/Documents/expander-copy-corrected-v01"
+}
