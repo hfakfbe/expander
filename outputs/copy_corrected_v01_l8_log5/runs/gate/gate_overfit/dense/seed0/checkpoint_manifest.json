@@ -1,0 +1,22 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 119,
+    "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/gate_overfit/dense/seed0/checkpoints/gate-overfit_final_step119.pt",
+    "permutation_position": 0,
+    "sha256": "3c1ca779e87fac9bca35d59120b0034afd68ddfd5531fc6dda3602dcf00f06f2"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 119,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/gate_overfit/dense/seed0/checkpoints/gate-overfit_final_step119.pt",
+      "permutation_position": 0,
+      "sha256": "3c1ca779e87fac9bca35d59120b0034afd68ddfd5531fc6dda3602dcf00f06f2"
+    }
+  ]
+}

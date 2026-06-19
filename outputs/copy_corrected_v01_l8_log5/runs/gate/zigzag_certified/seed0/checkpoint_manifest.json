@@ -1,0 +1,70 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 625,
+    "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/train_final_step625.pt",
+    "permutation_position": 0,
+    "sha256": "f467d42c9738e5e12bb98286d4c288f411ea19629c315115f555101d92f5189d"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 100,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step100.pt",
+      "permutation_position": 1600,
+      "sha256": "b0c14f2f8fbf845c30d04683dde5d6bb06830f3bfd7a54496da95dd9f4c8a10b"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 200,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step200.pt",
+      "permutation_position": 3200,
+      "sha256": "3a715c08edacd45e1b68bcba2ddfa07778a2df79a16a35276f814ce11f8c817a"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 300,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step300.pt",
+      "permutation_position": 4800,
+      "sha256": "b96cb98d64f9e4774f521cad3e5750e4581ca9bdda9d8fd80a89c614ce47634f"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 400,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step400.pt",
+      "permutation_position": 6400,
+      "sha256": "626c0e3dde83246944c7f0424cf0441b5b52388b37accb7e0f1e5fae1da881a2"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 8000,
+      "sha256": "52d38efe5831d57fa8c799c7b82f9ef46431e86505ebd45d8c59360bdc74f75f"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 600,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/checkpoint_step600.pt",
+      "permutation_position": 9600,
+      "sha256": "5520e52e20cf2f88f42a4a0489b398044339aaf18c9df192a4f2ab08efecb1b7"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 625,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/zigzag_certified/seed0/checkpoints/train_final_step625.pt",
+      "permutation_position": 0,
+      "sha256": "f467d42c9738e5e12bb98286d4c288f411ea19629c315115f555101d92f5189d"
+    }
+  ]
+}

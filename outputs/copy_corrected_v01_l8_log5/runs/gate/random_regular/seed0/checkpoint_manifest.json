@@ -1,0 +1,70 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 625,
+    "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/train_final_step625.pt",
+    "permutation_position": 0,
+    "sha256": "7c69306a5679d64fa5b5a0d283bcf85a16931e8b172bba0441794e92a04233e9"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 100,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step100.pt",
+      "permutation_position": 1600,
+      "sha256": "fbb4cfb98129cb6d9dd1a8c4aeed3c57be2707cf9b1d6083773f3b0e6dda9dd1"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 200,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step200.pt",
+      "permutation_position": 3200,
+      "sha256": "6e8f46fe3d9c93f7e8dfd536a94ac8f02757a120c053202def19ca946a50e7e0"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 300,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step300.pt",
+      "permutation_position": 4800,
+      "sha256": "0d40f8ad9a965928628e63386db5d6e2ac2ba8406ad454e5f6a2769b26213500"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 400,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step400.pt",
+      "permutation_position": 6400,
+      "sha256": "b5998d9c79ff9452c799287500c7141831db6b1fb6caab04ee86626885c9f98d"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 8000,
+      "sha256": "34099c0aaed63e7eb437e5667dcf3e26c4e4d1e161bb964230d3f14ce272e432"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 600,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/checkpoint_step600.pt",
+      "permutation_position": 9600,
+      "sha256": "e84609a6478ed8f852d6574d8ca116f9dc91bcc2b2dd4eaee7b0783e6078eaf0"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 625,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/random_regular/seed0/checkpoints/train_final_step625.pt",
+      "permutation_position": 0,
+      "sha256": "7c69306a5679d64fa5b5a0d283bcf85a16931e8b172bba0441794e92a04233e9"
+    }
+  ]
+}

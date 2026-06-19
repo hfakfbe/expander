@@ -1,0 +1,70 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 0,
+    "micro_step": 0,
+    "optimizer_step": 625,
+    "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/train_final_step625.pt",
+    "permutation_position": 0,
+    "sha256": "e212be9a789c4070d3e84a3aa4cbb6a7b3504dd80f1400c885acaf8aa4793c53"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 100,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step100.pt",
+      "permutation_position": 1600,
+      "sha256": "62c365ff44752ab9e0eb2b084f4ad6222f0a117634c210f1a98a6cc278c6ec14"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 200,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step200.pt",
+      "permutation_position": 3200,
+      "sha256": "0bae1d01da8caa2d02d1f047c1814b6b3243d71db65116b04ad6b5edc5a63d97"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 300,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step300.pt",
+      "permutation_position": 4800,
+      "sha256": "10ebdac38ff8f932aa94bf89ee1c8a2fe970f0c5ef3de6b20b77dc8425b9796a"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 400,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step400.pt",
+      "permutation_position": 6400,
+      "sha256": "66ef9b65f74ec8b894be009d4f7e561ba3bc5d45cd7ee6213845b05f052a297e"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 8000,
+      "sha256": "61b65b44cf64dfedfcf8ac18a7572f389f5fe1109c92d5dab912ed3516d6ce4e"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 600,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/checkpoint_step600.pt",
+      "permutation_position": 9600,
+      "sha256": "28438b21288b9b83d4bd45568341339d9cef6301dc3b2cc459a4781530503a12"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 625,
+      "path": "outputs/copy_corrected_v01_l8_log5/runs/gate/local/seed0/checkpoints/train_final_step625.pt",
+      "permutation_position": 0,
+      "sha256": "e212be9a789c4070d3e84a3aa4cbb6a7b3504dd80f1400c885acaf8aa4793c53"
+    }
+  ]
+}

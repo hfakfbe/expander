@@ -1,0 +1,23 @@
+{
+  "T": 2048,
+  "branch_head_commit": "0c9704eb638a82b82d730835e6bd1259091437de",
+  "branch_name": "codex/copy-corrected-v01-l8-log5",
+  "config_path": "configs/copy_corrected_v01_l8_log5.json",
+  "config_sha256": "b8d00328ba55b7ef3905e39cb3b9c98470ea495873e62e7251c52a28dac4a944",
+  "git_dirty": false,
+  "graph_sha256": "29971cfe7b624bb125a4efaf8c914556d6db7480619c8d19836a8d71c6a81113",
+  "manifest_path": "configs/copy_corrected_v01_l8_log5_task_parameters.json",
+  "manifest_sha256": "1e902935a8371534b69f1c9d91ebb53dae82b1c5c1f5644f780e71da2dbad079",
+  "method": "zigzag_certified",
+  "position_encoding": "rope",
+  "readout_start": 1024,
+  "seed": 0,
+  "test_content_sha256": "72be289c8982d76b110d256985efd10edbb8514e8c341be256f1a1559a49fbba",
+  "test_sha256": "f3aa817cc1433c5d3d566f47c794c9c4daeb4c2360833797de045e147c8c9910",
+  "token_output_size": 64,
+  "train_content_sha256": "ed34c697ccc4a7d50c233ecb6dbbd4cfad4fcf6faa21bfff5308d9ea5cf50a5e",
+  "train_sha256": "eb43507820dab41759c14f71a935060a729ad8ace1c4063957968e33146c68a7",
+  "trial_id": "gate",
+  "version": "copy_corrected_v01_l8_log5",
+  "vocab_size": 64
+}
