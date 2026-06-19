@@ -60,7 +60,13 @@ def test_static_contract(config: dict, record: dict) -> None:
     except subprocess.CalledProcessError:
         branch = ""
     require(branch == BRANCH or deployed_commit_exists(), "must run on corrected Copy branch or deployed marker")
-    require("expander-copy-corrected-v01-l8-log5" in str(Path.cwd()), "must run in corrected Copy l8/log5 worktree")
+    cwd = str(Path.cwd())
+    require(
+        "expander-copy-corrected-v01-l8-log5" in cwd
+        or "zigzag_attention_copy_corrected_v01_l8_log5" in cwd
+        or deployed_commit_exists(),
+        "must run in corrected Copy l8/log5 worktree or deployed directory",
+    )
     require(record.get("copy_corrected_variant") == "copy_corrected_v01_l8_log5", "variant must be l8/log5")
     require(record["copy_corrected_v01"] is True, "task record must be marked corrected")
     require(record["resolved_padded_sequence_length"] == 2048, "T must be 2048")
