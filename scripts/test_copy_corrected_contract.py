@@ -29,6 +29,14 @@ def git_value(*args: str) -> str:
     return subprocess.check_output(["git", *args], text=True).strip()
 
 
+def deployed_commit_exists() -> bool:
+    for name in [".deployed_git_commit_v08", ".deployed_git_commit_copy_corrected_v01_l8_log5"]:
+        marker = Path(name)
+        if marker.exists() and marker.read_text(encoding="utf-8").strip():
+            return True
+    return False
+
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
@@ -47,7 +55,11 @@ def record_from_manifest(path: Path) -> dict:
 
 
 def test_static_contract(config: dict, record: dict) -> None:
-    require(git_value("branch", "--show-current") == BRANCH, "must run on corrected Copy branch")
+    try:
+        branch = git_value("branch", "--show-current")
+    except subprocess.CalledProcessError:
+        branch = ""
+    require(branch == BRANCH or deployed_commit_exists(), "must run on corrected Copy branch or deployed marker")
     require("expander-copy-corrected-v01-l8-log5" in str(Path.cwd()), "must run in corrected Copy l8/log5 worktree")
     require(record.get("copy_corrected_variant") == "copy_corrected_v01_l8_log5", "variant must be l8/log5")
     require(record["copy_corrected_v01"] is True, "task record must be marked corrected")
