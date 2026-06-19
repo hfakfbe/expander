@@ -1,0 +1,15 @@
+{
+  "B": 32,
+  "N_task": 64,
+  "T": 64,
+  "T_raw": 64,
+  "canonical_graph_artifact_sha256": "6f2e24d85624572c5235ff06c10727c3e973cda8133b561b2e6f71afa7516161",
+  "d": 8,
+  "generation_attempts": 1,
+  "graph_generation_algorithm": "probes_corrected_valid_as_test_l8_log5_task_parameter_selection",
+  "graph_seed": 0,
+  "q": 2,
+  "selected_graph_path": "outputs/probes_corrected_valid_as_test_l8_log5/graphs/induction_associative_recall/selected_graph.json",
+  "status": "ok",
+  "timestamp_utc": "2026-06-19T09:25:48.742096+00:00"
+}

@@ -1,0 +1,11 @@
+{
+  "epochs": [
+    {
+      "draw_count": 100000,
+      "epoch": 0,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 100000
+    }
+  ]
+}

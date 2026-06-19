@@ -1,0 +1,83 @@
+{
+  "local": {
+    "average_shortest_path": 1.0,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "local",
+    "per_target_shortest_path_histogram": {
+      "1": 3,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 509
+    },
+    "target_in_1hop_rate": 0.005859375,
+    "target_in_2hop_rate": 0.005859375,
+    "target_in_3hop_rate": 0.005859375,
+    "target_in_4hop_rate": 0.005859375,
+    "target_in_5hop_rate": 0.005859375,
+    "target_in_6hop_rate": 0.005859375,
+    "target_in_7hop_rate": 0.005859375,
+    "target_in_8hop_rate": 0.005859375,
+    "target_in_Lhop_rate": 0.005859375,
+    "task": "selective_copy",
+    "unreachable_rate": 0.994140625
+  },
+  "random_regular": {
+    "average_shortest_path": 2.255859375,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "random_regular",
+    "per_target_shortest_path_histogram": {
+      "1": 6,
+      "2": 369,
+      "3": 137,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 0.01171875,
+    "target_in_2hop_rate": 0.732421875,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_5hop_rate": 1.0,
+    "target_in_6hop_rate": 1.0,
+    "target_in_7hop_rate": 1.0,
+    "target_in_8hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "task": "selective_copy",
+    "unreachable_rate": 0.0
+  },
+  "zigzag_certified": {
+    "average_shortest_path": 2.625,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "zigzag_certified",
+    "per_target_shortest_path_histogram": {
+      "1": 11,
+      "2": 170,
+      "3": 331,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 0.021484375,
+    "target_in_2hop_rate": 0.353515625,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_5hop_rate": 1.0,
+    "target_in_6hop_rate": 1.0,
+    "target_in_7hop_rate": 1.0,
+    "target_in_8hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "task": "selective_copy",
+    "unreachable_rate": 0.0
+  }
+}

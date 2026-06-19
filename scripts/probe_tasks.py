@@ -40,6 +40,12 @@ class ProbeEncoder:
         if self.encoder_type == "byte_utf8":
             text = value if isinstance(value, str) else target_to_text(value)
             tokens = [int(byte) + 3 for byte in text.encode("utf-8")]
+        elif self.encoder_type == "cl100k_base_shift":
+            import tiktoken
+
+            text = value if isinstance(value, str) else target_to_text(value)
+            encoding = tiktoken.get_encoding("cl100k_base")
+            tokens = [int(token) + 1 for token in encoding.encode(text)]
         elif self.encoder_type == "listops_vocab":
             tokens = [self.token_to_id.get(str(item), self.unk_token_id) for item in list(value)]
         elif self.encoder_type == "integer_shift":
@@ -57,6 +63,8 @@ class ProbeEncoder:
     def encode_target(self, value: Any, add_eos: bool = False) -> list[int]:
         if self.encoder_type == "byte_utf8":
             return self.encode_input(target_to_text(value), add_eos=add_eos)
+        if self.encoder_type == "cl100k_base_shift":
+            return self.encode_input(target_to_text(value), add_eos=False)
         if self.encoder_type == "listops_vocab":
             if isinstance(value, list):
                 return [self.token_to_id.get(str(item), self.unk_token_id) for item in value]
@@ -75,6 +83,12 @@ class ProbeEncoder:
         if self.encoder_type == "byte_utf8":
             raw = bytes(max(0, int(value) - 3) for value in values if int(value) >= 3)
             return raw.decode("utf-8", errors="replace")
+        if self.encoder_type == "cl100k_base_shift":
+            import tiktoken
+
+            encoding = tiktoken.get_encoding("cl100k_base")
+            raw = [max(0, int(value) - 1) for value in values if int(value) > 0]
+            return encoding.decode(raw)
         inv = {value: key for key, value in self.token_to_id.items()}
         if inv:
             return " ".join(inv.get(int(value), "<unk>") for value in values)
@@ -160,6 +174,24 @@ def byte_encoder(output_path: Path) -> dict:
     return payload
 
 
+def cl100k_base_shift_encoder(output_path: Path) -> dict:
+    import tiktoken
+
+    encoding = tiktoken.get_encoding("cl100k_base")
+    payload = {
+        "encoder_type": "cl100k_base_shift",
+        "vocab_size": int(encoding.n_vocab) + 2,
+        "pad_token_id": PAD_TOKEN_ID,
+        "eos_token_id": None,
+        "unk_token_id": None,
+        "integer_shift": 1,
+        "readout_token_id": int(encoding.n_vocab) + 1,
+        "base_encoding": "cl100k_base",
+    }
+    write_encoder(output_path, payload)
+    return payload
+
+
 class JsonlStore:
     def __init__(self, path: Path):
         self.path = path
@@ -218,6 +250,8 @@ def _target_entries(row: dict) -> tuple[list[int], list[int]]:
 def make_probe_batch(rows: list[dict], task_record: dict, encoder: ProbeEncoder, device: torch.device) -> ProbeBatch:
     if bool(task_record.get("copy_corrected_v01", False)):
         return make_copy_corrected_batch(rows, task_record, encoder, device)
+    if bool(task_record.get("no_target_append_v01", False)):
+        return make_no_target_append_batch(rows, task_record, encoder, device)
     loss_type = str(task_record["resolved_loss_type"])
     input_limit = int(task_record["resolved_runtime_input_length"])
     target_limit = int(task_record["resolved_runtime_target_length"])
@@ -333,6 +367,152 @@ def make_copy_corrected_batch(rows: list[dict], task_record: dict, encoder: Prob
         subtasks=subtasks,
         example_count=batch_size,
         token_count=batch_size * 2048,
+    )
+
+
+def _encoded_target_len(row: dict, encoder: ProbeEncoder) -> int:
+    return len(encoder.encode_target(row.get("target"), add_eos=False))
+
+
+def make_no_target_append_batch(rows: list[dict], task_record: dict, encoder: ProbeEncoder, device: torch.device) -> ProbeBatch:
+    """Build batches for the corrected probe contract.
+
+    The old v08 path appended target readout slots after the input.  This
+    function forbids that: sequence supervision positions must already lie
+    inside the original input tensor, or the task must be classification.
+    For RULER-style text rows that do not contain answer slots, the frozen
+    corrected contract replaces the final K encoded input tokens with a
+    readout sentinel while keeping the encoded input length unchanged.
+    """
+    task = str(task_record["task"])
+    loss_type = str(task_record["resolved_loss_type"])
+    T = int(task_record["resolved_padded_sequence_length"])
+    input_limit = int(task_record["resolved_runtime_input_length"])
+    target_limit = int(task_record["resolved_runtime_target_length"])
+    tokens = torch.full((len(rows), T), encoder.pad_token_id, dtype=torch.long)
+    pad_mask = torch.zeros((len(rows), T), dtype=torch.bool)
+    subtasks: list[str] = []
+    target_positions = None
+    targets = None
+    target_mask = None
+    class_targets = None
+    token_count = 0
+
+    if loss_type in {"sequence_cross_entropy", "retrieval_sequence_cross_entropy", "mqar_position_cross_entropy"}:
+        target_positions = torch.zeros((len(rows), target_limit), dtype=torch.long)
+        targets = torch.zeros((len(rows), target_limit), dtype=torch.long)
+        target_mask = torch.zeros((len(rows), target_limit), dtype=torch.bool)
+    elif loss_type == "classification_cross_entropy":
+        class_targets = torch.zeros((len(rows),), dtype=torch.long)
+    else:
+        raise ValueError(f"unsupported loss_type={loss_type!r}")
+
+    for batch_index, row in enumerate(rows):
+        meta = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        subtasks.append(str(meta.get("ruler_task") or row.get("variant") or "not_applicable"))
+
+        if loss_type == "classification_cross_entropy":
+            input_ids = encoder.encode_input(row.get("input"), add_eos=False)[:input_limit]
+            if len(input_ids) > T:
+                raise ValueError(f"{task} encoded input length {len(input_ids)} exceeds T={T}")
+            if input_ids:
+                tokens[batch_index, : len(input_ids)] = torch.tensor(input_ids, dtype=torch.long)
+                pad_mask[batch_index, : len(input_ids)] = True
+                token_count += len(input_ids)
+            assert class_targets is not None
+            class_targets[batch_index] = int(row.get("target"))
+            continue
+
+        assert target_positions is not None and targets is not None and target_mask is not None
+
+        if task == "selective_copy":
+            input_ids = encoder.encode_input(row.get("input"), add_eos=False)
+            if len(input_ids) > input_limit:
+                raise ValueError(f"selective_copy input length {len(input_ids)} exceeds input_limit={input_limit}")
+            target_ids = encoder.encode_target(row.get("target"), add_eos=False)
+            readout_len = len(target_ids)
+            start = len(input_ids) - readout_len
+            if start < 0 or readout_len > target_limit:
+                raise ValueError("selective_copy target length does not fit original input")
+            if input_ids:
+                tokens[batch_index, : len(input_ids)] = torch.tensor(input_ids, dtype=torch.long)
+                pad_mask[batch_index, : len(input_ids)] = True
+                token_count += len(input_ids)
+            for offset, target_id in enumerate(target_ids):
+                pos = start + offset
+                if pos >= len(input_ids):
+                    raise ValueError("selective_copy readout position escaped original input")
+                target_positions[batch_index, offset] = pos
+                targets[batch_index, offset] = int(target_id)
+                target_mask[batch_index, offset] = True
+            continue
+
+        if task == "induction_associative_recall":
+            input_ids = encoder.encode_input(row.get("input"), add_eos=False)
+            if len(input_ids) > input_limit:
+                raise ValueError(f"mqar input length {len(input_ids)} exceeds input_limit={input_limit}")
+            if input_ids:
+                tokens[batch_index, : len(input_ids)] = torch.tensor(input_ids, dtype=torch.long)
+                pad_mask[batch_index, : len(input_ids)] = True
+                token_count += len(input_ids)
+            entries = row.get("target", [])
+            if len(entries) > target_limit:
+                raise ValueError(f"mqar target entries {len(entries)} exceed target_limit={target_limit}")
+            for offset, item in enumerate(entries):
+                pos = int(item["position"])
+                value = encoder.encode_target(int(item["value"]), add_eos=False)[0]
+                if not (0 <= pos < len(input_ids)):
+                    raise ValueError(f"mqar target position {pos} outside original input length {len(input_ids)}")
+                target_positions[batch_index, offset] = pos
+                targets[batch_index, offset] = int(value)
+                target_mask[batch_index, offset] = True
+            continue
+
+        if task in {"niah_kv_retrieval", "ruler"}:
+            if str(task_record.get("text_readout_replacement_policy", "blocked")) != "replace_tail_with_readout_sentinel":
+                raise ValueError(
+                    f"{task} rows keep the answer outside the original input and do not contain "
+                    "an in-input answer/readout slot. no_target_append_v01 therefore blocks this "
+                    "task unless a manifest explicitly declares a text_readout_replacement_policy."
+                )
+            input_ids = encoder.encode_input(row.get("input"), add_eos=False)[:input_limit]
+            target_ids = encoder.encode_target(row.get("target"), add_eos=False)
+            if len(target_ids) > target_limit:
+                raise ValueError(f"{task} encoded target length {len(target_ids)} exceeds target_limit={target_limit}")
+            if len(input_ids) < target_limit:
+                raise ValueError(f"{task} input shorter than reserved readout window")
+            if len(input_ids) > T:
+                raise ValueError(f"{task} encoded input length {len(input_ids)} exceeds T={T}")
+            input_ids = list(input_ids)
+            readout_token = int(encoder.payload.get("readout_token_id", encoder.unk_token_id or encoder.pad_token_id))
+            readout_start = len(input_ids) - target_limit
+            for pos in range(readout_start, len(input_ids)):
+                input_ids[pos] = readout_token
+            if input_ids:
+                tokens[batch_index, : len(input_ids)] = torch.tensor(input_ids, dtype=torch.long)
+                pad_mask[batch_index, : len(input_ids)] = True
+                token_count += len(input_ids)
+            for offset, target_id in enumerate(target_ids):
+                pos = readout_start + offset
+                if pos >= len(input_ids):
+                    raise ValueError(f"{task} readout position escaped original input")
+                target_positions[batch_index, offset] = pos
+                targets[batch_index, offset] = int(target_id)
+                target_mask[batch_index, offset] = True
+            continue
+
+        raise ValueError(f"no_target_append_v01 does not define task={task!r}")
+
+    return ProbeBatch(
+        tokens=tokens.to(device),
+        target_positions=target_positions.to(device) if target_positions is not None else None,
+        targets=targets.to(device) if targets is not None else None,
+        target_mask=target_mask.to(device) if target_mask is not None else None,
+        class_targets=class_targets.to(device) if class_targets is not None else None,
+        pad_mask=pad_mask.to(device),
+        subtasks=subtasks,
+        example_count=len(rows),
+        token_count=token_count,
     )
 
 

@@ -1,0 +1,18 @@
+{
+  "B": 109,
+  "G_type": "permutation_regular",
+  "H_type": "permutation_regular",
+  "N_task": 5995,
+  "T": 5995,
+  "T_raw": 5995,
+  "certificate_policy": "structural graph artifact validation only; expensive spectral certificate not required for input-contract correction",
+  "certified": "not_evaluated_in_light_certificate",
+  "d": 8,
+  "graph_id": "probes_corrected_valid_as_test_l8_log5_B109_d8_s0_e854ea7afc7cf7a1",
+  "graph_seed": 0,
+  "q": 55,
+  "rho_exact": "skipped_for_corrected_probe_preparation",
+  "rho_zigzag_certified": "not_evaluated_in_light_certificate",
+  "rho_zigzag_exact": "skipped_for_corrected_probe_preparation",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

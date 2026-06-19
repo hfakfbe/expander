@@ -491,6 +491,9 @@ def deployed_git_commit(cwd: Path | None = None) -> str | None:
 
 
 def git_commit(cwd: Path | None = None) -> str:
+    deployed = deployed_git_commit(cwd)
+    if deployed:
+        return deployed
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
@@ -499,10 +502,12 @@ def git_commit(cwd: Path | None = None) -> str:
             stderr=subprocess.DEVNULL,
         ).strip()
     except Exception:
-        return deployed_git_commit(cwd) or "unknown"
+        return "unknown"
 
 
 def git_dirty(cwd: Path | None = None) -> bool:
+    if deployed_git_commit(cwd):
+        return False
     try:
         out = subprocess.check_output(
             ["git", "status", "--short"],

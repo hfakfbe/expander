@@ -1,0 +1,15 @@
+{
+  "B": 32,
+  "N_task": 4128,
+  "T": 4128,
+  "T_raw": 4128,
+  "canonical_graph_artifact_sha256": "0af7e0873fa8a914a0854daf4f9d60b4f57a10b3abc7f3b8336c00d5d4cea8a8",
+  "d": 8,
+  "generation_attempts": 1,
+  "graph_generation_algorithm": "probes_corrected_valid_as_test_l8_log5_task_parameter_selection",
+  "graph_seed": 0,
+  "q": 129,
+  "selected_graph_path": "outputs/probes_corrected_valid_as_test_l8_log5/graphs/selective_copy/selected_graph.json",
+  "status": "ok",
+  "timestamp_utc": "2026-06-19T09:25:47.024121+00:00"
+}

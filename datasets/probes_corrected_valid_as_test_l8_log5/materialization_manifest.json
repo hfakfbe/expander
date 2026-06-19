@@ -1,0 +1,214 @@
+{
+  "blocked_tasks": [
+    {
+      "reason": "JSONL input ends in a natural-language question; the answer is only in target and no original-input answer/readout slot exists.",
+      "sample_input_tail": ". The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. What is the special magic number for jittery-hospital mentioned in the provided text?",
+      "sample_metadata": {
+        "answer_prefix": " The special magic number for jittery-hospital mentioned in the provided text is",
+        "input_length": 4093,
+        "raw_index": 1179,
+        "ruler_task": "niah_single_1",
+        "seed": 42,
+        "source": "NVIDIA/RULER",
+        "target_length": 1,
+        "token_position_answer": 305
+      },
+      "sample_target": [
+        "5437923"
+      ],
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/niah_kv_retrieval/ruler_niah_single_1/niah_ruler_noise_4k_full_v2",
+      "source_test_sha256_discarded": "a463101d16c5714987db904a18cad3f1d43a657a8c6aa1a0dc183f4e44a17a61",
+      "source_train_sha256": "a1b7c5d604fd909d604a19016be082edb1552b46a11a4062ff004db28037c370",
+      "source_validation_sha256": "dc1f8c2e15d1ca405b3f434db31fc9ee97a578f46798514c444a7b5684a140b2",
+      "status": "blocked_by_input_contract",
+      "task": "niah_kv_retrieval"
+    },
+    {
+      "reason": "JSONL input ends in a natural-language question; the answer is only in target and no original-input answer/readout slot exists.",
+      "sample_input_tail": ". The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. What is the special magic number for jittery-hospital mentioned in the provided text?",
+      "sample_metadata": {
+        "answer_prefix": " The special magic number for jittery-hospital mentioned in the provided text is",
+        "input_length": 4093,
+        "raw_index": 1179,
+        "ruler_task": "niah_single_1",
+        "seed": 42,
+        "source": "NVIDIA/RULER",
+        "target_length": 1,
+        "token_position_answer": 305
+      },
+      "sample_target": [
+        "5437923"
+      ],
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/ruler/ruler_official_nonqa_synthetic_suite/ruler_nonqa_suite_4k_full_v2",
+      "source_test_sha256_discarded": "7c67a82c89ecc3f2db6db29ec5cbd1d011502108fde648490df15bc5e0436fd5",
+      "source_train_sha256": "bdd8dc646bac34fec1c32050beb9e86fb30918787f429dc0ddedcf88e75f97b3",
+      "source_validation_sha256": "77922a1bd2fbe34b804a4ea834227e4f351896f400a1258768b676b5f625f8d1",
+      "status": "blocked_by_input_contract",
+      "task": "ruler"
+    }
+  ],
+  "created_at": "2026-06-19T09:05:36.968073+00:00",
+  "output_root": "datasets/probes_corrected_valid_as_test_l8_log5",
+  "trainable_tasks": [
+    {
+      "output_dir": "datasets/probes_corrected_valid_as_test_l8_log5/selective_copy",
+      "sha256": {
+        "source_test_sha256_discarded": "a087af8a447c01dd0d03581dfd95635a29a971d552c01a8bc06f9671876a8fc4",
+        "source_train_sha256": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd",
+        "source_validation_sha256": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+        "test_sha256": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+        "train_sha256": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd"
+      },
+      "stats": {
+        "generated_train": {
+          "input_length_max": 4128,
+          "input_length_min": 4128,
+          "rows": 10000,
+          "selective_tail_marker_rows": 10000,
+          "target_length_max": 16,
+          "target_length_min": 16,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_test_discarded": {
+          "input_length_max": 8224,
+          "input_length_min": 8224,
+          "rows": 1000,
+          "selective_tail_marker_rows": 1000,
+          "target_length_max": 16,
+          "target_length_min": 16,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_train": {
+          "input_length_max": 4128,
+          "input_length_min": 4128,
+          "rows": 10000,
+          "selective_tail_marker_rows": 10000,
+          "target_length_max": 16,
+          "target_length_min": 16,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_validation_as_test": {
+          "input_length_max": 4128,
+          "input_length_min": 4128,
+          "rows": 1000,
+          "selective_tail_marker_rows": 1000,
+          "target_length_max": 16,
+          "target_length_min": 16,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        }
+      },
+      "task": "selective_copy"
+    },
+    {
+      "output_dir": "datasets/probes_corrected_valid_as_test_l8_log5/induction_associative_recall",
+      "sha256": {
+        "source_test_sha256_discarded": "8dd27359cd9255fd1ddf6e9f46a47fcc0e15d5794fc8aac359c8a0815db9abf8",
+        "source_train_sha256": "200080ef2fa57868104fa842fd044aaa9469e74920b947ebfbe064c0f1278659",
+        "source_validation_sha256": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+        "test_sha256": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+        "train_sha256": "492c064563bb400b259569e056f329968d00a73251f68e0731f1a98b435ad9b0"
+      },
+      "stats": {
+        "generated_train": {
+          "input_length_max": 64,
+          "input_length_min": 64,
+          "rows": 100000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 4,
+          "target_length_min": 4,
+          "target_positions_bad": 0,
+          "target_positions_total": 400000
+        },
+        "source_test_discarded": {
+          "input_length_max": 1024,
+          "input_length_min": 128,
+          "rows": 4000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 256,
+          "target_length_min": 32,
+          "target_positions_bad": 0,
+          "target_positions_total": 480000
+        },
+        "source_train": {
+          "input_length_max": 256,
+          "input_length_min": 64,
+          "rows": 180000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 64,
+          "target_length_min": 4,
+          "target_positions_bad": 0,
+          "target_positions_total": 2800000
+        },
+        "source_validation_as_test": {
+          "input_length_max": 64,
+          "input_length_min": 64,
+          "rows": 3000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 16,
+          "target_length_min": 4,
+          "target_positions_bad": 0,
+          "target_positions_total": 28000
+        }
+      },
+      "task": "induction_associative_recall"
+    },
+    {
+      "output_dir": "datasets/probes_corrected_valid_as_test_l8_log5/lra_listops",
+      "sha256": {
+        "source_test_sha256_discarded": "be1ed0adc0760d328d778c44248f8df07ecb96d0ecb25df8bc708d1b5568c134",
+        "source_train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41",
+        "source_validation_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+        "test_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+        "train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41"
+      },
+      "stats": {
+        "generated_train": {
+          "input_length_max": 5995,
+          "input_length_min": 1501,
+          "rows": 96000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 1,
+          "target_length_min": 1,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_test_discarded": {
+          "input_length_max": 5992,
+          "input_length_min": 1501,
+          "rows": 2000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 1,
+          "target_length_min": 1,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_train": {
+          "input_length_max": 5995,
+          "input_length_min": 1501,
+          "rows": 96000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 1,
+          "target_length_min": 1,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        },
+        "source_validation_as_test": {
+          "input_length_max": 5989,
+          "input_length_min": 1501,
+          "rows": 2000,
+          "selective_tail_marker_rows": 0,
+          "target_length_max": 1,
+          "target_length_min": 1,
+          "target_positions_bad": 0,
+          "target_positions_total": 0
+        }
+      },
+      "task": "lra_listops"
+    }
+  ],
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

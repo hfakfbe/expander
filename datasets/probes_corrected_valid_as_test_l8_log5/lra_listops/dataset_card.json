@@ -1,0 +1,66 @@
+{
+  "created_at": "2026-06-19T09:05:35.986417+00:00",
+  "input_contract": {
+    "no_target_append": true,
+    "runtime_rule": "model input length is the encoded/original input length only; labels are supervised at original-input positions or by a classifier head",
+    "target_storage": "target remains a JSONL label field and is never concatenated to input"
+  },
+  "sha256": {
+    "source_test_sha256_discarded": "be1ed0adc0760d328d778c44248f8df07ecb96d0ecb25df8bc708d1b5568c134",
+    "source_train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41",
+    "source_validation_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "test_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41"
+  },
+  "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1",
+  "split_policy": {
+    "discarded_source_test": "source test.jsonl is intentionally not used because train/test must share the same input contract",
+    "test": "byte-identical copy of source validation.jsonl",
+    "train": "byte-identical copy of source train.jsonl",
+    "validation": "absent"
+  },
+  "stats": {
+    "generated_train": {
+      "input_length_max": 5995,
+      "input_length_min": 1501,
+      "rows": 96000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 1,
+      "target_length_min": 1,
+      "target_positions_bad": 0,
+      "target_positions_total": 0
+    },
+    "source_test_discarded": {
+      "input_length_max": 5992,
+      "input_length_min": 1501,
+      "rows": 2000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 1,
+      "target_length_min": 1,
+      "target_positions_bad": 0,
+      "target_positions_total": 0
+    },
+    "source_train": {
+      "input_length_max": 5995,
+      "input_length_min": 1501,
+      "rows": 96000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 1,
+      "target_length_min": 1,
+      "target_positions_bad": 0,
+      "target_positions_total": 0
+    },
+    "source_validation_as_test": {
+      "input_length_max": 5989,
+      "input_length_min": 1501,
+      "rows": 2000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 1,
+      "target_length_min": 1,
+      "target_positions_bad": 0,
+      "target_positions_total": 0
+    }
+  },
+  "task": "lra_listops",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

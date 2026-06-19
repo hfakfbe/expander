@@ -1,0 +1,66 @@
+{
+  "created_at": "2026-06-19T09:05:20.902517+00:00",
+  "input_contract": {
+    "no_target_append": true,
+    "runtime_rule": "model input length is the encoded/original input length only; labels are supervised at original-input positions or by a classifier head",
+    "target_storage": "target remains a JSONL label field and is never concatenated to input"
+  },
+  "sha256": {
+    "source_test_sha256_discarded": "8dd27359cd9255fd1ddf6e9f46a47fcc0e15d5794fc8aac359c8a0815db9abf8",
+    "source_train_sha256": "200080ef2fa57868104fa842fd044aaa9469e74920b947ebfbe064c0f1278659",
+    "source_validation_sha256": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+    "test_sha256": "d6825af42e5fe1b4e4effb8449801ee087a0f9845e2ced5b04c19f2fd470751a",
+    "train_sha256": "492c064563bb400b259569e056f329968d00a73251f68e0731f1a98b435ad9b0"
+  },
+  "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/induction_associative_recall/zoology_mqar_regenerated/mqar_vocab8192_len64_128_256_512_1024_full_v2",
+  "split_policy": {
+    "discarded_source_test": "source test.jsonl is intentionally not used because train/test must share the same input contract",
+    "test": "byte-identical copy of source validation.jsonl",
+    "train": "filtered source train.jsonl to rows with input length 64, matching source validation used as test",
+    "validation": "absent"
+  },
+  "stats": {
+    "generated_train": {
+      "input_length_max": 64,
+      "input_length_min": 64,
+      "rows": 100000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 4,
+      "target_length_min": 4,
+      "target_positions_bad": 0,
+      "target_positions_total": 400000
+    },
+    "source_test_discarded": {
+      "input_length_max": 1024,
+      "input_length_min": 128,
+      "rows": 4000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 256,
+      "target_length_min": 32,
+      "target_positions_bad": 0,
+      "target_positions_total": 480000
+    },
+    "source_train": {
+      "input_length_max": 256,
+      "input_length_min": 64,
+      "rows": 180000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 64,
+      "target_length_min": 4,
+      "target_positions_bad": 0,
+      "target_positions_total": 2800000
+    },
+    "source_validation_as_test": {
+      "input_length_max": 64,
+      "input_length_min": 64,
+      "rows": 3000,
+      "selective_tail_marker_rows": 0,
+      "target_length_max": 16,
+      "target_length_min": 4,
+      "target_positions_bad": 0,
+      "target_positions_total": 28000
+    }
+  },
+  "task": "induction_associative_recall",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

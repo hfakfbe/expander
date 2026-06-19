@@ -1,0 +1,16 @@
+{
+  "created_at": "2026-06-19T09:05:35.987427+00:00",
+  "sha256": {
+    "source_test_sha256_discarded": "be1ed0adc0760d328d778c44248f8df07ecb96d0ecb25df8bc708d1b5568c134",
+    "source_train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41",
+    "source_validation_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "test_sha256": "d9b2b0a89d1ef21437ec14f75b8ab5a80bb7d17dd7069eaf9ae67ff8f9bb5c45",
+    "train_sha256": "64170ce8eb52bb961378500fcad3db7fbc2c4d15552b5b26a0b2044dc02e1c41"
+  },
+  "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1",
+  "source_test_discarded": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1/test.jsonl",
+  "source_train": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1/train.jsonl",
+  "source_validation_used_as_test": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1/validation.jsonl",
+  "task": "lra_listops",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

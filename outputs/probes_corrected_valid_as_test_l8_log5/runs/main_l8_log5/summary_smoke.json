@@ -1,0 +1,58 @@
+{
+  "blocked_tasks": [
+    {
+      "reason": "JSONL input ends in a natural-language question; the answer is only in target and no original-input answer/readout slot exists.",
+      "sample_input_tail": ". The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. What is the special magic number for jittery-hospital mentioned in the provided text?",
+      "sample_metadata": {
+        "answer_prefix": " The special magic number for jittery-hospital mentioned in the provided text is",
+        "input_length": 4093,
+        "raw_index": 1179,
+        "ruler_task": "niah_single_1",
+        "seed": 42,
+        "source": "NVIDIA/RULER",
+        "target_length": 1,
+        "token_position_answer": 305
+      },
+      "sample_target": [
+        "5437923"
+      ],
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/niah_kv_retrieval/ruler_niah_single_1/niah_ruler_noise_4k_full_v2",
+      "source_test_sha256_discarded": "a463101d16c5714987db904a18cad3f1d43a657a8c6aa1a0dc183f4e44a17a61",
+      "source_train_sha256": "a1b7c5d604fd909d604a19016be082edb1552b46a11a4062ff004db28037c370",
+      "source_validation_sha256": "dc1f8c2e15d1ca405b3f434db31fc9ee97a578f46798514c444a7b5684a140b2",
+      "status": "blocked_by_input_contract",
+      "task": "niah_kv_retrieval"
+    },
+    {
+      "reason": "JSONL input ends in a natural-language question; the answer is only in target and no original-input answer/readout slot exists.",
+      "sample_input_tail": ". The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. The grass is green. The sky is blue. The sun is yellow. Here we go. There and back again. What is the special magic number for jittery-hospital mentioned in the provided text?",
+      "sample_metadata": {
+        "answer_prefix": " The special magic number for jittery-hospital mentioned in the provided text is",
+        "input_length": 4093,
+        "raw_index": 1179,
+        "ruler_task": "niah_single_1",
+        "seed": 42,
+        "source": "NVIDIA/RULER",
+        "target_length": 1,
+        "token_position_answer": 305
+      },
+      "sample_target": [
+        "5437923"
+      ],
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/ruler/ruler_official_nonqa_synthetic_suite/ruler_nonqa_suite_4k_full_v2",
+      "source_test_sha256_discarded": "7c67a82c89ecc3f2db6db29ec5cbd1d011502108fde648490df15bc5e0436fd5",
+      "source_train_sha256": "bdd8dc646bac34fec1c32050beb9e86fb30918787f429dc0ddedcf88e75f97b3",
+      "source_validation_sha256": "77922a1bd2fbe34b804a4ea834227e4f351896f400a1258768b676b5f625f8d1",
+      "status": "blocked_by_input_contract",
+      "task": "ruler"
+    }
+  ],
+  "completed_runs": 9,
+  "expected_runs": 9,
+  "mode": "smoke",
+  "results_csv": "outputs/probes_corrected_valid_as_test_l8_log5/runs/main_l8_log5/results_smoke.csv",
+  "results_jsonl": "outputs/probes_corrected_valid_as_test_l8_log5/runs/main_l8_log5/results_smoke.jsonl",
+  "status": "ok",
+  "timestamp_utc": "2026-06-19T09:19:32.612554+00:00",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

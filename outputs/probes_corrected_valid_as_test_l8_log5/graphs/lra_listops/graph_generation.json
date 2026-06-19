@@ -1,0 +1,15 @@
+{
+  "B": 109,
+  "N_task": 5995,
+  "T": 5995,
+  "T_raw": 5995,
+  "canonical_graph_artifact_sha256": "6cd3b4ede583297d13056b9ad176f7b9df3dc014d6a2b64012953bc3fb35b748",
+  "d": 8,
+  "generation_attempts": 1,
+  "graph_generation_algorithm": "probes_corrected_valid_as_test_l8_log5_task_parameter_selection",
+  "graph_seed": 0,
+  "q": 55,
+  "selected_graph_path": "outputs/probes_corrected_valid_as_test_l8_log5/graphs/lra_listops/selected_graph.json",
+  "status": "ok",
+  "timestamp_utc": "2026-06-19T09:26:01.011149+00:00"
+}

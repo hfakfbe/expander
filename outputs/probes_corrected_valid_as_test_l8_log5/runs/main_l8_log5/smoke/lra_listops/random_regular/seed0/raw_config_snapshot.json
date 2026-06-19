@@ -1,0 +1,33 @@
+{
+  "blocked_tasks": [
+    "niah_kv_retrieval",
+    "ruler"
+  ],
+  "final_eval": {
+    "test_split": "test_jsonl_from_source_validation"
+  },
+  "methods": [
+    "local",
+    "zigzag_certified",
+    "random_regular"
+  ],
+  "output_root": "outputs/probes_corrected_valid_as_test_l8_log5/runs",
+  "phase": "probes_corrected_valid_as_test_l8_log5",
+  "profile": "main",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/probes_corrected_valid_as_test_l8_log5_task_parameters.json",
+  "tasks": [
+    "selective_copy",
+    "induction_associative_recall",
+    "lra_listops"
+  ],
+  "train": {
+    "epochs": 1,
+    "log_every": 5,
+    "train_diagnostic_examples": 16
+  },
+  "trial_id": "main_l8_log5",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

@@ -1,0 +1,431 @@
+{
+  "status": "ok",
+  "rule": "do not append target to input; keep original input length and supervise only original-input positions or classifier head",
+  "tasks": [
+    {
+      "task": "selective_copy",
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1",
+      "splits": {
+        "train": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target positions are original input tail marker positions"
+          ],
+          "input_length_min": 4128,
+          "input_length_max": 4128,
+          "target_json_length_min": 16,
+          "target_json_length_max": 16,
+          "example": {
+            "ok": true,
+            "contract": "target positions are original input tail marker positions",
+            "input_length": 4128,
+            "target_json_length": 16,
+            "supervised_positions_head": [
+              4112,
+              4113,
+              4114,
+              4115
+            ],
+            "supervised_positions_tail": [
+              4124,
+              4125,
+              4126,
+              4127
+            ],
+            "appends_target": false
+          }
+        },
+        "validation": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target positions are original input tail marker positions"
+          ],
+          "input_length_min": 4128,
+          "input_length_max": 4128,
+          "target_json_length_min": 16,
+          "target_json_length_max": 16,
+          "example": {
+            "ok": true,
+            "contract": "target positions are original input tail marker positions",
+            "input_length": 4128,
+            "target_json_length": 16,
+            "supervised_positions_head": [
+              4112,
+              4113,
+              4114,
+              4115
+            ],
+            "supervised_positions_tail": [
+              4124,
+              4125,
+              4126,
+              4127
+            ],
+            "appends_target": false
+          }
+        },
+        "test": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target positions are original input tail marker positions"
+          ],
+          "input_length_min": 8224,
+          "input_length_max": 8224,
+          "target_json_length_min": 16,
+          "target_json_length_max": 16,
+          "example": {
+            "ok": true,
+            "contract": "target positions are original input tail marker positions",
+            "input_length": 8224,
+            "target_json_length": 16,
+            "supervised_positions_head": [
+              8208,
+              8209,
+              8210,
+              8211
+            ],
+            "supervised_positions_tail": [
+              8220,
+              8221,
+              8222,
+              8223
+            ],
+            "appends_target": false
+          }
+        }
+      },
+      "trainable_current_contract": true
+    },
+    {
+      "task": "induction_associative_recall",
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/induction_associative_recall/zoology_mqar_regenerated/mqar_vocab8192_len64_128_256_512_1024_full_v2",
+      "splits": {
+        "train": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target dict positions are in original input"
+          ],
+          "input_length_min": 64,
+          "input_length_max": 64,
+          "target_json_length_min": 4,
+          "target_json_length_max": 4,
+          "example": {
+            "ok": true,
+            "contract": "target dict positions are in original input",
+            "input_length": 64,
+            "target_json_length": 4,
+            "supervised_positions_head": [
+              8,
+              12,
+              22,
+              48
+            ],
+            "supervised_positions_tail": [
+              8,
+              12,
+              22,
+              48
+            ],
+            "appends_target": false
+          }
+        },
+        "validation": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target dict positions are in original input"
+          ],
+          "input_length_min": 64,
+          "input_length_max": 64,
+          "target_json_length_min": 4,
+          "target_json_length_max": 4,
+          "example": {
+            "ok": true,
+            "contract": "target dict positions are in original input",
+            "input_length": 64,
+            "target_json_length": 4,
+            "supervised_positions_head": [
+              8,
+              10,
+              14,
+              24
+            ],
+            "supervised_positions_tail": [
+              8,
+              10,
+              14,
+              24
+            ],
+            "appends_target": false
+          }
+        },
+        "test": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "target dict positions are in original input"
+          ],
+          "input_length_min": 128,
+          "input_length_max": 128,
+          "target_json_length_min": 32,
+          "target_json_length_max": 32,
+          "example": {
+            "ok": true,
+            "contract": "target dict positions are in original input",
+            "input_length": 128,
+            "target_json_length": 32,
+            "supervised_positions_head": [
+              64,
+              66,
+              68,
+              70
+            ],
+            "supervised_positions_tail": [
+              120,
+              122,
+              124,
+              126
+            ],
+            "appends_target": false
+          }
+        }
+      },
+      "trainable_current_contract": true
+    },
+    {
+      "task": "niah_kv_retrieval",
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/niah_kv_retrieval/ruler_niah_single_1/niah_ruler_noise_4k_full_v2",
+      "splits": {
+        "train": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3490,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4093,
+            "cl100k_input_tokens": 3950,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 305,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        },
+        "validation": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3487,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4093,
+            "cl100k_input_tokens": 3950,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 3233,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        },
+        "test": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3490,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4090,
+            "cl100k_input_tokens": 3948,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 1192,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        }
+      },
+      "trainable_current_contract": false
+    },
+    {
+      "task": "ruler",
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/ruler/ruler_official_nonqa_synthetic_suite/ruler_nonqa_suite_4k_full_v2",
+      "splits": {
+        "train": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3490,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4093,
+            "cl100k_input_tokens": 3950,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 305,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        },
+        "validation": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3487,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4093,
+            "cl100k_input_tokens": 3950,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 3233,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        },
+        "test": {
+          "sampled_rows": 128,
+          "ok_all": false,
+          "contracts": [
+            "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots"
+          ],
+          "input_length_min": 3490,
+          "input_length_max": 4096,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": false,
+            "contract": "blocked: current JSONL has prompt input and separate target output but no original-input readout/answer slots",
+            "input_length": 4090,
+            "cl100k_input_tokens": 3948,
+            "target_json_length": 1,
+            "target_token_lengths": [
+              3
+            ],
+            "token_position_answer": 1192,
+            "answer_prefix_inside_input": false,
+            "appends_target": false,
+            "repair_required": "materialize input with answer/readout placeholders inside the fixed input length, or define task-specific classification/readout head without appending target"
+          }
+        }
+      },
+      "trainable_current_contract": false
+    },
+    {
+      "task": "lra_listops",
+      "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/lra_listops/lra_official_generator_regenerated/lra_listops_regenerated_len500_2000_96k_2k_2k_full_v1",
+      "splits": {
+        "train": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "classification from pooled original input"
+          ],
+          "input_length_min": 1537,
+          "input_length_max": 5929,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": true,
+            "contract": "classification from pooled original input",
+            "input_length": 2857,
+            "target_json_length": 1,
+            "supervised_positions_head": [],
+            "supervised_positions_tail": [],
+            "appends_target": false
+          }
+        },
+        "validation": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "classification from pooled original input"
+          ],
+          "input_length_min": 1516,
+          "input_length_max": 5794,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": true,
+            "contract": "classification from pooled original input",
+            "input_length": 3574,
+            "target_json_length": 1,
+            "supervised_positions_head": [],
+            "supervised_positions_tail": [],
+            "appends_target": false
+          }
+        },
+        "test": {
+          "sampled_rows": 128,
+          "ok_all": true,
+          "contracts": [
+            "classification from pooled original input"
+          ],
+          "input_length_min": 1501,
+          "input_length_max": 5992,
+          "target_json_length_min": 1,
+          "target_json_length_max": 1,
+          "example": {
+            "ok": true,
+            "contract": "classification from pooled original input",
+            "input_length": 2476,
+            "target_json_length": 1,
+            "supervised_positions_head": [],
+            "supervised_positions_tail": [],
+            "appends_target": false
+          }
+        }
+      },
+      "trainable_current_contract": true
+    }
+  ]
+}

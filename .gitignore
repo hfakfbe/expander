@@ -15,6 +15,7 @@ cached_graphs/
 
 # Corrected Copy raw data is materialized locally and tracked by checksums/scripts.
 datasets/copy/*.jsonl
+datasets/probes_corrected_valid_as_test_l8_log5/**/*.jsonl
 
 # Local editor / office lock files
 .~*

@@ -1,0 +1,16 @@
+{
+  "created_at": "2026-06-19T09:05:13.681335+00:00",
+  "sha256": {
+    "source_test_sha256_discarded": "a087af8a447c01dd0d03581dfd95635a29a971d552c01a8bc06f9671876a8fc4",
+    "source_train_sha256": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd",
+    "source_validation_sha256": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+    "test_sha256": "74fb829ac38e75f21aa5651cce276b43e25c53475bb9982d985016c8cd3e9e70",
+    "train_sha256": "8affb38eb0393f59e7d801855115fc0ed6ae88bf1b78f84cffa144a8de15c1bd"
+  },
+  "source_dir": "/Users/sxye/Documents/expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1",
+  "source_test_discarded": "/Users/sxye/Documents/expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1/test.jsonl",
+  "source_train": "/Users/sxye/Documents/expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1/train.jsonl",
+  "source_validation_used_as_test": "/Users/sxye/Documents/expander_bench/data/probes/selective_copy/s4_variable_copy_regenerated/selective_copy_s4_l4096_m16_a16_full_v1/validation.jsonl",
+  "task": "selective_copy",
+  "version": "probes_corrected_valid_as_test_l8_log5"
+}

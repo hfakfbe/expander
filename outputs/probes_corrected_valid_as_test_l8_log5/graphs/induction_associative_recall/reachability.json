@@ -1,0 +1,83 @@
+{
+  "local": {
+    "average_shortest_path": 1.0,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "local",
+    "per_target_shortest_path_histogram": {
+      "1": 198,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 58
+    },
+    "target_in_1hop_rate": 0.7734375,
+    "target_in_2hop_rate": 0.7734375,
+    "target_in_3hop_rate": 0.7734375,
+    "target_in_4hop_rate": 0.7734375,
+    "target_in_5hop_rate": 0.7734375,
+    "target_in_6hop_rate": 0.7734375,
+    "target_in_7hop_rate": 0.7734375,
+    "target_in_8hop_rate": 0.7734375,
+    "target_in_Lhop_rate": 0.7734375,
+    "task": "induction_associative_recall",
+    "unreachable_rate": 0.2265625
+  },
+  "random_regular": {
+    "average_shortest_path": 1.02734375,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "random_regular",
+    "per_target_shortest_path_histogram": {
+      "1": 249,
+      "2": 7,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 0.97265625,
+    "target_in_2hop_rate": 1.0,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_5hop_rate": 1.0,
+    "target_in_6hop_rate": 1.0,
+    "target_in_7hop_rate": 1.0,
+    "target_in_8hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "task": "induction_associative_recall",
+    "unreachable_rate": 0.0
+  },
+  "zigzag_certified": {
+    "average_shortest_path": 1.0,
+    "direction_definition": "mask[query/readout position, source key position] == true; multi-hop follows query-to-key rows backward through layers",
+    "method": "zigzag_certified",
+    "per_target_shortest_path_histogram": {
+      "1": 256,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 0,
+      "7": 0,
+      "8": 0,
+      "unreachable": 0
+    },
+    "target_in_1hop_rate": 1.0,
+    "target_in_2hop_rate": 1.0,
+    "target_in_3hop_rate": 1.0,
+    "target_in_4hop_rate": 1.0,
+    "target_in_5hop_rate": 1.0,
+    "target_in_6hop_rate": 1.0,
+    "target_in_7hop_rate": 1.0,
+    "target_in_8hop_rate": 1.0,
+    "target_in_Lhop_rate": 1.0,
+    "task": "induction_associative_recall",
+    "unreachable_rate": 0.0
+  }
+}

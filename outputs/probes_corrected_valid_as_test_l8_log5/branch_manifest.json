@@ -1,0 +1,12 @@
+{
+  "branch_head_commit": "b5ddf99c5d0f19a8fb794c9f49cb3433a7b85b2d",
+  "branch_name": "codex/probes-corrected-valid-as-test-l8-log5",
+  "config": "configs/probes_corrected_valid_as_test_l8_log5.json",
+  "created_at": "2026-06-19T09:26:03.490989+00:00",
+  "dataset_materialization_script_sha256": "dfccfe007733e68b31eef13e26876e9265e8a9ab5c3678a5c1b89a124f0f1d70",
+  "final_status": "prepared",
+  "manifest": "configs/probes_corrected_valid_as_test_l8_log5_task_parameters.json",
+  "prepare_script_sha256": "64d5a3c8b59e78ab334c0b2f8edb6e3d1c80d2365b2e4b671d1c70f8be48ca0f",
+  "version": "probes_corrected_valid_as_test_l8_log5",
+  "worktree_path": "/Users/sxye/Documents/expander-probes-corrected-valid-as-test-l8-log5"
+}

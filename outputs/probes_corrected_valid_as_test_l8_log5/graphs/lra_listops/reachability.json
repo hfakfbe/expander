@@ -1,0 +1,23 @@
+{
+  "local": {
+    "layers": 8,
+    "method": "local",
+    "target_in_Lhop_rate": "not_applicable_for_classification",
+    "task": "lra_listops",
+    "unreachable_rate": "not_applicable_for_classification"
+  },
+  "random_regular": {
+    "layers": 8,
+    "method": "random_regular",
+    "target_in_Lhop_rate": "not_applicable_for_classification",
+    "task": "lra_listops",
+    "unreachable_rate": "not_applicable_for_classification"
+  },
+  "zigzag_certified": {
+    "layers": 8,
+    "method": "zigzag_certified",
+    "target_in_Lhop_rate": "not_applicable_for_classification",
+    "task": "lra_listops",
+    "unreachable_rate": "not_applicable_for_classification"
+  }
+}
