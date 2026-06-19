@@ -30,8 +30,8 @@ from synthetic_mvp_core.artifacts import (
 )
 
 
-VERSION = "copy_corrected_v01"
-BRANCH = "codex/copy-corrected-v01"
+VERSION = "copy_corrected_v01_l8_log5"
+BRANCH = "codex/copy-corrected-v01-l8-log5"
 
 
 def utc_now() -> str:
@@ -630,7 +630,7 @@ def final_eval(
         checkpoint = Path(ckpt_manifest["latest_checkpoint"]["path"])
     identity = run_identity(config_path, config, manifest_path, record, method, seed)
     model, artifacts, backend, seed_policy = build_model(record, method, seed, device)
-    payload = torch.load(checkpoint, map_location=device)
+    payload = torch.load(checkpoint, map_location=device, weights_only=False)
     if payload.get("identity_sha256") != identity_sha256(identity):
         raise RuntimeError("checkpoint identity does not match current config/data/graph/code")
     model.load_state_dict(payload["model_state"])

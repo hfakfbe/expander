@@ -1,0 +1,16 @@
+{
+  "B": 64,
+  "N_task": 2048,
+  "T": 2048,
+  "T_raw": 2048,
+  "canonical_graph_artifact_sha256": "29971cfe7b624bb125a4efaf8c914556d6db7480619c8d19836a8d71c6a81113",
+  "command": "python scripts/prepare_copy_corrected.py",
+  "d": 8,
+  "generation_attempts": 1,
+  "graph_generation_algorithm": "copy_corrected_v01_task_parameter_selection",
+  "graph_seed": 0,
+  "q": 32,
+  "selected_graph_path": "outputs/copy_corrected_v01_l8_log5/graphs/copy/selected_graph.json",
+  "status": "ok",
+  "timestamp_utc": "2026-06-19T06:30:24.277477+00:00"
+}

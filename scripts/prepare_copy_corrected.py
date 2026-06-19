@@ -19,8 +19,8 @@ from synthetic_mvp_core.artifacts import (
 )
 
 
-VERSION = "copy_corrected_v01"
-BRANCH = "codex/copy-corrected-v01"
+VERSION = "copy_corrected_v01_l8_log5"
+BRANCH = "codex/copy-corrected-v01-l8-log5"
 RAW_T = 2048
 SOURCE_LENGTH = 1024
 TARGET_LENGTH = 1024
@@ -191,10 +191,11 @@ def reachability(graph: dict[str, Any], layers: int) -> dict[str, Any]:
     return out
 
 
-def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encoder_path: Path, reachability_path: Path) -> dict[str, Any]:
+def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encoder_path: Path, reachability_path: Path, layers: int) -> dict[str, Any]:
     card = read_json(data_dir / "dataset_card.json")
     return {
         "copy_corrected_v01": True,
+        "copy_corrected_variant": VERSION,
         "task": "copy",
         "version_path": str(data_dir),
         "primary_metric": "copy_token_accuracy",
@@ -229,7 +230,7 @@ def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encod
         "rope_apply_to": "q_and_k_only",
         "absolute_position_embedding": "none",
         "resolved_model_family": "probe_transformer_encoder_readout_rope_marker",
-        "resolved_layers": 4,
+        "resolved_layers": int(layers),
         "resolved_d_model": 128,
         "resolved_heads": 4,
         "resolved_ffn_dim": 512,
@@ -268,10 +269,11 @@ def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encod
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("datasets/copy"))
-    parser.add_argument("--output-root", type=Path, default=Path("outputs/copy_corrected_v01"))
-    parser.add_argument("--config", type=Path, default=Path("configs/copy_corrected_v01.json"))
-    parser.add_argument("--manifest", type=Path, default=Path("configs/copy_corrected_v01_task_parameters.json"))
-    parser.add_argument("--layers", type=int, default=4)
+    parser.add_argument("--output-root", type=Path, default=Path("outputs/copy_corrected_v01_l8_log5"))
+    parser.add_argument("--config", type=Path, default=Path("configs/copy_corrected_v01_l8_log5.json"))
+    parser.add_argument("--manifest", type=Path, default=Path("configs/copy_corrected_v01_l8_log5_task_parameters.json"))
+    parser.add_argument("--layers", type=int, default=8)
+    parser.add_argument("--log-every", type=int, default=5)
     args = parser.parse_args()
     require_branch()
     if not (args.data_dir / "train.jsonl").exists() or not (args.data_dir / "test.jsonl").exists():
@@ -285,7 +287,7 @@ def main() -> None:
     reach = reachability(graph, args.layers)
     reach_path = args.output_root / "graphs" / "copy" / "reachability.json"
     write_json(reach_path, reach)
-    record = build_record(args.data_dir, args.output_root, graph, encoder_path, reach_path)
+    record = build_record(args.data_dir, args.output_root, graph, encoder_path, reach_path, args.layers)
     manifest = {
         "attention_contract": "non_causal",
         "base_branch": "main",
@@ -313,7 +315,7 @@ def main() -> None:
             "seeds": [0],
             "train": {
                 "epochs": 1,
-                "log_every": 25,
+                "log_every": int(args.log_every),
                 "checkpoint_every": 100,
                 "train_diagnostic_examples": 16,
             },
@@ -321,7 +323,7 @@ def main() -> None:
                 "method": "dense",
                 "examples": 2,
                 "max_steps": 1000,
-                "layers": 4,
+                "layers": int(args.layers),
                 "d_model": 128,
                 "heads": 4,
                 "ffn_dim": 512,

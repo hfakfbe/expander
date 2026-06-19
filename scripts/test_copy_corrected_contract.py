@@ -17,7 +17,7 @@ from synthetic_mvp_core.attention import dense_attention, local_blockpair_attent
 from synthetic_mvp_core.model import RotaryEmbedding, apply_rotary_pos_emb
 
 
-BRANCH = "codex/copy-corrected-v01"
+BRANCH = "codex/copy-corrected-v01-l8-log5"
 OLD_TEST_SHA256 = "50de40e9b6f7c53af8a912cf0967ae1129e84028bcc7f90c14a94620d0760fac"
 
 
@@ -48,7 +48,8 @@ def record_from_manifest(path: Path) -> dict:
 
 def test_static_contract(config: dict, record: dict) -> None:
     require(git_value("branch", "--show-current") == BRANCH, "must run on corrected Copy branch")
-    require("expander-copy-corrected-v01" in str(Path.cwd()), "must run in corrected Copy worktree")
+    require("expander-copy-corrected-v01-l8-log5" in str(Path.cwd()), "must run in corrected Copy l8/log5 worktree")
+    require(record.get("copy_corrected_variant") == "copy_corrected_v01_l8_log5", "variant must be l8/log5")
     require(record["copy_corrected_v01"] is True, "task record must be marked corrected")
     require(record["resolved_padded_sequence_length"] == 2048, "T must be 2048")
     require(record["resolved_runtime_input_length"] == 2048, "runtime input length must be 2048")
@@ -61,6 +62,8 @@ def test_static_contract(config: dict, record: dict) -> None:
     require(record["absolute_position_embedding"] == "none", "absolute pos embedding must be absent")
     require(record["resolved_graph_block_size"] == 64, "graph B must be 64")
     require(record["resolved_graph_num_blocks_or_nodes"] == 32, "graph q must be 32")
+    require(record["resolved_layers"] == 8, "model layers must be 8")
+    require(config["train"]["log_every"] == 5, "train log_every must be 5")
     require(record["discarded_old_test_sha256"] == OLD_TEST_SHA256, "discarded old test hash must be recorded")
     require(OLD_TEST_SHA256 not in json.dumps(config), "old OOD test hash must not appear in config")
     data_dir = Path(record["version_path"])
