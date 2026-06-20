@@ -128,14 +128,27 @@ def run_dir_for(config: dict[str, Any], method: str, seed: int, mode: str = "tra
     return Path(config["output_root"]) / trial / method / f"seed{int(seed)}"
 
 
+def experiment_version(config: dict[str, Any], record: dict[str, Any]) -> str:
+    return str(config.get("version") or record.get("copy_corrected_variant") or VERSION)
+
+
+def experiment_branch(record: dict[str, Any]) -> str:
+    return str(record.get("branch_name") or BRANCH)
+
+
+def run_id_for(config: dict[str, Any], record: dict[str, Any], method: str, seed: int, suffix: str = "") -> str:
+    base = f"{experiment_version(config, record)}_{config.get('trial_id', 'gate')}_{method}_seed{seed}"
+    return f"{base}_{suffix}" if suffix else base
+
+
 def run_identity(config_path: Path, config: dict[str, Any], manifest_path: Path, record: dict[str, Any], method: str, seed: int) -> dict[str, Any]:
     graph = record["graph_artifacts"]
     return {
-        "version": VERSION,
+        "version": experiment_version(config, record),
         "trial_id": config.get("trial_id", "gate"),
         "method": method,
         "seed": int(seed),
-        "branch_name": BRANCH,
+        "branch_name": experiment_branch(record),
         "branch_head_commit": git_commit(),
         "git_dirty": git_dirty(),
         "config_path": str(config_path),
@@ -397,7 +410,7 @@ def train_loop(
             diag = evaluate_rows(model, artifacts, encoder, record, fixed_rows, batch_size, device)
             now = time.perf_counter()
             row = {
-                "run_id": f"{VERSION}_{config.get('trial_id', 'gate')}_{method}_seed{seed}",
+                "run_id": run_id_for(config, record, method, seed),
                 "mode": mode,
                 "task": "copy",
                 "method": method,
@@ -482,7 +495,7 @@ def train_loop(
                     diag = evaluate_rows(model, artifacts, encoder, record, diagnostic_rows, int(record["resolved_eval_batch_size"]), device)
                     now = time.perf_counter()
                     row = {
-                        "run_id": f"{VERSION}_{config.get('trial_id', 'gate')}_{method}_seed{seed}",
+                        "run_id": run_id_for(config, record, method, seed),
                         "mode": mode,
                         "task": "copy",
                         "method": method,
@@ -544,8 +557,8 @@ def train_loop(
     summary = {
         "status": "ok",
         "mode": mode,
-        "version": VERSION,
-        "run_id": f"{VERSION}_{config.get('trial_id', 'gate')}_{method}_seed{seed}",
+        "version": experiment_version(config, record),
+        "run_id": run_id_for(config, record, method, seed),
         "method": method,
         "seed": int(seed),
         "identity": identity,
@@ -644,8 +657,8 @@ def final_eval(
     out = {
         "status": "ok",
         "mode": "final-eval",
-        "version": VERSION,
-        "run_id": f"{VERSION}_{config.get('trial_id', 'gate')}_{method}_seed{seed}_final_eval",
+        "version": experiment_version(config, record),
+        "run_id": run_id_for(config, record, method, seed, "final_eval"),
         "method": method,
         "seed": int(seed),
         "checkpoint_path": str(checkpoint),
