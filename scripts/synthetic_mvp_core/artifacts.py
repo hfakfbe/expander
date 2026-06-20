@@ -458,7 +458,8 @@ def build_random_remote_rows_for_actual_mask_density(
     rng = random.Random(
         "random_actual_mask_density|"
         f"{getattr(args, 'seed', 0)}|{seq_len}|{block_size}|"
-        f"{target_pair_count}|{density:.12g}"
+        f"{target_pair_count}|{density:.12g}|"
+        f"layer={getattr(args, 'random_layer_index', 'shared')}"
     )
     random_remote_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
     for src in range(seq_len):

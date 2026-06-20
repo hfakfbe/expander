@@ -575,16 +575,21 @@ class ProbeTransformer(nn.Module):
         if self.pos is not None:
             pos = torch.arange(tokens.shape[1], device=tokens.device)
             h = h + self.pos(pos)[None, :, :]
-        for block in self.blocks:
+        def layer_value(value, layer_index: int):
+            if isinstance(value, (list, tuple)):
+                return value[layer_index]
+            return value
+
+        for layer_index, block in enumerate(self.blocks):
             h = block(
                 h,
-                mask,
-                local_valid,
-                neighbors,
-                valid_neighbors,
-                block_pair_index,
-                local_log_m,
-                neighbor_log_m,
+                layer_value(mask, layer_index),
+                layer_value(local_valid, layer_index),
+                layer_value(neighbors, layer_index),
+                layer_value(valid_neighbors, layer_index),
+                layer_value(block_pair_index, layer_index),
+                layer_value(local_log_m, layer_index),
+                layer_value(neighbor_log_m, layer_index),
             )
         h = self.norm(h)
         token_logits = self.token_head(h)

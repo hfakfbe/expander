@@ -142,17 +142,32 @@ def run_id_for(config: dict[str, Any], record: dict[str, Any], method: str, seed
     return f"{base}_{suffix}" if suffix else base
 
 
+def config_random_density(config: dict[str, Any]) -> Any:
+    density = config.get("random_actual_mask_density")
+    if density is None:
+        density = dict(config.get("attention", {})).get("random_actual_mask_density")
+    return density
+
+
+def config_random_layerwise_independent(config: dict[str, Any]) -> bool:
+    value = config.get("random_layerwise_independent_masks")
+    if value is None:
+        value = dict(config.get("attention", {})).get("random_layerwise_independent_masks", False)
+    return bool(value)
+
+
 def run_identity(config_path: Path, config: dict[str, Any], manifest_path: Path, record: dict[str, Any], method: str, seed: int) -> dict[str, Any]:
     graph = record["graph_artifacts"]
-    random_actual_mask_density = config.get("random_actual_mask_density")
-    if random_actual_mask_density is None:
-        random_actual_mask_density = dict(config.get("attention", {})).get("random_actual_mask_density")
+    random_actual_mask_density = config_random_density(config)
+    random_layerwise_independent = config_random_layerwise_independent(config)
     return {
         "version": experiment_version(config, record),
         "trial_id": config.get("trial_id", "gate"),
         "method": method,
         "seed": int(seed),
         "random_actual_mask_density": random_actual_mask_density if method == "random_regular" else None,
+        "random_layerwise_independent_masks": random_layerwise_independent if method == "random_regular" else None,
+        "random_layerwise_mask_count": int(record["resolved_layers"]) if method == "random_regular" and random_layerwise_independent else None,
         "branch_name": experiment_branch(record),
         "branch_head_commit": git_commit(),
         "git_dirty": git_dirty(),
@@ -198,13 +213,16 @@ def method_artifact_args(
     method: str,
     seed: int,
     config: dict[str, Any] | None = None,
+    layer_index: int | None = None,
 ) -> SimpleNamespace:
     args = artifact_args(record, method, seed)
+    if layer_index is not None:
+        args.random_base_seed = int(seed)
+        args.random_layer_index = int(layer_index)
+        args.seed = int(seed) + 104729 * (int(layer_index) + 1)
     if method == "random_regular":
         config = config or {}
-        density = config.get("random_actual_mask_density")
-        if density is None:
-            density = dict(config.get("attention", {})).get("random_actual_mask_density")
+        density = config_random_density(config)
         if density is None:
             args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(
                 int(record["resolved_padded_sequence_length"]),
@@ -222,6 +240,37 @@ def method_artifact_args(
     return args
 
 
+def aggregate_layerwise_artifacts(layer_artifacts: list[Any]) -> SimpleNamespace:
+    first = layer_artifacts[0]
+    metrics = dict(first.metrics)
+    per_layer_metrics = [dict(item.metrics) for item in layer_artifacts]
+    pair_counts = [int(item.metrics.get("attention_pair_count", 0)) for item in layer_artifacts]
+    unique_k_means = [float(item.metrics.get("unique_k_mean", 0.0)) for item in layer_artifacts]
+    metrics.update(
+        {
+            "layerwise_independent_masks": True,
+            "layerwise_mask_count": len(layer_artifacts),
+            "per_layer_attention_pair_count": pair_counts,
+            "per_layer_unique_k_mean": unique_k_means,
+            "attention_pair_count_min_across_layers": min(pair_counts) if pair_counts else 0,
+            "attention_pair_count_max_across_layers": max(pair_counts) if pair_counts else 0,
+            "unique_k_mean_min_across_layers": min(unique_k_means) if unique_k_means else 0.0,
+            "unique_k_mean_max_across_layers": max(unique_k_means) if unique_k_means else 0.0,
+            "per_layer_metrics": per_layer_metrics,
+        }
+    )
+    return SimpleNamespace(
+        mask=[item.mask for item in layer_artifacts],
+        local_valid=[item.local_valid for item in layer_artifacts],
+        neighbors=[item.neighbors for item in layer_artifacts],
+        valid_neighbors=[item.valid_neighbors for item in layer_artifacts],
+        block_pair_index=[item.block_pair_index for item in layer_artifacts],
+        local_log_m=[item.local_log_m for item in layer_artifacts],
+        neighbor_log_m=[item.neighbor_log_m for item in layer_artifacts],
+        metrics=metrics,
+    )
+
+
 def build_model(
     record: dict[str, Any],
     method: str,
@@ -230,8 +279,23 @@ def build_model(
     config: dict[str, Any] | None = None,
 ):
     backend = resolve_attention_backend(str(record["resolved_attention_backend"]), method)
-    args = method_artifact_args(record, method, seed, config)
-    artifacts = make_attention_artifacts(method, int(record["resolved_padded_sequence_length"]), args, device, backend)
+    if method == "random_regular" and config_random_layerwise_independent(config or {}):
+        layer_artifacts = []
+        for layer_index in range(int(record["resolved_layers"])):
+            layer_args = method_artifact_args(record, method, seed, config, layer_index=layer_index)
+            layer_artifacts.append(
+                make_attention_artifacts(
+                    method,
+                    int(record["resolved_padded_sequence_length"]),
+                    layer_args,
+                    device,
+                    backend,
+                )
+            )
+        artifacts = aggregate_layerwise_artifacts(layer_artifacts)
+    else:
+        args = method_artifact_args(record, method, seed, config)
+        artifacts = make_attention_artifacts(method, int(record["resolved_padded_sequence_length"]), args, device, backend)
     seed_policy = set_all_seeds(int(record.get("model_seed", seed)))
     model = ProbeTransformer(
         vocab_size=int(record["resolved_vocab_or_value_space_size"]),
