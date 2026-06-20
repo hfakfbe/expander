@@ -410,6 +410,71 @@ def build_random_remote_rows_aligned_to_zigzag_noncausal(seq_len: int, args) -> 
             random_remote_rows[src][dst] += 1
     return random_remote_rows
 
+def build_random_remote_rows_for_actual_mask_density(
+    seq_len: int,
+    args,
+    density: float,
+) -> list[Counter[int]]:
+    """Remote random rows whose final non-causal boolean mask has target density.
+
+    build_method_counts("random_regular", ...) always adds the block-local
+    mask first. This helper therefore returns only the remote rows, sampling
+    unique non-local keys so that local + remote contains exactly
+    round(density * seq_len * seq_len) true entries.
+    """
+    density = float(density)
+    if not 0.0 <= density <= 1.0:
+        raise ValueError(f"random actual mask density must be in [0, 1], got {density}")
+    block_size = int(args.block_size)
+    if seq_len % block_size != 0:
+        raise ValueError("seq_len must be divisible by block_size")
+    local_pair_count = seq_len * block_size
+    target_pair_count = int(round(density * seq_len * seq_len))
+    max_pair_count = seq_len * seq_len
+    if target_pair_count < local_pair_count:
+        raise ValueError(
+            f"requested density={density} gives {target_pair_count} pairs, "
+            f"below required local mask pairs={local_pair_count}"
+        )
+    if target_pair_count > max_pair_count:
+        raise ValueError(
+            f"requested density={density} gives {target_pair_count} pairs, "
+            f"above full mask pairs={max_pair_count}"
+        )
+
+    remote_pair_count = target_pair_count - local_pair_count
+    max_remote_per_row = seq_len - block_size
+    base_remote_k, extra_rows = divmod(remote_pair_count, seq_len)
+    if base_remote_k > max_remote_per_row or (
+        base_remote_k == max_remote_per_row and extra_rows
+    ):
+        raise ValueError(
+            f"requested density={density} requires too many remote keys per row: "
+            f"base={base_remote_k}, extra_rows={extra_rows}, max={max_remote_per_row}"
+        )
+
+    import random
+
+    rng = random.Random(
+        "random_actual_mask_density|"
+        f"{getattr(args, 'seed', 0)}|{seq_len}|{block_size}|"
+        f"{target_pair_count}|{density:.12g}"
+    )
+    random_remote_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    for src in range(seq_len):
+        block_start = (src // block_size) * block_size
+        local_keys = set(range(block_start, block_start + block_size))
+        remote_k = base_remote_k + (1 if src < extra_rows else 0)
+        candidates = [dst for dst in range(seq_len) if dst not in local_keys]
+        if remote_k > len(candidates):
+            raise ValueError(
+                f"cannot sample random actual-density row {src}: "
+                f"need {remote_k}, have {len(candidates)}"
+            )
+        for dst in rng.sample(candidates, remote_k):
+            random_remote_rows[src][dst] += 1
+    return random_remote_rows
+
 def budget_diagnostics(seq_len: int, args) -> tuple[dict, dict, list[Counter[int]]]:
     zigzag_rows = build_method_counts("zigzag_certified", seq_len, args)
     random_rows = build_random_rows_aligned_to_zigzag(seq_len, args)

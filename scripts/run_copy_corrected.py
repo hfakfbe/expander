@@ -25,6 +25,7 @@ from probe_tasks import JsonlStore, ProbeTransformer, load_encoder, make_probe_b
 from run_probe_experiment import forward_loss_and_metrics, schedule_lr
 from synthetic_mvp_core.artifacts import (
     build_random_remote_rows_aligned_to_zigzag_noncausal,
+    build_random_remote_rows_for_actual_mask_density,
     make_attention_artifacts,
     resolve_attention_backend,
 )
@@ -143,11 +144,15 @@ def run_id_for(config: dict[str, Any], record: dict[str, Any], method: str, seed
 
 def run_identity(config_path: Path, config: dict[str, Any], manifest_path: Path, record: dict[str, Any], method: str, seed: int) -> dict[str, Any]:
     graph = record["graph_artifacts"]
+    random_actual_mask_density = config.get("random_actual_mask_density")
+    if random_actual_mask_density is None:
+        random_actual_mask_density = dict(config.get("attention", {})).get("random_actual_mask_density")
     return {
         "version": experiment_version(config, record),
         "trial_id": config.get("trial_id", "gate"),
         "method": method,
         "seed": int(seed),
+        "random_actual_mask_density": random_actual_mask_density if method == "random_regular" else None,
         "branch_name": experiment_branch(record),
         "branch_head_commit": git_commit(),
         "git_dirty": git_dirty(),
@@ -188,19 +193,44 @@ def artifact_args(record: dict[str, Any], method: str, seed: int) -> SimpleNames
     )
 
 
-def method_artifact_args(record: dict[str, Any], method: str, seed: int) -> SimpleNamespace:
+def method_artifact_args(
+    record: dict[str, Any],
+    method: str,
+    seed: int,
+    config: dict[str, Any] | None = None,
+) -> SimpleNamespace:
     args = artifact_args(record, method, seed)
     if method == "random_regular":
-        args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(
-            int(record["resolved_padded_sequence_length"]),
-            args,
-        )
+        config = config or {}
+        density = config.get("random_actual_mask_density")
+        if density is None:
+            density = dict(config.get("attention", {})).get("random_actual_mask_density")
+        if density is None:
+            args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(
+                int(record["resolved_padded_sequence_length"]),
+                args,
+            )
+        else:
+            args.random_actual_mask_density = float(density)
+            args.random_alignment_mode = "actual_mask_density"
+            args.random_target_k_source = "configured_actual_mask_density"
+            args.random_aligned_rows = build_random_remote_rows_for_actual_mask_density(
+                int(record["resolved_padded_sequence_length"]),
+                args,
+                float(density),
+            )
     return args
 
 
-def build_model(record: dict[str, Any], method: str, seed: int, device: torch.device):
+def build_model(
+    record: dict[str, Any],
+    method: str,
+    seed: int,
+    device: torch.device,
+    config: dict[str, Any] | None = None,
+):
     backend = resolve_attention_backend(str(record["resolved_attention_backend"]), method)
-    args = method_artifact_args(record, method, seed)
+    args = method_artifact_args(record, method, seed, config)
     artifacts = make_attention_artifacts(method, int(record["resolved_padded_sequence_length"]), args, device, backend)
     seed_policy = set_all_seeds(int(record.get("model_seed", seed)))
     model = ProbeTransformer(
@@ -352,7 +382,7 @@ def train_loop(
     train_cfg = dict(config.get("train", {}))
     overfit = dict(config.get("gate_overfit", {}))
     active_record = gate_model_record(record, overfit) if mode == "gate-overfit" else record
-    model, artifacts, backend, seed_policy = build_model(active_record, method, seed, device)
+    model, artifacts, backend, seed_policy = build_model(active_record, method, seed, device, config)
     initial_hash = state_dict_sha256(model)
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -567,6 +597,11 @@ def train_loop(
         "git_commit": git_commit(),
         "git_dirty": git_dirty(),
         "backend": backend,
+        "attention_metrics": artifacts.metrics,
+        "actual_mask_density": (
+            float(artifacts.metrics.get("attention_pair_count", 0))
+            / float(int(active_record["resolved_padded_sequence_length"]) ** 2)
+        ),
         "seed_policy": seed_policy,
         "active_model": {
             "layers": active_record["resolved_layers"],
@@ -642,7 +677,7 @@ def final_eval(
         ckpt_manifest = read_json(run_dir / "checkpoint_manifest.json")
         checkpoint = Path(ckpt_manifest["latest_checkpoint"]["path"])
     identity = run_identity(config_path, config, manifest_path, record, method, seed)
-    model, artifacts, backend, seed_policy = build_model(record, method, seed, device)
+    model, artifacts, backend, seed_policy = build_model(record, method, seed, device, config)
     payload = torch.load(checkpoint, map_location=device, weights_only=False)
     if payload.get("identity_sha256") != identity_sha256(identity):
         raise RuntimeError("checkpoint identity does not match current config/data/graph/code")
@@ -667,6 +702,11 @@ def final_eval(
         "identity": identity,
         "identity_sha256": identity_sha256(identity),
         "backend": backend,
+        "attention_metrics": artifacts.metrics,
+        "actual_mask_density": (
+            float(artifacts.metrics.get("attention_pair_count", 0))
+            / float(int(record["resolved_padded_sequence_length"]) ** 2)
+        ),
         "seed_policy": seed_policy,
         "first_test_read_at": first_test_read_at,
         "test_examples": result["examples"],
