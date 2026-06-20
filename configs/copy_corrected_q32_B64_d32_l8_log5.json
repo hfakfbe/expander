@@ -1,0 +1,47 @@
+{
+  "final_eval": {
+    "test_examples": 1000
+  },
+  "gate_overfit": {
+    "d_model": 128,
+    "dropout": 0.0,
+    "examples": 2,
+    "ffn_dim": 512,
+    "heads": 4,
+    "layers": 8,
+    "learning_rate": 0.001,
+    "max_steps": 1000,
+    "method": "dense",
+    "threshold_loss": 0.01,
+    "threshold_sequence_accuracy": 0.99,
+    "threshold_token_accuracy": 0.999
+  },
+  "graph_override": {
+    "B": 64,
+    "d": 32,
+    "graph_seed": 0,
+    "q": 32
+  },
+  "methods": [
+    "zigzag_certified",
+    "random_regular"
+  ],
+  "output_root": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs",
+  "phase": "copy_corrected_v01",
+  "profile": "gate",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/copy_corrected_q32_B64_d32_l8_log5_task_parameters.json",
+  "tasks": [
+    "copy"
+  ],
+  "train": {
+    "checkpoint_every": 100,
+    "epochs": 1,
+    "log_every": 5,
+    "train_diagnostic_examples": 16
+  },
+  "trial_id": "q32_B64_d32_l8_log5",
+  "version": "copy_corrected_q32_B64_d32_l8_log5"
+}

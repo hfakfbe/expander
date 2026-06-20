@@ -29,6 +29,7 @@ BLOCK_SIZE = 64
 GRAPH_DEGREE = 8
 GRAPH_Q = 32
 GRAPH_SEED = 0
+REQUIRED_METHODS = ["dense", "local", "zigzag_certified", "random_regular"]
 OLD_TEST_SHA256 = "50de40e9b6f7c53af8a912cf0967ae1129e84028bcc7f90c14a94620d0760fac"
 
 
@@ -47,6 +48,12 @@ def require_branch() -> None:
 
 
 def write_graph(output_root: Path) -> dict[str, Any]:
+    if RAW_T % BLOCK_SIZE != 0:
+        raise ValueError(f"RAW_T={RAW_T} must be divisible by block_size={BLOCK_SIZE}")
+    if GRAPH_Q != RAW_T // BLOCK_SIZE:
+        raise ValueError(f"q={GRAPH_Q} must equal RAW_T/block_size={RAW_T // BLOCK_SIZE}")
+    if GRAPH_DEGREE <= 0 or GRAPH_DEGREE >= BLOCK_SIZE:
+        raise ValueError(f"degree must satisfy 0 < d < B, got d={GRAPH_DEGREE}, B={BLOCK_SIZE}")
     graph_dir = output_root / "graphs" / "copy"
     graph_dir.mkdir(parents=True, exist_ok=True)
     artifact = build_graph_artifact(
@@ -243,7 +250,7 @@ def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encod
         "resolved_graph_num_blocks_or_nodes": GRAPH_Q,
         "resolved_graph_degree_or_budget": GRAPH_DEGREE,
         "resolved_q_alias_if_applicable": GRAPH_Q,
-        "resolved_required_methods": ["dense", "local", "zigzag_certified", "random_regular"],
+        "resolved_required_methods": REQUIRED_METHODS,
         "resolved_optimizer": "adamw",
         "resolved_base_learning_rate": 0.0003,
         "resolved_min_learning_rate": 0.00003,
@@ -267,6 +274,7 @@ def build_record(data_dir: Path, output_root: Path, graph: dict[str, Any], encod
 
 
 def main() -> None:
+    global VERSION, BRANCH, BLOCK_SIZE, GRAPH_DEGREE, GRAPH_Q, GRAPH_SEED, REQUIRED_METHODS
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", type=Path, default=Path("datasets/copy"))
     parser.add_argument("--output-root", type=Path, default=Path("outputs/copy_corrected_v01_l8_log5"))
@@ -274,8 +282,25 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=Path("configs/copy_corrected_v01_l8_log5_task_parameters.json"))
     parser.add_argument("--layers", type=int, default=8)
     parser.add_argument("--log-every", type=int, default=5)
+    parser.add_argument("--block-size", type=int, default=BLOCK_SIZE)
+    parser.add_argument("--q", type=int, default=GRAPH_Q)
+    parser.add_argument("--degree", type=int, default=GRAPH_DEGREE)
+    parser.add_argument("--graph-seed", type=int, default=GRAPH_SEED)
+    parser.add_argument("--methods", nargs="+", default=REQUIRED_METHODS)
+    parser.add_argument("--trial-id", default="gate")
+    parser.add_argument("--version", default=VERSION)
+    parser.add_argument("--branch-name", default=BRANCH)
+    parser.add_argument("--skip-branch-check", action="store_true")
     args = parser.parse_args()
-    require_branch()
+    VERSION = str(args.version)
+    BRANCH = str(args.branch_name)
+    BLOCK_SIZE = int(args.block_size)
+    GRAPH_DEGREE = int(args.degree)
+    GRAPH_Q = int(args.q)
+    GRAPH_SEED = int(args.graph_seed)
+    REQUIRED_METHODS = [str(method) for method in args.methods]
+    if not args.skip_branch_check:
+        require_branch()
     if not (args.data_dir / "train.jsonl").exists() or not (args.data_dir / "test.jsonl").exists():
         raise SystemExit("datasets/copy/train.jsonl and test.jsonl must exist; run scripts/materialize_copy_corrected.py first")
     if (args.data_dir / "validation.jsonl").exists():
@@ -309,9 +334,9 @@ def main() -> None:
             "profile": "gate",
             "task_parameter_manifest": str(args.manifest),
             "output_root": str(args.output_root / "runs"),
-            "trial_id": "gate",
+            "trial_id": str(args.trial_id),
             "tasks": ["copy"],
-            "methods": ["dense"],
+            "methods": REQUIRED_METHODS,
             "seeds": [0],
             "train": {
                 "epochs": 1,
@@ -334,6 +359,12 @@ def main() -> None:
                 "threshold_loss": 0.01,
             },
             "final_eval": {"test_examples": 1000},
+            "graph_override": {
+                "q": GRAPH_Q,
+                "B": BLOCK_SIZE,
+                "d": GRAPH_DEGREE,
+                "graph_seed": GRAPH_SEED,
+            },
         },
     )
     branch_manifest_path = args.output_root / "branch_manifest.json"
