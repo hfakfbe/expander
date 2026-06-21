@@ -1,0 +1,40 @@
+{
+  "density_sweep_note": "multiplicity_logm; zigzag main method with the same G/H graph artifact shared by every transformer layer; d=13 gives about 10% non-causal unique mask density",
+  "final_eval": {
+    "test_examples": 1000
+  },
+  "graph_override": {
+    "q": 32,
+    "B": 64,
+    "d": 13,
+    "graph_seed": 413002,
+    "shared_across_layers": true
+  },
+  "methods": [
+    "zigzag_certified"
+  ],
+  "output_root": "outputs/copy_corrected_q32_B64_d13_l8_log5_zigzag_shared_density10/runs",
+  "phase": "copy_corrected_v01_zigzag_shared_graph_density10",
+  "profile": "gate",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/copy_corrected_q32_B64_d13_l8_log5_zigzag_shared_density10_task_parameters.json",
+  "tasks": [
+    "copy"
+  ],
+  "train": {
+    "checkpoint_every": 100,
+    "epochs": 1,
+    "log_every": 5,
+    "train_diagnostic_examples": 16
+  },
+  "trial_id": "q32_B64_d13_l8_log5_zigzag_shared_density10_multiplicity_logm",
+  "version": "copy_corrected_q32_B64_d13_l8_log5_zigzag_shared_density10",
+  "zigzag_layerwise_random_graphs": false,
+  "zigzag_layerwise_graph_seed_base": null,
+  "zigzag_target_actual_mask_density_note": "Approximate 10%; q=32, B=64, d=13 shared zigzag artifact seed 413002 yields actual unique density around 9.91%.",
+  "multiplicity_mode": "unique_log_m",
+  "zigzag_shared_graphs": true,
+  "zigzag_shared_graph_seed": 413002
+}
