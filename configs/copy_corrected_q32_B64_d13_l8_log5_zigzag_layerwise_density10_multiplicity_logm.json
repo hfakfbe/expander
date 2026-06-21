@@ -1,0 +1,37 @@
+{
+  "density_sweep_note": "multiplicity_logm; zigzag main method with independent random G/H per transformer layer; d=13 for about 10% non-causal mask density",
+  "final_eval": {
+    "test_examples": 1000
+  },
+  "graph_override": {
+    "q": 32,
+    "B": 64,
+    "d": 13,
+    "graph_seed": 0
+  },
+  "methods": [
+    "zigzag_certified"
+  ],
+  "output_root": "outputs/copy_corrected_q32_B64_d13_l8_log5_zigzag_layerwise_density10/runs",
+  "phase": "copy_corrected_v01_zigzag_layerwise_random_graphs_density10",
+  "profile": "gate",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/copy_corrected_q32_B64_d13_l8_log5_zigzag_layerwise_density10_task_parameters.json",
+  "tasks": [
+    "copy"
+  ],
+  "train": {
+    "checkpoint_every": 100,
+    "epochs": 1,
+    "log_every": 5,
+    "train_diagnostic_examples": 16
+  },
+  "trial_id": "q32_B64_d13_l8_log5_zigzag_layerwise_density10_multiplicity_logm",
+  "version": "copy_corrected_q32_B64_d13_l8_log5_zigzag_layerwise_density10",
+  "zigzag_layerwise_random_graphs": true,
+  "zigzag_layerwise_graph_seed_base": 308100,
+  "zigzag_target_actual_mask_density_note": "Approximate 10%; local B=64 plus randomized zigzag remote d=13 yields actual unique density around 9.8%.",
+  "multiplicity_mode": "unique_log_m"
+}

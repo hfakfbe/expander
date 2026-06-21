@@ -29,6 +29,7 @@ from synthetic_mvp_core.artifacts import (
     make_attention_artifacts,
     resolve_attention_backend,
 )
+from graph_structures import build_graph_artifact
 
 
 VERSION = "copy_corrected_v01_l8_log5"
@@ -156,10 +157,25 @@ def config_random_layerwise_independent(config: dict[str, Any]) -> bool:
     return bool(value)
 
 
+def config_layerwise_zigzag_random_graphs(config: dict[str, Any]) -> bool:
+    value = config.get("zigzag_layerwise_random_graphs")
+    if value is None:
+        value = dict(config.get("attention", {})).get("zigzag_layerwise_random_graphs", False)
+    return bool(value)
+
+
+def config_zigzag_graph_seed_base(config: dict[str, Any], default_seed: int = 0) -> int:
+    value = config.get("zigzag_layerwise_graph_seed_base")
+    if value is None:
+        value = dict(config.get("attention", {})).get("zigzag_layerwise_graph_seed_base", default_seed)
+    return int(value)
+
+
 def run_identity(config_path: Path, config: dict[str, Any], manifest_path: Path, record: dict[str, Any], method: str, seed: int) -> dict[str, Any]:
     graph = record["graph_artifacts"]
     random_actual_mask_density = config_random_density(config)
     random_layerwise_independent = config_random_layerwise_independent(config)
+    zigzag_layerwise_random_graphs = config_layerwise_zigzag_random_graphs(config)
     return {
         "version": experiment_version(config, record),
         "trial_id": config.get("trial_id", "gate"),
@@ -168,6 +184,10 @@ def run_identity(config_path: Path, config: dict[str, Any], manifest_path: Path,
         "random_actual_mask_density": random_actual_mask_density if method == "random_regular" else None,
         "random_layerwise_independent_masks": random_layerwise_independent if method == "random_regular" else None,
         "random_layerwise_mask_count": int(record["resolved_layers"]) if method == "random_regular" and random_layerwise_independent else None,
+        "zigzag_layerwise_random_graphs": zigzag_layerwise_random_graphs if method in {"zigzag_certified", "zigzag_boolean"} else None,
+        "zigzag_layerwise_graph_seed_base": config_zigzag_graph_seed_base(config, seed) if method in {"zigzag_certified", "zigzag_boolean"} and zigzag_layerwise_random_graphs else None,
+        "zigzag_layerwise_mask_count": int(record["resolved_layers"]) if method in {"zigzag_certified", "zigzag_boolean"} and zigzag_layerwise_random_graphs else None,
+        "multiplicity_mode": "boolean" if method == "zigzag_boolean" else ("unique_log_m" if method == "zigzag_certified" else None),
         "branch_name": experiment_branch(record),
         "branch_head_commit": git_commit(),
         "git_dirty": git_dirty(),
@@ -208,6 +228,20 @@ def artifact_args(record: dict[str, Any], method: str, seed: int) -> SimpleNames
     )
 
 
+def layerwise_zigzag_graph_config(record: dict[str, Any], seed_base: int, layer_index: int) -> dict[str, Any]:
+    original = record["graph_artifacts"]["artifact"]
+    return build_graph_artifact(
+        N_task=int(original.get("N_task", record["resolved_train_examples"])),
+        T_raw=int(record["resolved_raw_sequence_length"]),
+        block_size=int(record["resolved_graph_block_size"]),
+        degree=int(record["resolved_graph_degree_or_budget"]),
+        graph_seed=int(seed_base) + int(layer_index),
+        g_config=original.get("G", {}),
+        h_config=original.get("H", {}),
+        version=str(original.get("version", "v06")),
+    )
+
+
 def method_artifact_args(
     record: dict[str, Any],
     method: str,
@@ -220,6 +254,19 @@ def method_artifact_args(
         args.random_base_seed = int(seed)
         args.random_layer_index = int(layer_index)
         args.seed = int(seed) + 104729 * (int(layer_index) + 1)
+    if method in {"zigzag_certified", "zigzag_boolean"}:
+        config = config or {}
+        if config_layerwise_zigzag_random_graphs(config):
+            layer = int(layer_index or 0)
+            graph_seed_base = config_zigzag_graph_seed_base(config, seed)
+            graph_seed = graph_seed_base + layer
+            graph_config = layerwise_zigzag_graph_config(record, graph_seed_base, layer)
+            args.graph_config = graph_config
+            args.graph_artifact = graph_config
+            args.graph_artifact_path = f"inline_layerwise_random_graph_seed{graph_seed}"
+            args.zigzag_layer_index = layer
+            args.zigzag_graph_seed = int(graph_seed)
+            args.multiplicity_mode = "boolean" if method == "zigzag_boolean" else "unique_log_m"
     if method == "random_regular":
         config = config or {}
         density = config_random_density(config)
@@ -246,16 +293,28 @@ def aggregate_layerwise_artifacts(layer_artifacts: list[Any]) -> SimpleNamespace
     per_layer_metrics = [dict(item.metrics) for item in layer_artifacts]
     pair_counts = [int(item.metrics.get("attention_pair_count", 0)) for item in layer_artifacts]
     unique_k_means = [float(item.metrics.get("unique_k_mean", 0.0)) for item in layer_artifacts]
+    multiplicity_maxes = [int(item.metrics.get("multiplicity_max", 0)) for item in layer_artifacts]
+    multiplicity_means = [float(item.metrics.get("multiplicity_mean_nonzero", 0.0)) for item in layer_artifacts]
+    graph_seeds = [item.metrics.get("zigzag_graph_seed") for item in layer_artifacts if "zigzag_graph_seed" in item.metrics]
+    graph_ids = [item.metrics.get("zigzag_graph_id") for item in layer_artifacts if "zigzag_graph_id" in item.metrics]
     metrics.update(
         {
             "layerwise_independent_masks": True,
             "layerwise_mask_count": len(layer_artifacts),
             "per_layer_attention_pair_count": pair_counts,
             "per_layer_unique_k_mean": unique_k_means,
+            "per_layer_multiplicity_max": multiplicity_maxes,
+            "per_layer_multiplicity_mean_nonzero": multiplicity_means,
             "attention_pair_count_min_across_layers": min(pair_counts) if pair_counts else 0,
             "attention_pair_count_max_across_layers": max(pair_counts) if pair_counts else 0,
             "unique_k_mean_min_across_layers": min(unique_k_means) if unique_k_means else 0.0,
             "unique_k_mean_max_across_layers": max(unique_k_means) if unique_k_means else 0.0,
+            "multiplicity_max_min_across_layers": min(multiplicity_maxes) if multiplicity_maxes else 0,
+            "multiplicity_max_max_across_layers": max(multiplicity_maxes) if multiplicity_maxes else 0,
+            "multiplicity_mean_min_across_layers": min(multiplicity_means) if multiplicity_means else 0.0,
+            "multiplicity_mean_max_across_layers": max(multiplicity_means) if multiplicity_means else 0.0,
+            "per_layer_zigzag_graph_seed": graph_seeds,
+            "per_layer_zigzag_graph_id": graph_ids,
             "per_layer_metrics": per_layer_metrics,
         }
     )
@@ -279,19 +338,24 @@ def build_model(
     config: dict[str, Any] | None = None,
 ):
     backend = resolve_attention_backend(str(record["resolved_attention_backend"]), method)
-    if method == "random_regular" and config_random_layerwise_independent(config or {}):
+    layerwise_random = method == "random_regular" and config_random_layerwise_independent(config or {})
+    layerwise_zigzag = method in {"zigzag_certified", "zigzag_boolean"} and config_layerwise_zigzag_random_graphs(config or {})
+    if layerwise_random or layerwise_zigzag:
         layer_artifacts = []
         for layer_index in range(int(record["resolved_layers"])):
             layer_args = method_artifact_args(record, method, seed, config, layer_index=layer_index)
-            layer_artifacts.append(
-                make_attention_artifacts(
-                    method,
-                    int(record["resolved_padded_sequence_length"]),
-                    layer_args,
-                    device,
-                    backend,
-                )
+            layer_artifact = make_attention_artifacts(
+                method,
+                int(record["resolved_padded_sequence_length"]),
+                layer_args,
+                device,
+                backend,
             )
+            if layerwise_zigzag:
+                layer_artifact.metrics["zigzag_layer_index"] = int(layer_index)
+                layer_artifact.metrics["zigzag_graph_seed"] = int(layer_args.zigzag_graph_seed)
+                layer_artifact.metrics["zigzag_graph_id"] = str(layer_args.graph_config.get("graph_id", ""))
+            layer_artifacts.append(layer_artifact)
         artifacts = aggregate_layerwise_artifacts(layer_artifacts)
     else:
         args = method_artifact_args(record, method, seed, config)
