@@ -1,0 +1,7 @@
+144M	snapshots/corrected_valid_as_test_l8_log5_snapshot.tar.gz
+ 15M	snapshots/main_v08_premerge_local_snapshot.tar.gz
+ 84K	contents_corrected_valid_as_test_l8_log5_snapshot.txt
+284K	contents_main_v08_premerge_local_snapshot.txt
+8.0K	corrected_valid_as_test_l8_log5_inputs.txt
+4.0K	main_v08_premerge_inputs.txt
+4.0K	MANIFEST.sha256

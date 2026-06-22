@@ -20,3 +20,8 @@ datasets/probes_corrected_valid_as_test_l8_log5/**/*.jsonl
 # Local editor / office lock files
 .~*
 *.tmp
+tmp/
+demos/
+
+# Local archive payloads: keep archive indexes in git, keep large tarballs local.
+ref/archive_v08_complete_*/snapshots/*.tar.gz
