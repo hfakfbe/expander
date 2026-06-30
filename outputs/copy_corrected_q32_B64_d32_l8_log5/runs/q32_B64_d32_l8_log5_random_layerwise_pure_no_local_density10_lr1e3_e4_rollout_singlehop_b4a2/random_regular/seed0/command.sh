@@ -1,0 +1,1 @@
+/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_copy_corrected.py --config configs/copy_corrected_q32_B64_d32_l8_log5_random_layerwise_pure_no_local_rollout_singlehop_density10_lr1e3_e4_b4a2.json --mode train --method random_regular --seed 0 --device cuda

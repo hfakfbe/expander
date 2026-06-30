@@ -1,0 +1,182 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 3,
+    "micro_step": 0,
+    "optimizer_step": 5000,
+    "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/train_final_step5000.pt",
+    "permutation_position": 0,
+    "sha256": "4f7b405e1a531acd462a3f877af8e11f8b0b2db3c90e03c87ab7487a033228f7"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 250,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step250.pt",
+      "permutation_position": 2000,
+      "sha256": "ce4391471bb84e3e5b1231d23162f29fb2ed19e7b0f8362bd7dde5beb8b97156"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 500,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step500.pt",
+      "permutation_position": 4000,
+      "sha256": "9d80a55d4ac04c1b81986ed6b9b79158490758c936f7f551f816b5b9e18f1a41"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 750,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step750.pt",
+      "permutation_position": 6000,
+      "sha256": "c00d254f3f94f75adffa74b6e44f4e1632259cd48402e2d59928e7f37c3ecec4"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 1000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step1000.pt",
+      "permutation_position": 8000,
+      "sha256": "26ccef32780e0e2bdfddb1e8ae0fb3c806c5d50bac7f1486e6a54a313bd8c685"
+    },
+    {
+      "epoch": 0,
+      "micro_step": 0,
+      "optimizer_step": 1250,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step1250.pt",
+      "permutation_position": 10000,
+      "sha256": "cacc0f82b18471335838f8498a07ac7d5667dcf7904f12f5e7e1298fed3d8d68"
+    },
+    {
+      "epoch": 1,
+      "micro_step": 0,
+      "optimizer_step": 1500,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step1500.pt",
+      "permutation_position": 2000,
+      "sha256": "e7dbe8686e008d010c6b1cb00422ff6695d50f772ecafa427cd1c8fb902f6cb7"
+    },
+    {
+      "epoch": 1,
+      "micro_step": 0,
+      "optimizer_step": 1750,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step1750.pt",
+      "permutation_position": 4000,
+      "sha256": "ea93f3029650e64aebbd5c85839d3bbd4560fdf45ef1dffd8117f74b68fb3e00"
+    },
+    {
+      "epoch": 1,
+      "micro_step": 0,
+      "optimizer_step": 2000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step2000.pt",
+      "permutation_position": 6000,
+      "sha256": "0fb29878082af93424830a573e9b436388e35ee1f943020d5497e5ec06bc23a2"
+    },
+    {
+      "epoch": 1,
+      "micro_step": 0,
+      "optimizer_step": 2250,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step2250.pt",
+      "permutation_position": 8000,
+      "sha256": "63dd926ec19b18a6f480012eb24212382ef0ae61eaad0c5d7c6eea3c5d07801c"
+    },
+    {
+      "epoch": 1,
+      "micro_step": 0,
+      "optimizer_step": 2500,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step2500.pt",
+      "permutation_position": 10000,
+      "sha256": "f0419e2428b2bcbe2581121f6e2b19909ada066b0e8ee74d160eff44a4335b3c"
+    },
+    {
+      "epoch": 2,
+      "micro_step": 0,
+      "optimizer_step": 2750,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step2750.pt",
+      "permutation_position": 2000,
+      "sha256": "8422e0fd26d2d49e3c4b927455f1401cf7d2be3cc7bb1c9d35d930edf5dfc677"
+    },
+    {
+      "epoch": 2,
+      "micro_step": 0,
+      "optimizer_step": 3000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step3000.pt",
+      "permutation_position": 4000,
+      "sha256": "d8aec12d1e2b090e7ef547f2b9d423568354659bd95f74324915bc5419e3ac0b"
+    },
+    {
+      "epoch": 2,
+      "micro_step": 0,
+      "optimizer_step": 3250,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step3250.pt",
+      "permutation_position": 6000,
+      "sha256": "15b64c2d88b1b29709557bf3f84baedc0810987874be10ab01c2d78076f09d02"
+    },
+    {
+      "epoch": 2,
+      "micro_step": 0,
+      "optimizer_step": 3500,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step3500.pt",
+      "permutation_position": 8000,
+      "sha256": "ec6966ae539c270a5374729914350773092535b80e749f1418f334dc46aa5210"
+    },
+    {
+      "epoch": 2,
+      "micro_step": 0,
+      "optimizer_step": 3750,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step3750.pt",
+      "permutation_position": 10000,
+      "sha256": "be117750ba9dee302ead93847af46553777cb22a2a65f655c2de896d98df3cd2"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 4000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step4000.pt",
+      "permutation_position": 2000,
+      "sha256": "5e9cd912e6eefbf1e9f57ea21869d6a2124b8d4309c08531e4ee5638d0d9e9e7"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 4250,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step4250.pt",
+      "permutation_position": 4000,
+      "sha256": "9758411eaa4e3e0eaec8ba0b7e5f1e8b472b45851b6e73223debefc9266cfd22"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 4500,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step4500.pt",
+      "permutation_position": 6000,
+      "sha256": "d69199e5a45892e4857261911c81924834af6b1d649cc5a64a9db11cb886dabf"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 4750,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step4750.pt",
+      "permutation_position": 8000,
+      "sha256": "d4648aa7e1dc2571b9441f53da4d4d7db56ed65d63be81f74fa703d735a36621"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 5000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/checkpoint_step5000.pt",
+      "permutation_position": 10000,
+      "sha256": "005d12628b95193bea6d7c0b4a465ff91897ee7fd7ac7e5453ce492a1ba4f9a1"
+    },
+    {
+      "epoch": 3,
+      "micro_step": 0,
+      "optimizer_step": 5000,
+      "path": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs/q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_plain_b4a2/random_regular/seed0/checkpoints/train_final_step5000.pt",
+      "permutation_position": 0,
+      "sha256": "4f7b405e1a531acd462a3f877af8e11f8b0b2db3c90e03c87ab7487a033228f7"
+    }
+  ]
+}
