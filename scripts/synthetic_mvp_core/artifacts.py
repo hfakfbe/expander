@@ -236,7 +236,12 @@ def build_method_counts(method: str, seq_len: int, args) -> list[Counter[int]] |
     if method == "dense":
         return None
     rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
-    _add_local_counts(rows, args.block_size)
+    add_local = not (
+        method == "random_regular"
+        and not bool(getattr(args, "random_include_local_edges", True))
+    )
+    if add_local:
+        _add_local_counts(rows, args.block_size)
     if method == "local":
         return rows
     if method == "random_regular":
@@ -309,6 +314,16 @@ def metrics_from_counts(
     degree: int,
 ) -> dict:
     metric = mask_metrics(mask, method, block_size, degree)
+    local_mask = build_local_mask(mask.shape[0], block_size, mask.device)
+    local_pair_count = int((mask & local_mask).sum().item())
+    attention_pair_count = int(mask.sum().item())
+    metric.update(
+        {
+            "local_attention_pair_count": local_pair_count,
+            "remote_attention_pair_count": attention_pair_count - local_pair_count,
+            "local_attention_pair_rate": local_pair_count / max(attention_pair_count, 1),
+        }
+    )
     if rows is None:
         metric.update(
             {
@@ -476,6 +491,262 @@ def build_random_remote_rows_for_actual_mask_density(
             random_remote_rows[src][dst] += 1
     return random_remote_rows
 
+def build_pure_random_rows_for_actual_mask_density(
+    seq_len: int,
+    args,
+    density: float,
+    *,
+    exclude_block_local: bool = True,
+) -> list[Counter[int]]:
+    """Pure random rows whose boolean mask alone has target density.
+
+    Unlike build_random_remote_rows_for_actual_mask_density, this helper is
+    used with random_include_local_edges=false, so no deterministic block-local
+    mask is added by build_method_counts.  The configured density is therefore
+    the number of sampled random edges divided by seq_len**2.
+    """
+    density = float(density)
+    if not 0.0 <= density <= 1.0:
+        raise ValueError(f"random actual mask density must be in [0, 1], got {density}")
+    block_size = int(args.block_size)
+    if seq_len % block_size != 0:
+        raise ValueError("seq_len must be divisible by block_size")
+    target_pair_count = int(round(density * seq_len * seq_len))
+    candidates_per_row = seq_len - block_size if exclude_block_local else seq_len
+    max_pair_count = seq_len * candidates_per_row
+    if target_pair_count > max_pair_count:
+        raise ValueError(
+            f"requested density={density} gives {target_pair_count} pairs, "
+            f"above pure-random candidate pairs={max_pair_count}"
+        )
+    base_k, extra_rows = divmod(target_pair_count, seq_len)
+    if base_k > candidates_per_row or (base_k == candidates_per_row and extra_rows):
+        raise ValueError(
+            f"requested density={density} requires too many random keys per row: "
+            f"base={base_k}, extra_rows={extra_rows}, max={candidates_per_row}"
+        )
+
+    import random
+
+    rng = random.Random(
+        "pure_random_actual_mask_density|"
+        f"{getattr(args, 'seed', 0)}|{seq_len}|{block_size}|"
+        f"{target_pair_count}|{density:.12g}|"
+        f"exclude_block_local={bool(exclude_block_local)}|"
+        f"layer={getattr(args, 'random_layer_index', 'shared')}"
+    )
+    rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    for src in range(seq_len):
+        random_k = base_k + (1 if src < extra_rows else 0)
+        if exclude_block_local:
+            block_start = (src // block_size) * block_size
+            local_keys = set(range(block_start, block_start + block_size))
+            candidates = [dst for dst in range(seq_len) if dst not in local_keys]
+        else:
+            candidates = list(range(seq_len))
+        if random_k > len(candidates):
+            raise ValueError(
+                f"cannot sample pure random actual-density row {src}: "
+                f"need {random_k}, have {len(candidates)}"
+            )
+        for dst in rng.sample(candidates, random_k):
+            rows[src][dst] += 1
+    return rows
+
+def build_random_remote_rows_for_multihop_copy_route(
+    seq_len: int,
+    args,
+    density: float,
+) -> list[Counter[int]]:
+    """Random actual-density rows with a guaranteed multi-hop Copy route.
+
+    The corrected non-causal Copy task supervises positions source_len..T-1
+    to reproduce positions 0..source_len-1. A pure random 10% mask leaves most
+    target rows without a direct edge to the matching source, so the model has
+    to rely on multi-layer propagation. This helper makes that propagation
+    structurally learnable while preserving the configured boolean density:
+
+    * every row keeps the usual block-local mask outside this helper;
+    * each remote row receives one high-multiplicity route edge src -> src-s
+      when src >= s, or, with random_route_layerwise_staged=true, each layer
+      receives only its own stage of a source->marker-lane->target route;
+    * random remote edges fill the remaining unique-key budget up to the exact
+      requested actual mask density;
+    * direct target-to-source Copy edges source_len+i -> i are excluded from
+      the random filler so success cannot collapse to one-hop copying.
+
+    With source_len=1024, layers=8, and the default
+    route_stride=source_len/layers=128, every supervised target position has a
+    deterministic 8-hop route to its matching source:
+
+        1024+i -> 896+i -> ... -> i.
+
+    The route multiplicity is consumed only as a log-m attention bias by callers
+    that explicitly enable args.random_use_log_m; it does not increase the
+    boolean density.
+    """
+    density = float(density)
+    if not 0.0 <= density <= 1.0:
+        raise ValueError(f"random actual mask density must be in [0, 1], got {density}")
+    block_size = int(args.block_size)
+    if seq_len % block_size != 0:
+        raise ValueError("seq_len must be divisible by block_size")
+
+    source_len = int(getattr(args, "random_route_source_length", seq_len // 2))
+    target_start = int(getattr(args, "random_route_target_start", source_len))
+    layers = int(getattr(args, "random_route_layers", 1))
+    if layers <= 0:
+        raise ValueError(f"random multihop route requires positive layers, got {layers}")
+    route_stride = int(getattr(args, "random_route_stride", 0))
+    if route_stride <= 0:
+        if source_len % layers != 0:
+            raise ValueError(
+                f"source_len={source_len} must be divisible by layers={layers} "
+                "when random_route_stride is not configured"
+            )
+        route_stride = source_len // layers
+    if route_stride <= 0:
+        raise ValueError(f"random multihop route stride must be positive, got {route_stride}")
+    if target_start + source_len > seq_len:
+        raise ValueError(
+            f"copy route target window [{target_start}, {target_start + source_len}) "
+            f"escapes seq_len={seq_len}"
+        )
+    expected_source = target_start - layers * route_stride
+    if expected_source != 0:
+        raise ValueError(
+            "random multihop copy route expects target_start - layers*stride == 0, "
+            f"got target_start={target_start}, layers={layers}, stride={route_stride}"
+        )
+
+    route_multiplicity = int(getattr(args, "random_route_multiplicity", 1))
+    if route_multiplicity <= 0:
+        raise ValueError(
+            f"random multihop route multiplicity must be positive, got {route_multiplicity}"
+        )
+
+    local_pair_count = seq_len * block_size
+    target_pair_count = int(round(density * seq_len * seq_len))
+    max_pair_count = seq_len * seq_len
+    if target_pair_count < local_pair_count:
+        raise ValueError(
+            f"requested density={density} gives {target_pair_count} pairs, "
+            f"below required local mask pairs={local_pair_count}"
+        )
+    if target_pair_count > max_pair_count:
+        raise ValueError(
+            f"requested density={density} gives {target_pair_count} pairs, "
+            f"above full mask pairs={max_pair_count}"
+        )
+    remote_pair_count = target_pair_count - local_pair_count
+    max_remote_per_row = seq_len - block_size
+    base_remote_k, extra_rows = divmod(remote_pair_count, seq_len)
+    if base_remote_k > max_remote_per_row or (
+        base_remote_k == max_remote_per_row and extra_rows
+    ):
+        raise ValueError(
+            f"requested density={density} requires too many remote keys per row: "
+            f"base={base_remote_k}, extra_rows={extra_rows}, max={max_remote_per_row}"
+        )
+
+    import random
+
+    rng = random.Random(
+        "random_multihop_copy_route|"
+        f"{getattr(args, 'seed', 0)}|{seq_len}|{block_size}|"
+        f"{target_pair_count}|{density:.12g}|"
+        f"layers={layers}|stride={route_stride}|source={source_len}|"
+        f"target_start={target_start}|"
+        f"layer={getattr(args, 'random_layer_index', 'shared')}"
+    )
+    staged = bool(getattr(args, "random_route_layerwise_staged", False))
+    layer_index = int(getattr(args, "random_layer_index", 0))
+    route_keys_by_row: list[set[int]] = [set() for _ in range(seq_len)]
+    if staged:
+        if not 0 <= layer_index < layers:
+            raise ValueError(f"random_layer_index must be in [0,{layers}), got {layer_index}")
+
+        def stage_position(stage: int, offset: int) -> int:
+            if stage <= 0:
+                return int(offset)
+            if stage >= layers:
+                return target_start + int(offset)
+            return target_start + ((int(offset) + stage * route_stride) % source_len)
+
+        for offset in range(source_len):
+            src = stage_position(layer_index + 1, offset)
+            dst = stage_position(layer_index, offset)
+            if not (0 <= src < seq_len and 0 <= dst < seq_len):
+                raise ValueError(f"staged route produced invalid edge {src}->{dst}")
+            block_start = (src // block_size) * block_size
+            local_keys = set(range(block_start, block_start + block_size))
+            if dst in local_keys:
+                continue
+            route_keys_by_row[src].add(dst)
+    else:
+        for src in range(seq_len):
+            block_start = (src // block_size) * block_size
+            local_keys = set(range(block_start, block_start + block_size))
+            route_dst = src - route_stride
+            if route_dst >= 0 and route_dst not in local_keys:
+                route_keys_by_row[src].add(route_dst)
+
+    random_remote_rows: list[Counter[int]] = [Counter() for _ in range(seq_len)]
+    route_edges = 0
+    direct_copy_edges_excluded = 0
+    for src in range(seq_len):
+        block_start = (src // block_size) * block_size
+        local_keys = set(range(block_start, block_start + block_size))
+        remote_k = base_remote_k + (1 if src < extra_rows else 0)
+        route_keys = sorted(route_keys_by_row[src])
+        if route_keys:
+            if remote_k <= 0:
+                raise ValueError(
+                    f"row {src} has no remote budget for required route edge"
+                )
+            if len(route_keys) > remote_k:
+                raise ValueError(
+                    f"row {src} required route edges exceed remote budget: "
+                    f"required={len(route_keys)}, budget={remote_k}"
+                )
+            for route_dst in route_keys:
+                random_remote_rows[src][route_dst] += route_multiplicity
+            route_edges += len(route_keys)
+
+        forbidden: set[int] = set()
+        target_offset = src - target_start
+        if 0 <= target_offset < source_len:
+            forbidden.add(target_offset)
+        candidates = [
+            dst
+            for dst in range(seq_len)
+            if dst not in local_keys
+            and dst not in random_remote_rows[src]
+            and dst not in forbidden
+        ]
+        filler_k = remote_k - len(random_remote_rows[src])
+        if filler_k < 0:
+            raise ValueError(
+                f"row {src} required route edges exceed remote budget: "
+                f"required={len(random_remote_rows[src])}, budget={remote_k}"
+            )
+        if filler_k > len(candidates):
+            raise ValueError(
+                f"cannot sample random multihop route row {src}: "
+                f"need {filler_k}, have {len(candidates)}"
+            )
+        for dst in rng.sample(candidates, filler_k):
+            random_remote_rows[src][dst] += 1
+        if forbidden and forbidden.isdisjoint(random_remote_rows[src].keys()):
+            direct_copy_edges_excluded += 1
+
+    setattr(args, "random_multihop_route_stride", int(route_stride))
+    setattr(args, "random_multihop_route_edges", int(route_edges))
+    setattr(args, "random_multihop_route_layerwise_staged", bool(staged))
+    setattr(args, "random_multihop_route_layer_index", int(layer_index) if staged else None)
+    setattr(args, "random_multihop_direct_copy_edges_excluded", int(direct_copy_edges_excluded))
+    return random_remote_rows
+
 def budget_diagnostics(seq_len: int, args) -> tuple[dict, dict, list[Counter[int]]]:
     zigzag_rows = build_method_counts("zigzag_certified", seq_len, args)
     random_rows = build_random_rows_aligned_to_zigzag(seq_len, args)
@@ -515,7 +786,38 @@ class AttentionArtifacts:
     block_pair_index: torch.Tensor | None
     local_log_m: torch.Tensor | None
     neighbor_log_m: torch.Tensor | None
+    route_transport_src: torch.Tensor | None
+    route_transport_dst: torch.Tensor | None
+    route_transport_scale: float | None
+    route_transport_mode: str | None
     metrics: dict
+
+
+def _to_device_if_tensor(value, device: torch.device):
+    if isinstance(value, torch.Tensor):
+        return value.to(device)
+    if isinstance(value, list):
+        return [_to_device_if_tensor(item, device) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_to_device_if_tensor(item, device) for item in value)
+    return value
+
+
+def attention_artifacts_to_device(artifacts: AttentionArtifacts, device: torch.device) -> AttentionArtifacts:
+    return AttentionArtifacts(
+        mask=_to_device_if_tensor(artifacts.mask, device),
+        local_valid=_to_device_if_tensor(artifacts.local_valid, device),
+        neighbors=_to_device_if_tensor(artifacts.neighbors, device),
+        valid_neighbors=_to_device_if_tensor(artifacts.valid_neighbors, device),
+        block_pair_index=_to_device_if_tensor(artifacts.block_pair_index, device),
+        local_log_m=_to_device_if_tensor(artifacts.local_log_m, device),
+        neighbor_log_m=_to_device_if_tensor(artifacts.neighbor_log_m, device),
+        route_transport_src=_to_device_if_tensor(artifacts.route_transport_src, device),
+        route_transport_dst=_to_device_if_tensor(artifacts.route_transport_dst, device),
+        route_transport_scale=artifacts.route_transport_scale,
+        route_transport_mode=artifacts.route_transport_mode,
+        metrics=artifacts.metrics,
+    )
 
 def make_attention_artifacts(
     method: str,
@@ -534,7 +836,9 @@ def make_attention_artifacts(
     else:
         structural_mask = counts_to_mask(rows, seq_len, device)
         log_m_matrix = counts_to_log_m_matrix(rows, seq_len, device).detach()
-        if getattr(args, "multiplicity_mode", "boolean") != "unique_log_m" or method != "zigzag_certified":
+        use_zigzag_log_m = method == "zigzag_certified"
+        use_random_log_m = method == "random_regular" and bool(getattr(args, "random_use_log_m", False))
+        if getattr(args, "multiplicity_mode", "boolean") != "unique_log_m" or not (use_zigzag_log_m or use_random_log_m):
             log_m_matrix = torch.zeros_like(log_m_matrix)
     causal_mask = build_causal_mask(seq_len, device) if args.causal else None
     mask = structural_mask & causal_mask if causal_mask is not None else structural_mask
@@ -544,6 +848,10 @@ def make_attention_artifacts(
     block_pair_index = None
     local_log_m = None
     neighbor_log_m = None
+    route_transport_src = None
+    route_transport_dst = None
+    route_transport_scale = None
+    route_transport_mode = None
     if attention_backend == "neighbor":
         neighbors, valid_neighbors = mask_to_neighbors(mask)
         if log_m_matrix is not None:
@@ -560,6 +868,90 @@ def make_attention_artifacts(
                 neighbors, valid_neighbors, args.block_size
             )
     metric = metrics_from_counts(rows, mask, method, args.block_size, args.degree)
+    if method == "random_regular" and bool(getattr(args, "random_multihop_copy_route", False)):
+        source_len = int(getattr(args, "random_route_source_length", seq_len // 2))
+        target_start = int(getattr(args, "random_route_target_start", source_len))
+        layers = int(getattr(args, "random_route_layers", 1))
+        stride = int(getattr(args, "random_multihop_route_stride", getattr(args, "random_route_stride", 0)))
+        route_multiplicity = int(getattr(args, "random_route_multiplicity", 1))
+        route_edge_count = 0
+        route_edge_missing = 0
+        one_hop_direct = 0
+        transport_src: list[int] = []
+        transport_dst: list[int] = []
+        if rows is not None:
+            staged = bool(getattr(args, "random_route_layerwise_staged", False))
+            if staged:
+                layer_index = int(getattr(args, "random_layer_index", 0))
+
+                def stage_position(stage: int, offset: int) -> int:
+                    if stage <= 0:
+                        return int(offset)
+                    if stage >= layers:
+                        return target_start + int(offset)
+                    return target_start + ((int(offset) + stage * stride) % source_len)
+
+                for offset in range(source_len):
+                    src = stage_position(layer_index + 1, offset)
+                    route_dst = stage_position(layer_index, offset)
+                    if (src // int(args.block_size)) == (route_dst // int(args.block_size)):
+                        continue
+                    if int(rows[src].get(route_dst, 0)) >= route_multiplicity:
+                        route_edge_count += 1
+                        transport_src.append(int(src))
+                        transport_dst.append(int(route_dst))
+                    else:
+                        route_edge_missing += 1
+            else:
+                for src, counts in enumerate(rows):
+                    route_dst = src - stride
+                    if stride > 0 and route_dst >= 0:
+                        if int(counts.get(route_dst, 0)) >= route_multiplicity:
+                            route_edge_count += 1
+                            transport_src.append(int(src))
+                            transport_dst.append(int(route_dst))
+                        else:
+                            route_edge_missing += 1
+            for offset in range(source_len):
+                target = target_start + offset
+                if 0 <= target < len(rows) and int(rows[target].get(offset, 0)) > 0:
+                    one_hop_direct += 1
+        if bool(getattr(args, "random_route_transport", False)):
+            if route_edge_missing:
+                raise ValueError("random_route_transport requires all route edges to be present")
+            if transport_src:
+                route_transport_src = torch.tensor(transport_src, dtype=torch.long, device=device)
+                route_transport_dst = torch.tensor(transport_dst, dtype=torch.long, device=device)
+            else:
+                route_transport_src = torch.empty((0,), dtype=torch.long, device=device)
+                route_transport_dst = torch.empty((0,), dtype=torch.long, device=device)
+            route_transport_scale = float(getattr(args, "random_route_transport_scale", 1.0))
+            route_transport_mode = str(getattr(args, "random_route_transport_mode", "residual"))
+            if route_transport_mode not in {"residual", "replace", "memory_residual", "memory_replace"}:
+                raise ValueError(f"unknown random_route_transport_mode={route_transport_mode!r}")
+        metric.update(
+            {
+                "random_multihop_copy_route": True,
+                "random_route_layers": layers,
+                "random_route_stride": stride,
+                "random_route_source_length": source_len,
+                "random_route_target_start": target_start,
+                "random_route_multiplicity": route_multiplicity,
+                "random_route_edge_count": route_edge_count,
+                "random_route_edge_missing": route_edge_missing,
+                "random_direct_copy_edge_count": one_hop_direct,
+                "random_direct_copy_edge_rate": one_hop_direct / max(source_len, 1),
+                "random_use_log_m": bool(getattr(args, "random_use_log_m", False)),
+                "random_route_layerwise_staged": bool(getattr(args, "random_route_layerwise_staged", False)),
+                "random_route_layer_index": getattr(args, "random_layer_index", None)
+                if bool(getattr(args, "random_route_layerwise_staged", False))
+                else None,
+                "random_route_transport": bool(getattr(args, "random_route_transport", False)),
+                "random_route_transport_edge_count": len(transport_src),
+                "random_route_transport_scale": route_transport_scale,
+                "random_route_transport_mode": route_transport_mode,
+            }
+        )
     return AttentionArtifacts(
         mask=mask,
         local_valid=local_valid,
@@ -568,5 +960,9 @@ def make_attention_artifacts(
         block_pair_index=block_pair_index,
         local_log_m=local_log_m,
         neighbor_log_m=neighbor_log_m,
+        route_transport_src=route_transport_src,
+        route_transport_dst=route_transport_dst,
+        route_transport_scale=route_transport_scale,
+        route_transport_mode=route_transport_mode,
         metrics=metric,
     )

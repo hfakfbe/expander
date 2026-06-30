@@ -1,7 +1,7 @@
 {
   "attention_contract": "non_causal",
   "base_branch": "main",
-  "branch_name": "codex/probes-corrected-valid-as-test-l8-log5",
+  "branch_name": "main",
   "causal": false,
   "graph_directionality": "directed",
   "merge_back_to_main": false,
@@ -9,11 +9,11 @@
   "tasks": [
     {
       "absolute_position_embedding": "none",
-      "checksums_sha256": "dfc06d91d0f301849190103c8e804ed31bc7785a86b6434a7a67b438a17e7bdc",
+      "checksums_sha256": "9d87cff99795a16277acc59f98f875a60261931998a56cc26a64962406e4d0e8",
       "copy_corrected_v01": true,
       "copy_corrected_variant": "copy_corrected_q32_B64_d32_l8_log5",
       "data_seed": 0,
-      "dataset_card_sha256": "4fea18224189895b1f8794ca6b499b64262a160359063481bfa2d7cbb6ca50d8",
+      "dataset_card_sha256": "7d22eab6707038ae547c8bc1a33452a051dde15ab09e2a718f41a24604186702",
       "discarded_old_test_sha256": "50de40e9b6f7c53af8a912cf0967ae1129e84028bcc7f90c14a94620d0760fac",
       "dropout_seed_or_policy": "torch_seed_model_seed_dropout_disabled_by_default",
       "graph_artifacts": {
@@ -4493,7 +4493,7 @@
       "secondary_metrics": [
         "copy_sequence_accuracy"
       ],
-      "source_lock_sha256": "6449afe67c409c2319a3c1d0e6a7171582352a1c917e71d799246194944d851f",
+      "source_lock_sha256": "9dc5505cded307eebd9b695502d1bb1c389836c5314b3ba4942e11ed224eddc7",
       "target_value_max": 62,
       "target_value_min": 1,
       "task": "copy",
@@ -4503,6 +4503,6 @@
       "version_path": "datasets/copy"
     }
   ],
-  "timestamp_utc": "2026-06-20T07:20:29.678681+00:00",
+  "timestamp_utc": "2026-06-23T11:13:06.193001+00:00",
   "version": "copy_corrected_q32_B64_d32_l8_log5"
 }

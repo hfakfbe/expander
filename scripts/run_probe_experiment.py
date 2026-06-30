@@ -210,6 +210,10 @@ def forward_loss_and_metrics(model, artifacts, batch, task_record: dict) -> tupl
         artifacts.block_pair_index,
         artifacts.local_log_m,
         artifacts.neighbor_log_m,
+        getattr(artifacts, "route_transport_src", None),
+        getattr(artifacts, "route_transport_dst", None),
+        getattr(artifacts, "route_transport_scale", None),
+        getattr(artifacts, "route_transport_mode", None),
     )
     loss_type = task_record["resolved_loss_type"]
     task = task_record["task"]

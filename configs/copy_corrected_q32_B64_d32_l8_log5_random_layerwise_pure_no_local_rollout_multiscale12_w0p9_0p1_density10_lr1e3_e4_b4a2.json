@@ -1,0 +1,74 @@
+{
+  "density_sweep_note": "pure no-local random sparse rollout trial; random_regular only; independent random mask per transformer layer; no deterministic block-local edges; configured density is sampled random edges / T^2; same-block local candidates are excluded; Q/K-only RoPE; no relative attention bias; no top-k sparse attention; generic lazy attention-rollout memory with weighted multiscale propagation [1,2] and weights [0.9,0.1]; no task-specific copy route, no token rollout side channel, no value-position side channel, no learned per-edge transport, and no history logits readout.",
+  "final_eval": {
+    "test_examples": 1000
+  },
+  "gate_overfit": {
+    "d_model": 128,
+    "dropout": 0.0,
+    "examples": 2,
+    "ffn_dim": 512,
+    "heads": 4,
+    "layers": 8,
+    "learning_rate": 0.001,
+    "max_steps": 1000,
+    "method": "random_regular",
+    "threshold_loss": 0.01,
+    "threshold_sequence_accuracy": 0.99,
+    "threshold_token_accuracy": 0.999
+  },
+  "graph_override": {
+    "B": 64,
+    "d": 32,
+    "graph_seed": 0,
+    "q": 32
+  },
+  "methods": [
+    "random_regular"
+  ],
+  "output_root": "outputs/copy_corrected_q32_B64_d32_l8_log5/runs",
+  "phase": "copy_corrected_v01_random_layerwise_pure_no_local_density10_lr1e3_e4_rollout_multiscale12_w0p9_0p1_b4a2",
+  "profile": "gate",
+  "random_actual_mask_density": 0.1,
+  "random_attention_logit_scale_multiplier": 1.0,
+  "random_attention_top_k": 0,
+  "random_include_local_edges": false,
+  "random_layerwise_independent_masks": true,
+  "random_relative_attention_bias": false,
+  "random_rollout_head_merge": "mean",
+  "random_rollout_memory": true,
+  "random_rollout_memory_lazy_alpha": 0.5,
+  "random_rollout_memory_multiscale_steps": [
+    1,
+    2
+  ],
+  "random_rollout_memory_multiscale_weights": [
+    0.9,
+    0.1
+  ],
+  "random_rollout_memory_scale": 2.0,
+  "random_rollout_memory_source": "input",
+  "random_rollout_memory_update": "lazy",
+  "random_rollout_weight_mode": "soft",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/copy_corrected_q32_B64_d32_l8_log5_task_parameters.json",
+  "tasks": [
+    "copy"
+  ],
+  "train": {
+    "batch_size": 4,
+    "checkpoint_every": 250,
+    "epochs": 4,
+    "gradient_accumulation_steps": 2,
+    "learning_rate": 0.001,
+    "log_every": 25,
+    "lr_scheduler": "const",
+    "max_steps": 5000,
+    "min_learning_rate": 0.001,
+    "train_diagnostic_examples": 16
+  },
+  "trial_id": "q32_B64_d32_l8_log5_random_layerwise_pure_no_local_density10_lr1e3_e4_rollout_multiscale12_w0p9_0p1_b4a2",
+  "version": "copy_corrected_q32_B64_d32_l8_log5"
+}

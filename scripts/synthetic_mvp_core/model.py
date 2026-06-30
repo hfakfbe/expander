@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import math
 
 from .attention import local_blockpair_attention, local_cross_attention
 
@@ -49,15 +50,35 @@ class MaskedSelfAttention(nn.Module):
         block_size: int,
         position_encoding: str = "learned_absolute",
         rope_theta: float = 10000.0,
+        value_position_encoding: str = "none",
+        attention_logit_scale_multiplier: float = 1.0,
+        learned_attention_logit_scale: bool = False,
+        attention_top_k: int = 0,
     ):
         super().__init__()
         if d_model % num_heads != 0:
             raise ValueError("d_model must be divisible by num_heads")
+        if value_position_encoding not in {"none", "rope_relative"}:
+            raise ValueError(f"unknown value_position_encoding={value_position_encoding!r}")
+        if value_position_encoding != "none" and position_encoding != "rope":
+            raise ValueError("value_position_encoding requires RoPE position_encoding")
+        if float(attention_logit_scale_multiplier) <= 0:
+            raise ValueError("attention_logit_scale_multiplier must be positive")
         self.num_heads = num_heads
         self.head_dim = d_model // num_heads
         self.attention_backend = attention_backend
         self.block_size = block_size
         self.position_encoding = position_encoding
+        self.value_position_encoding = value_position_encoding
+        self.attention_logit_scale_multiplier = float(attention_logit_scale_multiplier)
+        self.attention_top_k = int(attention_top_k)
+        if self.attention_top_k < 0:
+            raise ValueError("attention_top_k must be non-negative")
+        if learned_attention_logit_scale:
+            init = math.log(float(attention_logit_scale_multiplier))
+            self.log_attention_logit_scale = nn.Parameter(torch.full((int(num_heads),), init))
+        else:
+            self.log_attention_logit_scale = None
         self.qkv = nn.Linear(d_model, d_model * 3)
         self.out = nn.Linear(d_model, d_model)
         self.dropout = nn.Dropout(dropout)
@@ -80,9 +101,21 @@ class MaskedSelfAttention(nn.Module):
         q = q.transpose(1, 2)
         k = k.transpose(1, 2)
         v = v.transpose(1, 2)
+        value_rope_cos = None
+        value_rope_sin = None
         if self.rotary_emb is not None:
             cos, sin = self.rotary_emb(seq_len, q.device, q.dtype)
             q, k = apply_rotary_pos_emb(q, k, cos, sin)
+            if self.value_position_encoding == "rope_relative":
+                value_rope_cos = cos
+                value_rope_sin = sin
+                v = (v * cos) + (rotate_half(v) * sin)
+        elif self.value_position_encoding != "none":
+            raise ValueError("value_position_encoding requires RoPE position_encoding")
+        if self.log_attention_logit_scale is not None:
+            q = q * self.log_attention_logit_scale.exp().to(device=q.device, dtype=q.dtype)[None, :, None, None]
+        elif self.attention_logit_scale_multiplier != 1.0:
+            q = q * float(self.attention_logit_scale_multiplier)
         if self.attention_backend == "dense_mask":
             scores = torch.matmul(q, k.transpose(-1, -2)) * (self.head_dim ** -0.5)
             scores = scores.masked_fill(~mask[None, None, :, :], torch.finfo(scores.dtype).min)
@@ -104,6 +137,10 @@ class MaskedSelfAttention(nn.Module):
             scores = scores.masked_fill(
                 ~valid_neighbors[None, None, :, :], torch.finfo(scores.dtype).min
             )
+            if self.attention_top_k > 0 and self.attention_top_k < int(scores.shape[-1]):
+                values, _indices = torch.topk(scores, k=self.attention_top_k, dim=-1)
+                threshold = values[..., -1, None]
+                scores = scores.masked_fill(scores < threshold, torch.finfo(scores.dtype).min)
             attn = self.dropout(torch.softmax(scores, dim=-1))
             out = (attn[..., None] * gathered_v).sum(dim=-2)
         elif self.attention_backend == "split":
@@ -118,6 +155,7 @@ class MaskedSelfAttention(nn.Module):
                 local_log_m=local_log_m,
                 cross_log_m=neighbor_log_m,
                 dropout=self.dropout,
+                top_k=self.attention_top_k,
             )
         elif self.attention_backend == "blockpair":
             out = local_blockpair_attention(
@@ -132,9 +170,12 @@ class MaskedSelfAttention(nn.Module):
                 local_log_m=local_log_m,
                 cross_log_m=neighbor_log_m,
                 dropout=self.dropout,
+                top_k=self.attention_top_k,
             )
         else:
             raise ValueError(f"unknown attention backend: {self.attention_backend}")
+        if value_rope_cos is not None and value_rope_sin is not None:
+            out = (out * value_rope_cos) - (rotate_half(out) * value_rope_sin)
         out = out.transpose(1, 2).contiguous().view(batch, seq_len, d_model)
         return self.out(out)
 
@@ -149,8 +190,16 @@ class Block(nn.Module):
         block_size: int,
         position_encoding: str = "learned_absolute",
         rope_theta: float = 10000.0,
+        value_position_encoding: str = "none",
+        attention_logit_scale_multiplier: float = 1.0,
+        learned_attention_logit_scale: bool = False,
+        attention_top_k: int = 0,
+        attention_residual_scale: float = 1.0,
+        ffn_residual_scale: float = 1.0,
     ):
         super().__init__()
+        self.attention_residual_scale = float(attention_residual_scale)
+        self.ffn_residual_scale = float(ffn_residual_scale)
         self.ln1 = nn.LayerNorm(d_model)
         self.attn = MaskedSelfAttention(
             d_model,
@@ -160,6 +209,10 @@ class Block(nn.Module):
             block_size,
             position_encoding=position_encoding,
             rope_theta=rope_theta,
+            value_position_encoding=value_position_encoding,
+            attention_logit_scale_multiplier=attention_logit_scale_multiplier,
+            learned_attention_logit_scale=learned_attention_logit_scale,
+            attention_top_k=attention_top_k,
         )
         self.ln2 = nn.LayerNorm(d_model)
         self.ffn = nn.Sequential(
@@ -181,7 +234,7 @@ class Block(nn.Module):
         local_log_m: torch.Tensor | None,
         neighbor_log_m: torch.Tensor | None,
     ) -> torch.Tensor:
-        x = x + self.attn(
+        x = x + float(self.attention_residual_scale) * self.attn(
             self.ln1(x),
             mask,
             local_valid,
@@ -191,7 +244,7 @@ class Block(nn.Module):
             local_log_m,
             neighbor_log_m,
         )
-        return x + self.ffn(self.ln2(x))
+        return x + float(self.ffn_residual_scale) * self.ffn(self.ln2(x))
 
 class Transformer(nn.Module):
     def __init__(
@@ -208,6 +261,12 @@ class Transformer(nn.Module):
         block_size: int,
         position_encoding: str = "learned_absolute",
         rope_theta: float = 10000.0,
+        value_position_encoding: str = "none",
+        attention_logit_scale_multiplier: float = 1.0,
+        learned_attention_logit_scale: bool = False,
+        attention_top_k: int = 0,
+        attention_residual_scale: float = 1.0,
+        ffn_residual_scale: float = 1.0,
     ):
         super().__init__()
         if position_encoding not in {"learned_absolute", "rope"}:
@@ -226,6 +285,12 @@ class Transformer(nn.Module):
                     block_size,
                     position_encoding=position_encoding,
                     rope_theta=rope_theta,
+                    value_position_encoding=value_position_encoding,
+                    attention_logit_scale_multiplier=attention_logit_scale_multiplier,
+                    learned_attention_logit_scale=learned_attention_logit_scale,
+                    attention_top_k=attention_top_k,
+                    attention_residual_scale=attention_residual_scale,
+                    ffn_residual_scale=ffn_residual_scale,
                 )
                 for _ in range(num_layers)
             ]

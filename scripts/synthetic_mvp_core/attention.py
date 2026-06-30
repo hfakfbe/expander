@@ -35,9 +35,141 @@ def dense_attention(
     scale = q.shape[-1] ** -0.5
     scores = torch.matmul(q, k.transpose(-1, -2)) * scale
     if log_m is not None:
-        scores = scores + log_m[None, None, :, :]
+        scores = _add_attention_log_bias(scores, log_m)
     scores = scores.masked_fill(~mask[None, None, :, :], torch.finfo(scores.dtype).min)
     return torch.matmul(torch.softmax(scores, dim=-1), v)
+
+
+def _add_attention_log_bias(scores: torch.Tensor, log_bias: torch.Tensor) -> torch.Tensor:
+    if log_bias.dim() == 2:
+        return scores + log_bias[None, None, :, :]
+    if log_bias.dim() == 3:
+        return scores + log_bias[None, :, :, :]
+    raise ValueError(f"attention log bias must be rank 2 or 3, got shape={tuple(log_bias.shape)}")
+
+
+def _mask_scores_to_topk(scores: torch.Tensor, top_k: int | None) -> torch.Tensor:
+    if top_k is None or int(top_k) <= 0:
+        return scores
+    k = int(top_k)
+    if k >= int(scores.shape[-1]):
+        return scores
+    values, _indices = torch.topk(scores, k=k, dim=-1)
+    threshold = values[..., -1, None]
+    return scores.masked_fill(scores < threshold, torch.finfo(scores.dtype).min)
+
+
+def split_attention_rollout(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    memory: torch.Tensor,
+    block_size: int,
+    local_valid: torch.Tensor,
+    cross_neighbors: torch.Tensor | None,
+    valid_cross_neighbors: torch.Tensor | None,
+    local_log_m: torch.Tensor | None = None,
+    cross_log_m: torch.Tensor | None = None,
+    top_k: int | None = None,
+    return_heads: bool = False,
+    weight_mode: str = "soft",
+    edge_scope: str = "all",
+    local_extra_log_bias: float = 0.0,
+    cross_extra_log_bias: float = 0.0,
+    rollout_steps: int = 1,
+) -> torch.Tensor:
+    batch, heads, seq_len, head_dim = q.shape
+    if memory.dim() != 3:
+        raise ValueError(f"rollout memory must have shape [batch, seq, dim], got {tuple(memory.shape)}")
+    if memory.shape[0] != batch or memory.shape[1] != seq_len:
+        raise ValueError(
+            f"rollout memory batch/seq mismatch: memory={tuple(memory.shape)}, q={tuple(q.shape)}"
+        )
+    if seq_len % block_size != 0:
+        raise ValueError("seq_len must be divisible by block_size for split attention rollout")
+    num_blocks = seq_len // block_size
+    scale = head_dim ** -0.5
+
+    q_blocks = q.view(batch, heads, num_blocks, block_size, head_dim)
+    k_blocks = k.view(batch, heads, num_blocks, block_size, head_dim)
+    local_scores = torch.einsum("bhqtd,bhqsd->bhqts", q_blocks, k_blocks) * scale
+    if edge_scope not in {"all", "cross_only", "local_only"}:
+        raise ValueError(f"unknown rollout edge_scope={edge_scope!r}")
+    local_scores_flat = local_scores.reshape(batch, heads, seq_len, block_size)
+    if local_log_m is not None:
+        local_scores_flat = _add_attention_log_bias(local_scores_flat, local_log_m)
+    if float(local_extra_log_bias) != 0.0:
+        local_scores_flat = local_scores_flat + float(local_extra_log_bias)
+    local_scores_flat = local_scores_flat.masked_fill(
+        ~local_valid[None, None, :, :],
+        torch.finfo(local_scores_flat.dtype).min,
+    )
+    if edge_scope == "cross_only":
+        local_scores_flat = torch.full_like(local_scores_flat, torch.finfo(local_scores_flat.dtype).min)
+
+    has_cross = (
+        cross_neighbors is not None
+        and valid_cross_neighbors is not None
+        and cross_neighbors.shape[1] > 0
+    )
+    if has_cross and edge_scope != "local_only":
+        gathered_k = k[:, :, cross_neighbors.reshape(-1), :].reshape(
+            batch, heads, seq_len, cross_neighbors.shape[1], head_dim
+        )
+        cross_scores = (q[:, :, :, None, :] * gathered_k).sum(dim=-1) * scale
+        if cross_log_m is not None:
+            cross_scores = _add_attention_log_bias(cross_scores, cross_log_m)
+        if float(cross_extra_log_bias) != 0.0:
+            cross_scores = cross_scores + float(cross_extra_log_bias)
+        cross_scores = cross_scores.masked_fill(
+            ~valid_cross_neighbors[None, None, :, :], torch.finfo(cross_scores.dtype).min
+        )
+        scores = torch.cat([local_scores_flat, cross_scores], dim=-1)
+    else:
+        has_cross = False
+        scores = local_scores_flat
+
+    scores = _mask_scores_to_topk(scores, top_k)
+    weights = torch.softmax(scores, dim=-1)
+    if weight_mode == "straight_through_hard":
+        hard_weights = torch.zeros_like(weights)
+        hard_weights.scatter_(-1, weights.argmax(dim=-1, keepdim=True), 1.0)
+        weights = hard_weights - weights.detach() + weights
+    elif weight_mode != "soft":
+        raise ValueError(f"unknown rollout weight_mode={weight_mode!r}")
+    steps = int(rollout_steps)
+    if steps < 1:
+        raise ValueError(f"rollout_steps must be >= 1, got {rollout_steps!r}")
+
+    local_weights = weights[..., :block_size].reshape(batch, heads, num_blocks, block_size, block_size)
+    cross_weights = weights[..., block_size:] if has_cross else None
+
+    def apply_rollout_once(input_memory: torch.Tensor) -> torch.Tensor:
+        memory_blocks = input_memory.view(batch, num_blocks, block_size, input_memory.shape[-1])
+        local_out = torch.einsum("bhqts,bqsd->bhqtd", local_weights, memory_blocks).reshape(
+            batch, heads, seq_len, input_memory.shape[-1]
+        )
+        if has_cross:
+            gathered_memory = input_memory[:, cross_neighbors.reshape(-1), :].reshape(
+                batch, seq_len, cross_neighbors.shape[1], input_memory.shape[-1]
+            )
+            cross_heads = []
+            for head_index in range(heads):
+                cross_heads.append(
+                    (cross_weights[:, head_index, :, :, None] * gathered_memory).sum(dim=-2)
+                )
+            local_out = local_out + torch.stack(cross_heads, dim=1)
+        return local_out
+
+    current_memory = memory
+    local_out = None
+    for _step in range(steps):
+        local_out = apply_rollout_once(current_memory)
+        current_memory = local_out.mean(dim=1)
+    if return_heads:
+        if local_out is None:
+            raise RuntimeError("rollout did not run")
+        return local_out
+    return current_memory
 
 def neighbor_attention_from_table(
     q: torch.Tensor,
@@ -46,6 +178,7 @@ def neighbor_attention_from_table(
     neighbors: torch.Tensor,
     valid: torch.Tensor,
     log_m: torch.Tensor | None = None,
+    top_k: int | None = None,
 ) -> torch.Tensor:
     batch, heads, seq_len, head_dim = q.shape
     gathered_k = k[:, :, neighbors.reshape(-1), :].reshape(
@@ -56,8 +189,9 @@ def neighbor_attention_from_table(
     )
     scores = (q[:, :, :, None, :] * gathered_k).sum(dim=-1) * (head_dim ** -0.5)
     if log_m is not None:
-        scores = scores + log_m[None, None, :, :]
+        scores = _add_attention_log_bias(scores, log_m)
     scores = scores.masked_fill(~valid[None, None, :, :], torch.finfo(scores.dtype).min)
+    scores = _mask_scores_to_topk(scores, top_k)
     weights = torch.softmax(scores, dim=-1)
     return (weights[..., None] * gathered_v).sum(dim=-2)
 
@@ -67,12 +201,13 @@ def neighbor_attention(
     v: torch.Tensor,
     mask: torch.Tensor,
     log_m: torch.Tensor | None = None,
+    top_k: int | None = None,
 ) -> torch.Tensor:
     neighbors, valid = mask_to_neighbors(mask)
     gathered_log_m = None
     if log_m is not None:
         gathered_log_m = log_m.gather(1, neighbors).masked_fill(~valid, 0.0)
-    return neighbor_attention_from_table(q, k, v, neighbors, valid, gathered_log_m)
+    return neighbor_attention_from_table(q, k, v, neighbors, valid, gathered_log_m, top_k=top_k)
 
 def cross_neighbors_to_block_pair_index(
     cross_neighbors: torch.Tensor,
@@ -119,6 +254,7 @@ def local_cross_attention(
     local_log_m: torch.Tensor | None = None,
     cross_log_m: torch.Tensor | None = None,
     dropout: nn.Module | None = None,
+    top_k: int | None = None,
 ) -> torch.Tensor:
     batch, heads, seq_len, head_dim = q.shape
     if seq_len % block_size != 0:
@@ -132,7 +268,7 @@ def local_cross_attention(
     local_scores = torch.einsum("bhqtd,bhqsd->bhqts", q_blocks, k_blocks) * scale
     local_scores_flat = local_scores.reshape(batch, heads, seq_len, block_size)
     if local_log_m is not None:
-        local_scores_flat = local_scores_flat + local_log_m[None, None, :, :]
+        local_scores_flat = _add_attention_log_bias(local_scores_flat, local_log_m)
     local_scores_flat = local_scores_flat.masked_fill(
         ~local_valid[None, None, :, :],
         torch.finfo(local_scores_flat.dtype).min,
@@ -149,7 +285,7 @@ def local_cross_attention(
         )
         cross_scores = (q[:, :, :, None, :] * gathered_k).sum(dim=-1) * scale
         if cross_log_m is not None:
-            cross_scores = cross_scores + cross_log_m[None, None, :, :]
+            cross_scores = _add_attention_log_bias(cross_scores, cross_log_m)
         cross_scores = cross_scores.masked_fill(
             ~valid_cross_neighbors[None, None, :, :], torch.finfo(cross_scores.dtype).min
         )
@@ -157,6 +293,7 @@ def local_cross_attention(
     else:
         scores = local_scores_flat
 
+    scores = _mask_scores_to_topk(scores, top_k)
     weights = torch.softmax(scores, dim=-1)
     if dropout is not None:
         weights = dropout(weights)
@@ -186,6 +323,7 @@ def local_blockpair_attention(
     local_log_m: torch.Tensor | None = None,
     cross_log_m: torch.Tensor | None = None,
     dropout: nn.Module | None = None,
+    top_k: int | None = None,
 ) -> torch.Tensor:
     batch, heads, seq_len, head_dim = q.shape
     if seq_len % block_size != 0:
@@ -199,7 +337,7 @@ def local_blockpair_attention(
     local_scores = torch.einsum("bhqtd,bhqsd->bhqts", q_blocks, k_blocks) * scale
     local_scores_flat = local_scores.reshape(batch, heads, seq_len, block_size)
     if local_log_m is not None:
-        local_scores_flat = local_scores_flat + local_log_m[None, None, :, :]
+        local_scores_flat = _add_attention_log_bias(local_scores_flat, local_log_m)
     local_scores_flat = local_scores_flat.masked_fill(
         ~local_valid[None, None, :, :],
         torch.finfo(local_scores_flat.dtype).min,
@@ -227,12 +365,20 @@ def local_blockpair_attention(
         k_edges = k[:, :, dst_tokens, :]
         edge_scores = (q_edges * k_edges).sum(dim=-1) * scale
         if cross_log_m is not None:
-            edge_scores = edge_scores + cross_log_m[src_tokens, slots][None, None, :]
+            if cross_log_m.dim() == 2:
+                edge_scores = edge_scores + cross_log_m[src_tokens, slots][None, None, :]
+            elif cross_log_m.dim() == 3:
+                edge_scores = edge_scores + cross_log_m[:, src_tokens, slots][None, :, :]
+            else:
+                raise ValueError(
+                    f"cross log bias must be rank 2 or 3, got shape={tuple(cross_log_m.shape)}"
+                )
         cross_scores[:, :, src_tokens, slots] = edge_scores
         scores = torch.cat([local_scores_flat, cross_scores], dim=-1)
     else:
         scores = local_scores_flat
 
+    scores = _mask_scores_to_topk(scores, top_k)
     weights = torch.softmax(scores, dim=-1)
     if dropout is not None:
         weights = dropout(weights)
