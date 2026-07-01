@@ -1,0 +1,7 @@
+{
+  "dataset": "induction_associative_recall",
+  "split_policy": "finite_language_coverage_train_and_test_rows_for_dense_to_one_calibration",
+  "test_rows": 256,
+  "train_rows": 256,
+  "variant": "dense_to_one_easy_v02"
+}

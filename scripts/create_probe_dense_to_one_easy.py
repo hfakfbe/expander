@@ -13,22 +13,25 @@ from graph_structures import build_graph_artifact
 
 ROOT = Path(".")
 BASE_MANIFEST = ROOT / "configs/probes_corrected_valid_as_test_l8_log5_task_parameters.json"
-DATA_ROOT = ROOT / "datasets/probes_dense_to_one_easy_v01"
-OUTPUT_ROOT = ROOT / "outputs/probes_dense_to_one_easy_v01"
+DATA_ROOT = ROOT / "datasets/probes_dense_to_one_easy_v02"
+OUTPUT_ROOT = ROOT / "outputs/probes_dense_to_one_easy_v02"
 CONFIG_ROOT = ROOT / "configs"
 TASKS = ["selective_copy", "induction_associative_recall", "lra_listops"]
-TRAIN_ROWS = 512
-TEST_ROWS = 128
+ROWS_BY_TASK = {
+    "selective_copy": 256,
+    "induction_associative_recall": 256,
+    "lra_listops": 400,
+}
 BLOCK_SIZE = 16
 GRAPH_DEGREE = 2
 
 SEQ_LEN = {
-    "selective_copy": 128,
+    "selective_copy": 64,
     "induction_associative_recall": 64,
     "lra_listops": 64,
 }
 TARGET_LEN = {
-    "selective_copy": 8,
+    "selective_copy": 4,
     "induction_associative_recall": 4,
     "lra_listops": 1,
 }
@@ -59,42 +62,50 @@ def selected_records() -> dict[str, dict[str, Any]]:
     return {row["task"]: row for row in manifest["tasks"] if row["task"] in TASKS}
 
 
+def value_combos(width: int, values: list[int]) -> list[tuple[int, ...]]:
+    combos: list[tuple[int, ...]] = [()]
+    for _ in range(width):
+        combos = [prefix + (value,) for prefix in combos for value in values]
+    return combos
+
+
 def selective_rows(split: str, count: int) -> list[dict[str, Any]]:
-    rng = random.Random(f"dense_to_one_easy_v01|selective_copy|{split}")
     rows: list[dict[str, Any]] = []
     input_len = SEQ_LEN["selective_copy"]
     target_len = TARGET_LEN["selective_copy"]
-    source_positions = [8 + 13 * index for index in range(target_len)]
+    source_positions = [4, 18, 32, 46]
     marker = 15
+    combos = value_combos(target_len, [1, 2, 3, 4])
+    if split == "test":
+        combos = list(reversed(combos))
     for index in range(count):
-        values = [rng.randint(1, 14) for _ in range(target_len)]
+        values = list(combos[index % len(combos)])
         tokens = [0] * (input_len - target_len) + [marker] * target_len
         for pos, value in zip(source_positions, values):
             tokens[pos] = value
         rows.append(
             {
-                "id": f"selective_copy.dense_to_one_easy_v01.{split}.{index}",
+                "id": f"selective_copy.dense_to_one_easy_v02.{split}.{index}",
                 "input": tokens,
                 "metadata": {
                     "input_length": input_len,
                     "l_memorize": target_len,
                     "l_noise": input_len - target_len,
                     "seed": index,
-                    "source": "dense_to_one_easy_v01",
+                    "source": "dense_to_one_easy_v02",
                     "source_positions": source_positions,
                     "split": split,
                     "target_length": target_len,
                 },
                 "target": values,
                 "task": "selective_copy",
-                "variant": "dense_to_one_easy_v01",
+                "variant": "dense_to_one_easy_v02",
             }
         )
     return rows
 
 
 def induction_rows(split: str, count: int) -> list[dict[str, Any]]:
-    rng = random.Random(f"dense_to_one_easy_v01|induction|{split}")
     rows: list[dict[str, Any]] = []
     input_len = SEQ_LEN["induction_associative_recall"]
     pair_count = TARGET_LEN["induction_associative_recall"]
@@ -102,13 +113,38 @@ def induction_rows(split: str, count: int) -> list[dict[str, Any]]:
     value_positions = [16, 17, 18, 19]
     query_positions = [32, 33, 34, 35]
     target_positions = [48, 49, 50, 51]
-    key_vocab = list(range(10, 18))
-    value_vocab = list(range(30, 38))
+    keys = [10, 11, 12, 13]
+    values = [30, 31, 32, 33]
+    orders = [
+        [0, 1, 2, 3],
+        [0, 1, 3, 2],
+        [0, 2, 1, 3],
+        [0, 2, 3, 1],
+        [0, 3, 1, 2],
+        [0, 3, 2, 1],
+        [1, 0, 2, 3],
+        [1, 0, 3, 2],
+        [1, 2, 0, 3],
+        [1, 2, 3, 0],
+        [1, 3, 0, 2],
+        [1, 3, 2, 0],
+        [2, 0, 1, 3],
+        [2, 0, 3, 1],
+        [2, 1, 0, 3],
+        [2, 1, 3, 0],
+        [2, 3, 0, 1],
+        [2, 3, 1, 0],
+        [3, 0, 1, 2],
+        [3, 0, 2, 1],
+        [3, 1, 0, 2],
+        [3, 1, 2, 0],
+        [3, 2, 0, 1],
+        [3, 2, 1, 0],
+    ]
+    if split == "test":
+        orders = list(reversed(orders))
     for index in range(count):
-        keys = rng.sample(key_vocab, pair_count)
-        values = rng.sample(value_vocab, pair_count)
-        order = list(range(pair_count))
-        rng.shuffle(order)
+        order = orders[index % len(orders)]
         tokens = [0] * input_len
         for slot, (key, value) in enumerate(zip(keys, values)):
             tokens[key_positions[slot]] = key
@@ -120,7 +156,7 @@ def induction_rows(split: str, count: int) -> list[dict[str, Any]]:
             targets.append({"position": target_positions[query_slot], "value": values[pair_index]})
         rows.append(
             {
-                "id": f"induction_associative_recall.dense_to_one_easy_v01.{split}.{index}",
+                "id": f"induction_associative_recall.dense_to_one_easy_v02.{split}.{index}",
                 "input": tokens,
                 "metadata": {
                     "input_length": input_len,
@@ -129,7 +165,7 @@ def induction_rows(split: str, count: int) -> list[dict[str, Any]]:
                     "num_kv_pairs": pair_count,
                     "query_positions": query_positions,
                     "seed": index,
-                    "source": "dense_to_one_easy_v01",
+                    "source": "dense_to_one_easy_v02",
                     "split": split,
                     "target_length": pair_count,
                     "target_positions": target_positions,
@@ -138,7 +174,7 @@ def induction_rows(split: str, count: int) -> list[dict[str, Any]]:
                 },
                 "target": targets,
                 "task": "induction_associative_recall",
-                "variant": "dense_to_one_easy_v01",
+                "variant": "dense_to_one_easy_v02",
             }
         )
     return rows
@@ -157,32 +193,32 @@ def listops_label(op: str, a: int, b: int) -> int:
 
 
 def listops_rows(split: str, count: int) -> list[dict[str, Any]]:
-    rng = random.Random(f"dense_to_one_easy_v01|listops|{split}")
     rows: list[dict[str, Any]] = []
     ops = ["[MAX", "[MIN", "[SM", "[MED"]
+    examples = [(op, a, b) for op in ops for a in range(10) for b in range(10)]
+    if split == "test":
+        examples = list(reversed(examples))
     for index in range(count):
-        op = ops[index % len(ops)]
-        a = rng.randrange(10)
-        b = rng.randrange(10)
+        op, a, b = examples[index % len(examples)]
         label = listops_label(op, a, b)
         tokens = ["(", op, str(a), str(b), ")", "]"]
         rows.append(
             {
-                "id": f"lra_listops.dense_to_one_easy_v01.{split}.{index}",
+                "id": f"lra_listops.dense_to_one_easy_v02.{split}.{index}",
                 "input": tokens,
                 "metadata": {
                     "input_length": len(tokens),
                     "max_args": 2,
                     "max_depth": 1,
                     "seed": index,
-                    "source": "dense_to_one_easy_v01",
+                    "source": "dense_to_one_easy_v02",
                     "split": split,
                     "target_length": 1,
                     "tree_length": len(tokens),
                 },
                 "target": label,
                 "task": "lra_listops",
-                "variant": "dense_to_one_easy_v01",
+                "variant": "dense_to_one_easy_v02",
             }
         )
     return rows
@@ -204,13 +240,13 @@ def write_dataset(task: str, train_rows: list[dict[str, Any]], test_rows: list[d
     write_jsonl(task_dir / "test.jsonl", test_rows)
     card = {
         "dataset": task,
-        "split_policy": "disjoint_generated_train_test_rows_same_easy_task_family",
+        "split_policy": "finite_language_coverage_train_and_test_rows_for_dense_to_one_calibration",
         "train_rows": len(train_rows),
         "test_rows": len(test_rows),
-        "variant": "dense_to_one_easy_v01",
+        "variant": "dense_to_one_easy_v02",
     }
     write_json(task_dir / "dataset_card.json", card)
-    (task_dir / "source.lock").write_text("source=dense_to_one_easy_v01\n", encoding="utf-8")
+    (task_dir / "source.lock").write_text("source=dense_to_one_easy_v02\n", encoding="utf-8")
     controlled = ["train.jsonl", "test.jsonl", "dataset_card.json", "source.lock"]
     checksums = [f"{sha256_file(task_dir / name)}  {name}" for name in controlled]
     (task_dir / "checksums.sha256").write_text("\n".join(checksums) + "\n", encoding="utf-8")
@@ -234,11 +270,11 @@ def write_graph(task: str, seq_len: int) -> dict[str, Any]:
         degree=GRAPH_DEGREE,
         graph_seed=0,
         g_config={"max_parallel_edges_per_block_pair": None},
-        version="probes_dense_to_one_easy_v01",
+        version="probes_dense_to_one_easy_v02",
     )
     artifact["allow_multiedges"] = True
     artifact["preserve_multiplicity"] = True
-    artifact["graph_generation_algorithm"] = "dense_to_one_easy_v01_graph"
+    artifact["graph_generation_algorithm"] = "dense_to_one_easy_v02_graph"
     cert = certificate_for_artifact(
         artifact,
         {"acceptance": {"rho_bound_lt": 1.0, "max_remote_local_overlap_mean": 1.0}},
@@ -255,7 +291,7 @@ def write_graph(task: str, seq_len: int) -> dict[str, Any]:
         generation,
         {
             "status": "ok",
-            "graph_generation_algorithm": "dense_to_one_easy_v01_graph",
+            "graph_generation_algorithm": "dense_to_one_easy_v02_graph",
             "graph_seed": 0,
             "N_task": seq_len,
             "T_raw": seq_len,
@@ -314,11 +350,11 @@ def update_record(
     target_len = TARGET_LEN[task]
     record.update(
         {
-            "version": "probes_dense_to_one_easy_v01",
+            "version": "probes_dense_to_one_easy_v02",
             "version_path": data["version_path"],
             "valid_as_test_v01": False,
-            "dataset_source": "dense_to_one_easy_v01_generated",
-            "dataset_revision_or_hash": "local_generated_v01",
+            "dataset_source": "dense_to_one_easy_v02_generated",
+            "dataset_revision_or_hash": "local_generated_v02",
             "dataset_card_sha256": data["dataset_card_sha256"],
             "source_lock_sha256": data["source_lock_sha256"],
             "checksums_sha256": data["checksums_sha256"],
@@ -338,7 +374,7 @@ def update_record(
             "resolved_raw_sequence_length": seq_len,
             "resolved_padded_sequence_length": seq_len,
             "runtime_padding_positions": 0,
-            "runtime_padding_policy": "fixed_block_aligned_dense_to_one_easy_v01",
+            "runtime_padding_policy": "fixed_block_aligned_dense_to_one_easy_v02",
             "resolved_readout_start": seq_len - target_len if task == "selective_copy" else 0,
             "resolved_sequence_length_min": stats["input_min"],
             "resolved_sequence_length_mean": stats["input_mean"],
@@ -368,8 +404,8 @@ def update_record(
             "rope_theta": 10000.0,
             "resolved_graph_block_size": BLOCK_SIZE,
             "resolved_graph_degree_or_budget": GRAPH_DEGREE,
-            "resolved_graph_generation_algorithm": "dense_to_one_easy_v01_graph",
-            "resolved_graph_id": f"dense_to_one_easy_v01_{task}_B{BLOCK_SIZE}_d{GRAPH_DEGREE}_s0",
+            "resolved_graph_generation_algorithm": "dense_to_one_easy_v02_graph",
+            "resolved_graph_id": f"dense_to_one_easy_v02_{task}_B{BLOCK_SIZE}_d{GRAPH_DEGREE}_s0",
             "resolved_graph_num_blocks_or_nodes": seq_len // BLOCK_SIZE,
             "resolved_graph_seed": 0,
             "resolved_q_alias_if_applicable": seq_len // BLOCK_SIZE,
@@ -397,8 +433,8 @@ def update_record(
     record["input_contract"] = dict(record["input_contract"])
     record["input_contract"].update(
         {
-            "input_length_policy": f"dense_to_one_easy_v01_fixed_T_{seq_len}",
-            "source_test_policy": "generated_disjoint_test_rows",
+            "input_length_policy": f"dense_to_one_easy_v02_fixed_T_{seq_len}",
+            "source_test_policy": "generated_finite_language_coverage_test_rows",
             "test_source": "generated_test_jsonl",
         }
     )
@@ -409,40 +445,40 @@ def main() -> None:
     base_records = selected_records()
     records = []
     for task in TASKS:
-        train_rows = task_rows(task, "train", TRAIN_ROWS)
-        test_rows = task_rows(task, "test", TEST_ROWS)
+        train_rows = task_rows(task, "train", ROWS_BY_TASK[task])
+        test_rows = task_rows(task, "test", ROWS_BY_TASK[task])
         data = write_dataset(task, train_rows, test_rows)
         graph = write_graph(task, SEQ_LEN[task])
         records.append(update_record(task, base_records[task], data, graph, train_rows, test_rows))
 
     manifest = {
-        "branch_name": "codex/probes-dense-to-one-easy-v01",
-        "phase": "probes_dense_to_one_easy_v01",
-        "version": "probes_dense_to_one_easy_v01",
+        "branch_name": "codex/probes-dense-to-one-easy-v02",
+        "phase": "probes_dense_to_one_easy_v02",
+        "version": "probes_dense_to_one_easy_v02",
         "tasks": records,
     }
-    manifest_path = CONFIG_ROOT / "probes_dense_to_one_easy_v01_task_parameters.json"
+    manifest_path = CONFIG_ROOT / "probes_dense_to_one_easy_v02_task_parameters.json"
     write_json(manifest_path, manifest)
 
     common = {
-        "output_root": "outputs/probes_dense_to_one_easy_v01/runs",
-        "phase": "probes_dense_to_one_easy_v01",
+        "output_root": "outputs/probes_dense_to_one_easy_v02/runs",
+        "phase": "probes_dense_to_one_easy_v02",
         "profile": "main",
         "seeds": [0],
         "task_parameter_manifest": str(manifest_path),
         "tasks": TASKS,
-        "version": "probes_dense_to_one_easy_v01",
+        "version": "probes_dense_to_one_easy_v02",
     }
     write_json(
-        CONFIG_ROOT / "probes_dense_to_one_easy_v01_dense.json",
+        CONFIG_ROOT / "probes_dense_to_one_easy_v02_dense.json",
         {
             **common,
             "methods": ["dense"],
-            "trial_id": "dense_to_one_easy_v01_dense",
+            "trial_id": "dense_to_one_easy_v02_dense",
         },
     )
     write_json(
-        CONFIG_ROOT / "probes_dense_to_one_easy_v01_random_density10.json",
+        CONFIG_ROOT / "probes_dense_to_one_easy_v02_random_density10.json",
         {
             **common,
             "methods": ["random_regular", "random_memory"],
@@ -462,7 +498,7 @@ def main() -> None:
                 "update": "lazy",
                 "weight_mode": "soft",
             },
-            "trial_id": "dense_to_one_easy_v01_random_density10",
+            "trial_id": "dense_to_one_easy_v02_random_density10",
         },
     )
     print(json.dumps({"status": "ok", "manifest": str(manifest_path)}, ensure_ascii=False))
