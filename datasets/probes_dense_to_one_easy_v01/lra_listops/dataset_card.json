@@ -1,0 +1,7 @@
+{
+  "dataset": "lra_listops",
+  "split_policy": "disjoint_generated_train_test_rows_same_easy_task_family",
+  "test_rows": 128,
+  "train_rows": 512,
+  "variant": "dense_to_one_easy_v01"
+}

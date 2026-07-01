@@ -1,0 +1,14 @@
+{
+  "B": 16,
+  "N_task": 128,
+  "T": 128,
+  "T_raw": 128,
+  "canonical_graph_artifact_sha256": "d632eb769b8c71f98cf762e039cdc08504244ae696fd6b3e436d0fc08abf1ab6",
+  "d": 2,
+  "graph_certificate_path": "outputs/probes_dense_to_one_easy_v01/graphs/selective_copy/graph_certificate.json",
+  "graph_generation_algorithm": "dense_to_one_easy_v01_graph",
+  "graph_seed": 0,
+  "q": 8,
+  "selected_graph_path": "outputs/probes_dense_to_one_easy_v01/graphs/selective_copy/selected_graph.json",
+  "status": "ok"
+}

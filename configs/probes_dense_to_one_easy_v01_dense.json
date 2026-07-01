@@ -1,0 +1,19 @@
+{
+  "methods": [
+    "dense"
+  ],
+  "output_root": "outputs/probes_dense_to_one_easy_v01/runs",
+  "phase": "probes_dense_to_one_easy_v01",
+  "profile": "main",
+  "seeds": [
+    0
+  ],
+  "task_parameter_manifest": "configs/probes_dense_to_one_easy_v01_task_parameters.json",
+  "tasks": [
+    "selective_copy",
+    "induction_associative_recall",
+    "lra_listops"
+  ],
+  "trial_id": "dense_to_one_easy_v01_dense",
+  "version": "probes_dense_to_one_easy_v01"
+}

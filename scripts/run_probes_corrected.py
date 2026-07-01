@@ -23,6 +23,7 @@ from probe_metrics import aggregate_metric_rows, json_metric, write_training_cur
 from probe_tasks import JsonlStore, ProbeTransformer, load_encoder, make_probe_batch, parameter_count
 from run_probe_experiment import forward_loss_and_metrics, schedule_lr
 from synthetic_mvp_core.artifacts import (
+    build_pure_random_rows_for_actual_mask_density,
     build_random_remote_rows_aligned_to_zigzag_noncausal,
     make_attention_artifacts,
     resolve_attention_backend,
@@ -81,6 +82,87 @@ def load_manifest(config: dict[str, Any]) -> dict[str, Any]:
 
 def task_records(manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {str(row["task"]): row for row in manifest["tasks"]}
+
+
+def resolve_data_dir(record: dict[str, Any]) -> Path:
+    path = Path(record["version_path"])
+    if path.exists():
+        return path
+    rel = Path(str(record["version_path"]))
+    if rel.is_absolute():
+        rel = Path(*rel.parts[-3:])
+    candidates = [
+        Path("datasets") / rel.name if len(rel.parts) == 1 else rel,
+        Path("/home/huiwei/ysx/zigzag_attention") / rel,
+        Path("/home/huiwei/ysx/expander_bench/data/probes") / rel,
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    checked = [str(path), *(str(candidate) for candidate in candidates)]
+    raise FileNotFoundError(f"could not resolve dataset for {record['task']}: checked {checked}")
+
+
+def resolved_position_encoding(record: dict[str, Any]) -> str:
+    return str(record.get("position_encoding") or "learned_absolute")
+
+
+def random_family_method(method: str) -> bool:
+    return method in {"random_regular", "random_memory"}
+
+
+def artifact_method(method: str) -> str:
+    return "random_regular" if method == "random_memory" else method
+
+
+def random_config(config: dict[str, Any]) -> dict[str, Any]:
+    value = config.get("random", {})
+    return value if isinstance(value, dict) else {}
+
+
+def memory_config(config: dict[str, Any]) -> dict[str, Any]:
+    value = config.get("random_memory", {})
+    return value if isinstance(value, dict) else {}
+
+
+def config_random_density(config: dict[str, Any]) -> float | None:
+    value = random_config(config).get("actual_mask_density")
+    return None if value is None else float(value)
+
+
+def config_random_exclude_block_local(config: dict[str, Any]) -> bool:
+    return bool(random_config(config).get("exclude_block_local", False))
+
+
+def config_random_use_log_m(config: dict[str, Any]) -> bool:
+    return bool(random_config(config).get("use_log_m", False))
+
+
+def config_memory_enabled(config: dict[str, Any], method: str) -> bool:
+    return method == "random_memory" and bool(memory_config(config).get("enabled", True))
+
+
+def config_memory_float(config: dict[str, Any], key: str, default: float) -> float:
+    return float(memory_config(config).get(key, default))
+
+
+def config_memory_str(config: dict[str, Any], key: str, default: str) -> str:
+    return str(memory_config(config).get(key, default))
+
+
+def config_memory_int(config: dict[str, Any], key: str, default: int) -> int:
+    return int(memory_config(config).get(key, default))
+
+
+def config_memory_list(config: dict[str, Any], key: str) -> list[Any] | None:
+    value = memory_config(config).get(key)
+    return None if value is None else list(value)
+
+
+def artifact_density(artifacts) -> float:
+    pair_count = float(artifacts.metrics.get("attention_pair_count", 0.0))
+    seq_len = int(artifacts.mask.shape[-1])
+    return pair_count / max(float(seq_len * seq_len), 1.0)
 
 
 def select_device(requested: str) -> torch.device:
@@ -171,22 +253,43 @@ def artifact_args(record: dict[str, Any], method: str, seed: int) -> SimpleNames
     )
 
 
-def method_artifact_args(record: dict[str, Any], method: str, seed: int) -> SimpleNamespace:
-    args = artifact_args(record, method, seed)
-    if method == "random_regular":
-        args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(
-            int(record["resolved_padded_sequence_length"]),
-            args,
-        )
+def method_artifact_args(record: dict[str, Any], method: str, seed: int, config: dict[str, Any]) -> SimpleNamespace:
+    args = artifact_args(record, artifact_method(method), seed)
+    if random_family_method(method):
+        density = config_random_density(config)
+        if density is None:
+            args.random_aligned_rows = build_random_remote_rows_aligned_to_zigzag_noncausal(
+                int(record["resolved_padded_sequence_length"]),
+                args,
+            )
+        else:
+            args.random_include_local_edges = False
+            args.random_use_log_m = config_random_use_log_m(config)
+            args.random_aligned_rows = build_pure_random_rows_for_actual_mask_density(
+                int(record["resolved_padded_sequence_length"]),
+                args,
+                density,
+                exclude_block_local=config_random_exclude_block_local(config),
+            )
+            args.random_alignment_mode = "pure_actual_mask_density"
+            args.random_target_k_source = "configured_actual_mask_density"
+            args.random_actual_mask_density = float(density)
     return args
 
 
-def build_model(record: dict[str, Any], method: str, seed: int, device: torch.device):
-    backend = resolve_attention_backend(str(record["resolved_attention_backend"]), method)
-    args = method_artifact_args(record, method, seed)
-    artifacts = make_attention_artifacts(method, int(record["resolved_padded_sequence_length"]), args, device, backend)
+def build_model(record: dict[str, Any], method: str, seed: int, device: torch.device, config: dict[str, Any]):
+    backend = resolve_attention_backend(str(record["resolved_attention_backend"]), artifact_method(method))
+    args = method_artifact_args(record, method, seed, config)
+    artifacts = make_attention_artifacts(
+        artifact_method(method),
+        int(record["resolved_padded_sequence_length"]),
+        args,
+        device,
+        backend,
+    )
     seed_policy = set_all_seeds(int(record.get("model_seed", seed)))
     use_class_head = str(record["resolved_loss_type"]) == "classification_cross_entropy"
+    memory_enabled = config_memory_enabled(config, method)
     model = ProbeTransformer(
         vocab_size=int(record["resolved_vocab_or_value_space_size"]),
         token_output_size=int(record["resolved_token_output_size"]),
@@ -199,9 +302,20 @@ def build_model(record: dict[str, Any], method: str, seed: int, device: torch.de
         dropout=float(record["resolved_dropout"]),
         attention_backend=backend,
         block_size=int(record["resolved_graph_block_size"]),
-        position_encoding=str(record["position_encoding"]),
+        position_encoding=resolved_position_encoding(record),
         rope_theta=float(record["rope_theta"]),
         use_class_head=use_class_head,
+        rollout_memory=memory_enabled,
+        rollout_memory_scale=config_memory_float(config, "scale", 1.0),
+        rollout_memory_source=config_memory_str(config, "source", "input"),
+        rollout_memory_update=config_memory_str(config, "update", "lazy"),
+        rollout_memory_lazy_alpha=config_memory_float(config, "lazy_alpha", 0.5),
+        rollout_memory_steps=config_memory_int(config, "steps", 1),
+        rollout_memory_multiscale_steps=config_memory_list(config, "multiscale_steps"),
+        rollout_memory_multiscale_weights=config_memory_list(config, "multiscale_weights"),
+        rollout_head_merge=config_memory_str(config, "head_merge", "mean"),
+        rollout_weight_mode=config_memory_str(config, "weight_mode", "soft"),
+        rollout_edge_scope=config_memory_str(config, "edge_scope", "all"),
     ).to(device)
     return model, artifacts, backend, seed_policy
 
@@ -324,13 +438,13 @@ def train_loop(
     write_json(run_dir / "resolved_config_snapshot.json", record)
     write_json(run_dir / "run_identity.json", identity)
 
-    data_dir = Path(record["version_path"])
+    data_dir = resolve_data_dir(record)
     if (data_dir / "validation.jsonl").exists():
         raise RuntimeError(f"{task}: validation.jsonl is forbidden in corrected valid-as-test data")
     train_store = JsonlStore(data_dir / "train.jsonl")
     encoder = load_encoder(Path(record["resolved_tokenizer_or_encoder_path"]))
     profile = profile_record(record, mode)
-    model, artifacts, backend, seed_policy = build_model(record, method, seed, device)
+    model, artifacts, backend, seed_policy = build_model(record, method, seed, device, config)
     initial_hash = state_dict_sha256(model)
     optimizer = torch.optim.AdamW(
         model.parameters(),
@@ -488,6 +602,9 @@ def train_loop(
         "initial_model_state_sha256": initial_hash,
         "parameter_count": parameter_count(model),
         "position_parameter_count": sum(p.numel() for name, p in model.named_parameters() if "pos" in name.lower()),
+        "random_actual_mask_density": artifact_density(artifacts) if random_family_method(method) else None,
+        "random_attention_pair_count": artifacts.metrics.get("attention_pair_count") if random_family_method(method) else None,
+        "random_memory": config_memory_enabled(config, method),
         "train_loss_last_step": train_loss_last,
         "train_loss_mean": train_loss_sum / max(train_token_count, 1),
         "steps_completed": global_step,
@@ -529,14 +646,14 @@ def final_eval(
         ckpt_manifest = read_json(run_dir / "checkpoint_manifest.json")
         checkpoint = Path(ckpt_manifest["latest_checkpoint"]["path"])
     identity = run_identity(config_path, config, manifest_path, record, task, method, seed)
-    model, artifacts, backend, seed_policy = build_model(record, method, seed, device)
+    model, artifacts, backend, seed_policy = build_model(record, method, seed, device, config)
     payload = torch.load(checkpoint, map_location=device, weights_only=False)
     if payload.get("identity_sha256") != identity_sha256(identity):
         raise RuntimeError("checkpoint identity does not match current config/data/graph/code")
     model.load_state_dict(payload["model_state"])
     encoder = load_encoder(Path(record["resolved_tokenizer_or_encoder_path"]))
     first_test_read_at = utc_now()
-    test_store = JsonlStore(Path(record["version_path"]) / "test.jsonl")
+    test_store = JsonlStore(resolve_data_dir(record) / "test.jsonl")
     profile = profile_record(record, mode)
     limit = min(len(test_store), int(profile.get("test_examples", len(test_store))))
     test_rows = [test_store.row(i) for i in range(limit)]
@@ -567,6 +684,9 @@ def final_eval(
         "secondary_metrics": result["secondary_metrics"],
         "task_metrics": result.get("task_metrics", {}),
         "position_parameter_count": sum(p.numel() for name, p in model.named_parameters() if "pos" in name.lower()),
+        "random_actual_mask_density": artifact_density(artifacts) if random_family_method(method) else None,
+        "random_attention_pair_count": artifacts.metrics.get("attention_pair_count") if random_family_method(method) else None,
+        "random_memory": config_memory_enabled(config, method),
         "parameter_count": parameter_count(model),
         "git_commit": git_commit(),
         "git_dirty": git_dirty(),
@@ -636,6 +756,9 @@ def aggregate(config: dict[str, Any], manifest: dict[str, Any], mode: str) -> di
                         "train_loss_last_step": summary.get("train_loss_last_step"),
                         "parameter_count": final.get("parameter_count", summary.get("parameter_count")),
                         "position_parameter_count": final.get("position_parameter_count", summary.get("position_parameter_count")),
+                        "random_actual_mask_density": final.get("random_actual_mask_density", summary.get("random_actual_mask_density")),
+                        "random_attention_pair_count": final.get("random_attention_pair_count", summary.get("random_attention_pair_count")),
+                        "random_memory": final.get("random_memory", summary.get("random_memory")),
                         "input_length": records[task]["resolved_runtime_input_length"],
                         "T": records[task]["resolved_padded_sequence_length"],
                         "layers": records[task]["resolved_layers"],
