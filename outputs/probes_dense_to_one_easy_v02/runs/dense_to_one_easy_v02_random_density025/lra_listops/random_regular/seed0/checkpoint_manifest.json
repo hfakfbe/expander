@@ -1,0 +1,20 @@
+{
+  "checkpoint_files_git_ignored": true,
+  "checkpoint_policy": "tensor_checkpoint_with_optimizer_sampler_rng_state",
+  "latest_checkpoint": {
+    "epoch": 119,
+    "optimizer_step": 3000,
+    "path": "outputs/probes_dense_to_one_easy_v02/runs/dense_to_one_easy_v02_random_density025/lra_listops/random_regular/seed0/checkpoints/train_final_step3000.pt",
+    "permutation_position": 0,
+    "sha256": "b5c246fa5bc1b60f026a95cc1ebbac30bd1d83bfe1265d611f82d0e5020d62b7"
+  },
+  "tensor_checkpoints_written": [
+    {
+      "epoch": 119,
+      "optimizer_step": 3000,
+      "path": "outputs/probes_dense_to_one_easy_v02/runs/dense_to_one_easy_v02_random_density025/lra_listops/random_regular/seed0/checkpoints/train_final_step3000.pt",
+      "permutation_position": 0,
+      "sha256": "b5c246fa5bc1b60f026a95cc1ebbac30bd1d83bfe1265d611f82d0e5020d62b7"
+    }
+  ]
+}

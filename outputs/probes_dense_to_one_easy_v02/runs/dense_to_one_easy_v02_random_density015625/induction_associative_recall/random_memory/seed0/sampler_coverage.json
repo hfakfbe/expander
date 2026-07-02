@@ -1,0 +1,844 @@
+{
+  "epochs": [
+    {
+      "draw_count": 256,
+      "epoch": 0,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 1,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 2,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 3,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 4,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 5,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 6,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 7,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 8,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 9,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 10,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 11,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 12,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 13,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 14,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 15,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 16,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 17,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 18,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 19,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 20,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 21,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 22,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 23,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 24,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 25,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 26,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 27,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 28,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 29,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 30,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 31,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 32,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 33,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 34,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 35,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 36,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 37,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 38,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 39,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 40,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 41,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 42,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 43,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 44,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 45,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 46,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 47,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 48,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 49,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 50,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 51,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 52,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 53,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 54,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 55,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 56,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 57,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 58,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 59,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 60,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 61,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 62,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 63,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 64,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 65,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 66,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 67,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 68,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 69,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 70,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 71,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 72,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 73,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 74,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 75,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 76,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 77,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 78,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 79,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 80,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 81,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 82,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 83,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 84,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 85,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 86,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 87,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 88,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 89,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 90,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 91,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 92,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 93,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 94,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 95,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 96,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 97,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 98,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 99,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 100,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 101,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 102,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 103,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 104,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 105,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 106,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 107,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 108,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 109,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 110,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 111,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 112,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 113,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 114,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 115,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 116,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 117,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 118,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    },
+    {
+      "draw_count": 256,
+      "epoch": 119,
+      "max_repeat_count": 1,
+      "never_seen": 0,
+      "unique_count": 256
+    }
+  ]
+}
