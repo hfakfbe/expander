@@ -75,7 +75,7 @@ lra_listops 是本轮最清楚的学习信号。zigzag_certified 在 seed 0 下�
 | random_k_alignment_error_max | 全部为 0 |
 | training_curves.png | 18 张均为 1080 x 960 PNG |
 | result_field_audit | 18 个 run 全部 passed |
-| old_bad_outputs | 一轮训练和 1 x 1 曲线图旧产物已归档到 `ref/archive_v08_one_epoch_bad_curves/` |
+| old_bad_outputs | 一轮训练和 1 x 1 曲线图旧产物已从主仓移除 |
 
 ## 参数说明
 

@@ -1,1 +1,0 @@
-/home/huiwei/miniconda3/envs/ysx_base/bin/python scripts/run_probes_corrected.py --config configs/probes_dense_to_one_easy_v02_random_density10.json --mode train --task selective_copy --seed 0 --device cuda

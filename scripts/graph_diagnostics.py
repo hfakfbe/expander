@@ -27,6 +27,7 @@ from graph_structures import (
     load_graph_artifact,
     padded_length,
 )
+from probe_common import deep_merge
 from v07_artifacts import (
     V07_GRAPH_GENERATION_ALGORITHM,
     file_sha256,
@@ -108,16 +109,6 @@ DEFAULT_CONFIG = {
     },
     "output": {"root": "outputs/copy_v06_graph_search"},
 }
-
-
-def deep_merge(base: dict, override: dict) -> dict:
-    out = copy.deepcopy(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(out.get(key), dict):
-            out[key] = deep_merge(out[key], value)
-        else:
-            out[key] = copy.deepcopy(value)
-    return out
 
 
 def load_config(path: Path | None) -> dict:

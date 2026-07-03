@@ -1,0 +1,8 @@
+{
+  "encoder_type": "identity_integer",
+  "eos_token_id": null,
+  "integer_shift": 0,
+  "pad_token_id": 0,
+  "unk_token_id": null,
+  "vocab_size": 64
+}

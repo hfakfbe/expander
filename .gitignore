@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 .deps/
+.codegraph/
 
 # Model checkpoints / tensor artifacts
 *.pt
@@ -12,6 +13,25 @@ __pycache__/
 checkpoint*/
 checkpoints/
 cached_graphs/
+
+# Generated experiment logs and run outputs. Static graph/encoder artifacts under
+# outputs/ remain trackable when explicitly added.
+logs/
+outputs/**/runs/
+outputs/**/checkpoints/
+outputs/**/*.jsonl
+outputs/**/*.csv
+outputs/**/*.log
+outputs/**/*.png
+outputs/**/command.sh
+outputs/**/raw_config_snapshot.json
+outputs/**/resolved_config_snapshot.json
+outputs/**/config_snapshot.json
+outputs/**/summary.json
+outputs/**/metrics.jsonl
+outputs/**/checkpoint_manifest.json
+outputs/**/attention_diagnostics.json
+outputs/**/result_field_audit.json
 
 # Corrected Copy raw data is materialized locally and tracked by checksums/scripts.
 datasets/copy/*.jsonl

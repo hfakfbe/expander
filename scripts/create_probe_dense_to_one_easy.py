@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import random
@@ -9,6 +8,7 @@ from typing import Any
 
 from graph_diagnostics import certificate_for_artifact
 from graph_structures import build_graph_artifact
+from probe_common import file_sha256 as sha256_file, write_json, write_jsonl
 
 
 ROOT = Path(".")
@@ -35,26 +35,6 @@ TARGET_LEN = {
     "induction_associative_recall": 4,
     "lra_listops": 1,
 }
-
-
-def write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fp:
-        for row in rows:
-            fp.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
-
-
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def selected_records() -> dict[str, dict[str, Any]]:

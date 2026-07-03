@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import copy
 import hashlib
 import json
 import os
@@ -476,6 +477,23 @@ def write_command(path: Path, command: str | None = None) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text((command or command_string()) + "\n", encoding="utf-8")
     path.chmod(0o755)
+
+
+def deep_merge(base: dict, override: dict) -> dict:
+    out = copy.deepcopy(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = deep_merge(out[key], value)
+        else:
+            out[key] = copy.deepcopy(value)
+    return out
+
+
+def iter_set_bits(value: int):
+    while value:
+        low = value & -value
+        yield low.bit_length() - 1
+        value ^= low
 
 
 def deployed_git_commit(cwd: Path | None = None) -> str | None:

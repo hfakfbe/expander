@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from probe_common import file_sha256 as sha256_file, write_json
 
 
 OLD_TRAIN_SHA256 = "a5a4aa651a5bdec25075930d1f59b7d0358e29dcca0fdd8f8dc897d55ee3de1c"
@@ -16,14 +17,6 @@ SOURCE_LENGTH = 1024
 TARGET_LENGTH = 1024
 RAW_SEQUENCE_LENGTH = 2048
 MARKER_TOKEN_ID = 63
-
-
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def canonical_json(value: Any) -> str:
@@ -106,11 +99,6 @@ def transform_rows(rows: list[dict[str, Any]], split: str) -> list[dict[str, Any
         assert_row_contract(row, split, line_no)
         out.append(row)
     return out
-
-
-def write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from probe_common import file_sha256 as sha256_file, write_json, write_jsonl
 
 
 VERSION = "probes_corrected_valid_as_test_l8_log5"
@@ -34,34 +35,14 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def sha256_file(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     with path.open("r", encoding="utf-8") as fp:
         return [json.loads(line) for line in fp if line.strip()]
 
 
-def write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
-
-
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
-
-
-def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fp:
-        for row in rows:
-            fp.write(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n")
 
 
 def split_stats(path: Path) -> dict[str, Any]:

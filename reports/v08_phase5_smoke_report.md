@@ -4,7 +4,7 @@
 
 Phase 5 按 `configs/probes_v08_smoke.json` 对 6 个 task、3 个 required methods、seed 0 执行 smoke train + eval，共 18 个 run。聚合结果为 `status=ok`，`completed_runs=18`，`expected_runs=18`，`result_field_audits_passed=18`，`result_field_audits_total=18`。本阶段只验证入口、字段、graph/budget、metric、日志和曲线产物可用，不作为 Phase 6 主比较结论。
 
-旧版一轮 main 与 1 x 1 曲线图产物已归档到 `ref/archive_v08_one_epoch_bad_curves/`；本报告对应重新生成后的 smoke 输出。
+旧版一轮 main 与 1 x 1 曲线图产物已从主仓移除；本报告对应重新生成后的 smoke 输出。
 
 ## Smoke 结果摘要
 

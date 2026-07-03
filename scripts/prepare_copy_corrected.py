@@ -11,7 +11,7 @@ from typing import Any
 
 from graph_diagnostics import certificate_for_artifact
 from graph_structures import build_graph_artifact
-from probe_common import file_sha256, write_json
+from probe_common import file_sha256, iter_set_bits, write_json
 from probe_tasks import identity_integer_encoder
 from synthetic_mvp_core.artifacts import (
     build_method_counts,
@@ -109,13 +109,6 @@ def write_graph(output_root: Path) -> dict[str, Any]:
         "selected_graph_path": str(selected),
         "selected_graph_sha256": selected_sha,
     }
-
-
-def iter_set_bits(value: int):
-    while value:
-        low = value & -value
-        yield low.bit_length() - 1
-        value ^= low
 
 
 def rows_to_bits(rows: list[Counter[int]] | None, seq_len: int) -> list[int]:

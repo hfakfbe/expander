@@ -1,6 +1,0 @@
-{
-  "checkpoint_policy": "manifest_only_no_tensor_checkpoint",
-  "external_checkpoint_path": "not_applicable",
-  "retention_reason": "v08 first sweep records manifest only; no tensor checkpoint is written",
-  "tensor_checkpoints_written": []
-}

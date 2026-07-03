@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import shutil
@@ -11,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from graph_structures import load_graph_artifact
+from probe_common import file_sha256
 
 
 V07_GRAPH_GENERATION_ALGORITHM = "zigzag_v07_fixed_N1024_q32_B32_d8"
@@ -27,14 +27,6 @@ def read_json(path: Path) -> dict:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-
-
-def file_sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def git_commit(cwd: Path | None = None) -> str:

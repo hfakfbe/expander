@@ -2,11 +2,7 @@
 
 ## 0. 文档定位
 
-v0.8 接在 v0.7 之后，不再继续 copy/WikiText 两任务主线。v0.7 的配置、输出、日志、报告和轻量环境快照已归档到：
-
-```text
-ref/archive_v07_reports/
-```
+v0.8 接在 v0.7 之后，不再继续 copy/WikiText 两任务主线。v0.7 的配置、输出、日志、报告和轻量环境快照已移出主仓；主仓只保留当前可复现契约、必要配置和静态 graph/encoder artifact。
 
 v0.8 的唯一目标是：根据 `../expander_bench/data/probes/DEPLOYMENT_SUMMARY.md` 中已经验证通过的 6 个 probe 数据集，完成当前 expander/zigzag 代码对任务格式的适配、数据上传、每任务 smoke test、全量训练和评测。
 

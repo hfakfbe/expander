@@ -248,6 +248,4 @@ Training/eval outputs are written under the config's output_root, for example:
 outputs/copy_corrected_q32_B64_d32_l8_log5/runs/<trial_id>/<method>/seed0/
 ~~~
 
-Checkpoints are under checkpoints/ and are git-ignored. The JSON/CSV summaries, metrics, config snapshots, graph artifacts, and reports are kept as normal experiment artifacts.
-
-The v08/corrected-run archive index is in ref/archive_v08_complete_20260622/. Large local tarball payloads under ref/archive_v08_complete_*/snapshots/*.tar.gz are intentionally ignored by git; the archive README, file lists, and checksums are tracked.
+Checkpoints, logs, per-run JSON/CSV summaries, metrics, and config snapshots are generated artifacts and are git-ignored. Static graph/encoder artifacts that configs need to run may remain tracked under `outputs/`.

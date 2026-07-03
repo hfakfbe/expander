@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from graph_structures import build_graph_artifact
-from probe_common import file_sha256, write_json
+from probe_common import file_sha256, iter_set_bits, write_json
 from probe_tasks import build_listops_encoder, integer_encoder
 from synthetic_mvp_core.artifacts import build_method_counts, build_random_remote_rows_aligned_to_zigzag_noncausal
 
@@ -182,13 +182,6 @@ def write_graph(task: str, raw_t: int, block_size: int, output_root: Path) -> di
         "selected_graph_path": str(selected),
         "selected_graph_sha256": selected_sha,
     }
-
-
-def iter_set_bits(value: int):
-    while value:
-        low = value & -value
-        yield low.bit_length() - 1
-        value ^= low
 
 
 def rows_to_bits(rows: list[Counter[int]] | None, seq_len: int) -> list[int]:

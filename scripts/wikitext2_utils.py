@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import shutil
@@ -16,6 +15,7 @@ import torch
 import torch.nn.functional as F
 
 from graph_structures import load_graph_artifact
+from probe_common import file_sha256
 from v07_artifacts import materialize_graph_artifact
 from synthetic_mvp import (
     Transformer,
@@ -100,14 +100,6 @@ def write_csv(path: Path, rows: list[dict], fieldnames: list[str]) -> None:
         )
         writer.writeheader()
         writer.writerows(rows)
-
-
-def file_sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
 
 def command_string() -> str:

@@ -17,6 +17,7 @@ from graph_structures import (
     load_graph_artifact,
     validate_graph_config,
 )
+from probe_common import deep_merge
 from v07_artifacts import materialize_graph_artifact
 
 from .data import canonical_task_name, copy_source_length_from_total, padded_copy_lengths
@@ -80,15 +81,6 @@ def parse_csv_ints(value: str) -> list[int]:
 
 def parse_csv_strings(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
-
-def deep_merge(base: dict, override: dict) -> dict:
-    out = copy.deepcopy(base)
-    for key, value in override.items():
-        if isinstance(value, dict) and isinstance(out.get(key), dict):
-            out[key] = deep_merge(out[key], value)
-        else:
-            out[key] = copy.deepcopy(value)
-    return out
 
 def file_sha256(path: Path | None) -> str:
     if path is None:

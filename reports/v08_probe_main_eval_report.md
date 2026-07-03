@@ -4,7 +4,7 @@
 
 Phase 6 已按 `configs/probes_v08_main.json` 和 `configs/probes_v08_task_parameters.json` 重新执行完整 main train + eval。主实验覆盖 6 个 task、3 个 required methods、seed 0，共 18 个 run；聚合结果为 `status=ok`、`completed_runs=18`、`expected_runs=18`、`result_field_audits_passed=18`、`result_field_audits_total=18`。
 
-这次 main 不再是一轮 full-train sweep，而是 Phase 4 冻结的 5 个 train-equivalent epochs。对应训练样本数为：copy 50000、selective_copy 50000、niah_kv_retrieval 50000、ruler 60000、induction_associative_recall 900000、lra_listops 480000。旧版一轮训练与 1 x 1 空白曲线图产物已归档到 `ref/archive_v08_one_epoch_bad_curves/`。
+这次 main 不再是一轮 full-train sweep，而是 Phase 4 冻结的 5 个 train-equivalent epochs。对应训练样本数为：copy 50000、selective_copy 50000、niah_kv_retrieval 50000、ruler 60000、induction_associative_recall 900000、lra_listops 480000。旧版一轮训练与 1 x 1 空白曲线图产物已从主仓移除。
 
 结果上，lra_listops 学到了可见信号，zigzag_certified 的 `listops_accuracy=0.383`；niah_kv_retrieval 有低水平 retrieval exact match；copy、induction_associative_recall 和 ruler 仍未学起来。该结论比上一版更可靠，因为训练预算、random budget 和曲线图 gate 都已通过审计。
 

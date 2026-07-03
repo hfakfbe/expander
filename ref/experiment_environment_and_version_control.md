@@ -230,4 +230,4 @@ config snapshot
 是否需要改代码
 ```
 
-旧版本 outputs、reports、logs、configs 和轻量 dataset/env 元数据应归档到 `ref/archive_<version>_reports/` 并进入 git；checkpoint/tensor 大文件不进入 git，但归档 README 必须记录外部保存路径或删除原因。旧版本产物不得混入新版本主结果表。
+旧版本 outputs、reports、logs、临时 configs 和轻量 dataset/env 元数据不进入主仓；如确需长期留存，应放到仓库外部的实验记录系统，并在当前报告中只保留可复现命令、核心结论和必要校验 hash。旧版本产物不得混入新版本主结果表。

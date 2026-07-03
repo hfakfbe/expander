@@ -3,10 +3,10 @@ from __future__ import annotations
 import csv
 import json
 import math
-import struct
-import zlib
 from pathlib import Path
 from collections.abc import Iterable
+
+from png_utils import draw_line, write_png_rgb
 
 from .artifacts import RESULT_FIELDS
 
@@ -104,30 +104,6 @@ _FONT_3X5 = {
 }
 
 
-def _write_png_rgb(path: Path, width: int, height: int, pixels: bytearray) -> None:
-    def chunk(name: bytes, payload: bytes) -> bytes:
-        return (
-            struct.pack(">I", len(payload))
-            + name
-            + payload
-            + struct.pack(">I", zlib.crc32(name + payload) & 0xFFFFFFFF)
-        )
-
-    raw = bytearray()
-    stride = width * 3
-    for y in range(height):
-        raw.append(0)
-        raw.extend(pixels[y * stride : (y + 1) * stride])
-    payload = (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(bytes(raw), level=6))
-        + chunk(b"IEND", b"")
-    )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(payload)
-
-
 def _fallback_training_curves_png(
     metrics_rows: list[dict],
     output_path: Path,
@@ -145,24 +121,6 @@ def _fallback_training_curves_png(
         if 0 <= x < width and 0 <= y < height:
             idx = (y * width + x) * 3
             pixels[idx : idx + 3] = bytes(color)
-
-    def line(x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]) -> None:
-        dx = abs(x1 - x0)
-        dy = -abs(y1 - y0)
-        sx = 1 if x0 < x1 else -1
-        sy = 1 if y0 < y1 else -1
-        err = dx + dy
-        while True:
-            put(x0, y0, color)
-            if x0 == x1 and y0 == y1:
-                break
-            e2 = 2 * err
-            if e2 >= dy:
-                err += dy
-                x0 += sx
-            if e2 <= dx:
-                err += dx
-                y0 += sy
 
     def text(x: int, y: int, value: str, color: tuple[int, int, int], scale: int = 2) -> None:
         cursor = x
@@ -183,8 +141,8 @@ def _fallback_training_curves_png(
         left, top = ox + 48, oy + 36
         right, bottom = ox + panel_w - 24, oy + panel_h - 32
         text(ox + 16, oy + 12, title[:28], (30, 30, 30))
-        line(left, bottom, right, bottom, (40, 40, 40))
-        line(left, top, left, bottom, (40, 40, 40))
+        draw_line(put, left, bottom, right, bottom, (40, 40, 40))
+        draw_line(put, left, top, left, bottom, (40, 40, 40))
         values = []
         for row in metrics_rows:
             try:
@@ -208,7 +166,7 @@ def _fallback_training_curves_png(
             y = bottom - round((value - vmin) * (bottom - top) / (vmax - vmin))
             points.append((x, y))
         for (x0, y0), (x1, y1) in zip(points, points[1:]):
-            line(x0, y0, x1, y1, (31, 119, 180))
+            draw_line(put, x0, y0, x1, y1, (31, 119, 180))
         for x, y in points:
             for dy in range(-2, 3):
                 for dx in range(-2, 3):
@@ -216,7 +174,7 @@ def _fallback_training_curves_png(
         text(left, bottom + 8, f"{smin}-{smax}", (70, 70, 70), scale=1)
         text(left, top - 12, f"{vmax:.3g}", (70, 70, 70), scale=1)
         text(left, bottom - 8, f"{vmin:.3g}", (70, 70, 70), scale=1)
-    _write_png_rgb(output_path, width, height, pixels)
+    write_png_rgb(output_path, width, height, pixels)
 
 
 def plot_training_curves(metrics_rows: list[dict], output_path: Path) -> None:

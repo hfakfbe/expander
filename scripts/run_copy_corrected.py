@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
-import io
 import json
 import math
 import os
@@ -23,6 +21,13 @@ import torch.nn.functional as F
 from probe_common import command_string, file_sha256, git_commit, git_dirty, read_json, write_command, write_json, write_jsonl
 from probe_metrics import aggregate_metric_rows, json_metric, masked_sequence_loss_sum, sequence_metrics
 from probe_tasks import JsonlStore, ProbeTransformer, load_encoder, make_probe_batch, parameter_count
+from runtime_common import (
+    epoch_coverage,
+    select_device,
+    state_dict_sha256,
+    tensor_checkpoint_sha256,
+    write_checkpoint_manifest,
+)
 from run_probe_experiment import schedule_lr
 from synthetic_mvp_core.artifacts import (
     attention_artifacts_to_device,
@@ -94,20 +99,6 @@ def set_all_seeds(seed: int) -> dict[str, Any]:
     }
 
 
-def state_dict_sha256(model: torch.nn.Module) -> str:
-    buffer = io.BytesIO()
-    torch.save(model.state_dict(), buffer)
-    return hashlib.sha256(buffer.getvalue()).hexdigest()
-
-
-def tensor_checkpoint_sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as fp:
-        for chunk in iter(lambda: fp.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def load_config(path: Path) -> dict[str, Any]:
     return read_json(path)
 
@@ -132,35 +123,11 @@ def task_record(manifest: dict[str, Any]) -> dict[str, Any]:
     return record
 
 
-def select_device(requested: str) -> torch.device:
-    if requested == "cuda":
-        return torch.device("cuda")
-    if requested == "cpu":
-        return torch.device("cpu")
-    if requested == "mps":
-        return torch.device("mps")
-    if torch.cuda.is_available():
-        return torch.device("cuda")
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return torch.device("mps")
-    return torch.device("cpu")
-
-
 def deterministic_permutation(n: int, data_seed: int, epoch: int) -> list[int]:
     indices = list(range(int(n)))
     rng = random.Random(f"copy_corrected_v01|data|{int(data_seed)}|epoch|{int(epoch)}")
     rng.shuffle(indices)
     return indices
-
-
-def epoch_coverage(indices: list[int], n: int) -> dict[str, int]:
-    counts = Counter(indices)
-    return {
-        "draw_count": len(indices),
-        "unique_count": len(counts),
-        "never_seen": int(n) - len(counts),
-        "max_repeat_count": max(counts.values()) if counts else 0,
-    }
 
 
 def run_dir_for(config: dict[str, Any], method: str, seed: int, mode: str = "train") -> Path:
@@ -1736,18 +1703,6 @@ def make_checkpoint(
         "micro_step": int(micro_step),
         "permutation_position": int(permutation_position),
     }
-
-
-def write_checkpoint_manifest(run_dir: Path, checkpoints: list[dict[str, Any]], policy: str) -> None:
-    write_json(
-        run_dir / "checkpoint_manifest.json",
-        {
-            "checkpoint_policy": policy,
-            "tensor_checkpoints_written": checkpoints,
-            "latest_checkpoint": checkpoints[-1] if checkpoints else None,
-            "checkpoint_files_git_ignored": True,
-        },
-    )
 
 
 def train_loop(
