@@ -1,0 +1,15 @@
+{
+  "name": "selective_copy",
+  "dataset_root": "datasets/selective_copy",
+  "train_split": "train",
+  "eval_split": "test",
+  "vocab_size": 16,
+  "output_size": 16,
+  "sequence_length": 4128,
+  "target_length": 16,
+  "loss_type": "sequence",
+  "pad_token_id": 0,
+  "marker_token_id": 15,
+  "source_length": null
+}
+

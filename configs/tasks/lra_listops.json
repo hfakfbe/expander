@@ -1,0 +1,15 @@
+{
+  "name": "lra_listops",
+  "dataset_root": "datasets/lra_listops",
+  "train_split": "train",
+  "eval_split": "test",
+  "vocab_size": 18,
+  "output_size": 10,
+  "sequence_length": 5995,
+  "target_length": 1,
+  "loss_type": "classification",
+  "pad_token_id": 0,
+  "marker_token_id": null,
+  "source_length": null
+}
+

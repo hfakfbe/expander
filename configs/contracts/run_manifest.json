@@ -1,0 +1,15 @@
+{
+  "required_fields": [
+    "created_at",
+    "git_commit",
+    "git_dirty",
+    "command",
+    "task",
+    "method",
+    "final_config",
+    "config_sha256",
+    "dataset_sha256",
+    "graph_artifact_sha256"
+  ]
+}
+

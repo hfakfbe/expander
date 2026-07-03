@@ -1,0 +1,12 @@
+{
+  "required_fields": [
+    "schema",
+    "layer_index",
+    "method",
+    "seq_len",
+    "edges",
+    "diagnostics",
+    "artifact_id"
+  ]
+}
+

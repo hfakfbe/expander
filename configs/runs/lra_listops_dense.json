@@ -1,0 +1,102 @@
+{
+  "task": {
+    "name": "lra_listops",
+    "dataset_root": "datasets/lra_listops",
+    "train_split": "train",
+    "eval_split": "test",
+    "vocab_size": 18,
+    "output_size": 10,
+    "sequence_length": 5995,
+    "target_length": 1,
+    "loss_type": "classification",
+    "pad_token_id": 0,
+    "marker_token_id": null,
+    "source_length": null
+  },
+  "model": {
+    "num_layers": 1,
+    "dim": 8,
+    "dim_ffn": 16,
+    "num_heads": 1,
+    "activation": "gelu",
+    "dropout": 0.0,
+    "attention_dropout": 0.0,
+    "norm_type": "layernorm",
+    "positional_encoding": "rope",
+    "rope": {
+      "enabled": true,
+      "theta": 10000.0
+    }
+  },
+  "training": {
+    "learning_rate": 0.0003,
+    "warmup_steps": 0,
+    "scheduler": "constant",
+    "min_learning_rate": 0.0,
+    "weight_decay": 0.0,
+    "optimizer": "adamw",
+    "max_steps": 1,
+    "epochs": null,
+    "batch_size": 1,
+    "minibatch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "log_step": 1,
+    "eval_interval": 1,
+    "checkpoint_interval": 1,
+    "seed": 0,
+    "device": "cpu",
+    "dtype": "float32",
+    "amp": false,
+    "grad_clip_norm": 0.0,
+    "resume_checkpoint": null,
+    "shuffle_buffer_size": 64,
+    "eval_batches": 1,
+    "final_eval_batches": 1
+  },
+  "attention": {
+    "method": "dense",
+    "causal": false,
+    "local_mode": "sliding_window",
+    "local_window_size": 64,
+    "include_local_edges": true,
+    "per_layer_random": false,
+    "graph_seed": 0,
+    "per_layer_graph_seeds": null,
+    "q": 1,
+    "B": 5995,
+    "d": 4,
+    "density": null,
+    "graph_artifact_root": "outputs/artifacts/lra_listops_dense",
+    "graph_artifact_policy": "regenerate",
+    "random_regular": {
+      "degree": 8,
+      "density": null
+    },
+    "random_memory": {
+      "degree": 8,
+      "density": null,
+      "route_stride": 1,
+      "route_multiplicity": 1,
+      "memory_mode": "memory_replace",
+      "memory_scale": 1.0
+    },
+    "zigzag_logm": {
+      "use_multiplicity_logm": true
+    },
+    "zigzag_boolean": {
+      "use_multiplicity_logm": false
+    }
+  },
+  "run": {
+    "output_root": "outputs/runs",
+    "run_id": "lra_listops_dense",
+    "save_checkpoints": true,
+    "save_graph_artifacts": false,
+    "save_metrics": true,
+    "save_manifest": true,
+    "manifest_path": null,
+    "config_sha256_required": null,
+    "dataset_sha256_required": null,
+    "resume_checkpoint": null
+  }
+}

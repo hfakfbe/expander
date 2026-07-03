@@ -1,0 +1,15 @@
+{
+  "name": "induction_associative_recall",
+  "dataset_root": "datasets/induction_associative_recall",
+  "train_split": "train",
+  "eval_split": "test",
+  "vocab_size": 8192,
+  "output_size": 8192,
+  "sequence_length": 64,
+  "target_length": 16,
+  "loss_type": "sequence",
+  "pad_token_id": 0,
+  "marker_token_id": null,
+  "source_length": null
+}
+

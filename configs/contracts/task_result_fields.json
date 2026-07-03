@@ -1,0 +1,25 @@
+{
+  "shared_fields": [
+    "loss",
+    "examples",
+    "tokens"
+  ],
+  "task_metric_fields": {
+    "copy": [
+      "copy_token_accuracy",
+      "copy_sequence_accuracy"
+    ],
+    "selective_copy": [
+      "selective_copy_token_accuracy",
+      "selective_copy_sequence_accuracy"
+    ],
+    "induction_associative_recall": [
+      "position_value_token_accuracy"
+    ],
+    "lra_listops": [
+      "listops_accuracy",
+      "listops_macro_accuracy"
+    ]
+  }
+}
+
