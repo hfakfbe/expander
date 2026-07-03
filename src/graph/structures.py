@@ -9,15 +9,6 @@ from typing import Iterable
 import torch
 
 
-@dataclass(frozen=True)
-class MemoryRoutes:
-    src: list[int]
-    dst: list[int]
-    mode: str
-    scale: float
-    multiplicity: int
-
-
 @dataclass
 class LayerGraph:
     layer_index: int
@@ -27,7 +18,6 @@ class LayerGraph:
     counts: list[Counter[int]] | None
     log_m: torch.Tensor | None
     seed: int | None
-    memory_routes: MemoryRoutes | None = None
 
 
 def apply_causal(mask: torch.Tensor, causal: bool) -> torch.Tensor:
@@ -167,21 +157,3 @@ def counts_from_edges(seq_len: int, edges: Iterable[tuple[int, int]]) -> list[Co
     for src, dst in edges:
         rows[int(src)][int(dst)] += 1
     return rows
-
-
-def memory_routes_for_layer(seq_len: int, route_stride: int, route_multiplicity: int, mode: str, scale: float) -> MemoryRoutes:
-    stride = int(route_stride)
-    if stride <= 0:
-        raise ValueError("random_memory.route_stride must be positive")
-    multiplicity = int(route_multiplicity)
-    if multiplicity <= 0:
-        raise ValueError("random_memory.route_multiplicity must be positive")
-    src: list[int] = []
-    dst: list[int] = []
-    for target in range(stride, seq_len):
-        for _ in range(multiplicity):
-            src.append(target - stride)
-            dst.append(target)
-    if mode not in {"memory_replace", "memory_residual"}:
-        raise ValueError("random_memory memory_mode must be memory_replace or memory_residual")
-    return MemoryRoutes(src=src, dst=dst, mode=mode, scale=float(scale), multiplicity=multiplicity)

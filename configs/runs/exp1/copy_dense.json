@@ -21,7 +21,7 @@
     "activation": "gelu",
     "dropout": 0.0,
     "attention_dropout": 0.0,
-    "norm_type": "layernorm",
+    "norm_type": "rmsnorm",
     "positional_encoding": "rope",
     "rope": {
       "enabled": true,
@@ -35,11 +35,11 @@
     "min_learning_rate": 0.0,
     "weight_decay": 0.1,
     "optimizer": "adamw",
-    "max_steps": 1,
-    "epochs": null,
-    "batch_size": 8,
-    "minibatch_size": 1,
-    "gradient_accumulation_steps": 8,
+    "max_steps": 5000,
+    "epochs": 2,
+    "batch_size": 32,
+    "minibatch_size": 32,
+    "gradient_accumulation_steps": 1,
     "log_step": 10,
     "eval_interval": 10,
     "checkpoint_interval": 1,
@@ -51,7 +51,7 @@
     "resume_checkpoint": null,
     "shuffle_buffer_size": 64,
     "eval_batches": 1,
-    "final_eval_batches": 1
+    "final_eval_batches": 32
   },
   "attention": {
     "method": "dense",
@@ -66,7 +66,7 @@
     "B": 64,
     "d": 4,
     "density": null,
-    "graph_artifact_root": "outputs/artifacts/copy_dense",
+    "graph_artifact_root": "outputs/artifacts/exp1/copy_dense",
     "graph_artifact_policy": "regenerate",
     "random_regular": {
       "degree": 8,
@@ -80,7 +80,7 @@
     }
   },
   "run": {
-    "output_root": "outputs/runs",
+    "output_root": "outputs/runs/exp1",
     "run_id": "copy_dense",
     "save_checkpoints": true,
     "save_graph_artifacts": false,

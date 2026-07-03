@@ -32,14 +32,6 @@ def layer_graph_to_artifact(graph: LayerGraph, diagnostics: dict) -> dict[str, A
             for src, counts in enumerate(graph.counts)
             for dst, value in counts.items()
         ]
-    if graph.memory_routes is not None:
-        payload["memory_routes"] = {
-            "src": graph.memory_routes.src,
-            "dst": graph.memory_routes.dst,
-            "mode": graph.memory_routes.mode,
-            "scale": graph.memory_routes.scale,
-            "multiplicity": graph.memory_routes.multiplicity,
-        }
     payload["artifact_id"] = "graph_" + sha256_json(payload)[:16]
     return payload
 

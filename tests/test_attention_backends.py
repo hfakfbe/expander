@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,9 +8,8 @@ import torch
 
 from src.graph.generation import build_layer_graphs
 from src.graph.structures import apply_causal
-from src.model.attention import apply_memory_routes
 from src.model.backends import build_backend_bundle
-from src.model.transformer import SequenceTransformer, model_config_from_resolved
+from src.model.transformer import MemoryRolloutConfig, SequenceTransformer, model_config_from_resolved, rollout_memory_update
 
 
 def tiny_config(method: str) -> dict:
@@ -83,16 +81,16 @@ def tiny_config(method: str) -> dict:
             "graph_artifact_root": "unused",
             "graph_artifact_policy": "regenerate",
             "random_regular": {"degree": 3, "density": None},
-            "random_memory": {
-                "degree": 3,
-                "density": None,
-                "route_stride": 4,
-                "route_multiplicity": 1,
-                "memory_mode": "memory_replace",
-                "memory_scale": 1.0,
-            },
             "zigzag_logm": {"use_multiplicity_logm": True},
             "zigzag_boolean": {"use_multiplicity_logm": False},
+        },
+        "memory_rollout": {
+            "enabled": False,
+            "alpha": 0.5,
+            "injection_scale": 2.0,
+            "head_merge": "mean",
+            "update": "lazy",
+            "initial_state": "input",
         },
         "run": {
             "output_root": "unused",
@@ -114,7 +112,7 @@ class AttentionBackendTests(unittest.TestCase):
         outputs = {}
         tokens = torch.arange(32, dtype=torch.long).reshape(2, 16) % 16
         pad_mask = torch.ones((2, 16), dtype=torch.bool)
-        for method in ["dense", "local", "random_regular", "random_memory", "zigzag_logm", "zigzag_boolean"]:
+        for method in ["dense", "local", "random_regular", "zigzag_logm", "zigzag_boolean"]:
             config = tiny_config(method)
             graphs = build_layer_graphs(config, torch.device("cpu"))
             bundle = build_backend_bundle(graphs, 0.0)
@@ -159,13 +157,58 @@ class AttentionBackendTests(unittest.TestCase):
         self.assertIsNone(boolean.log_m)
         self.assertEqual(max(value for counts in boolean.counts for value in counts.values()), 1)
 
-    def test_random_memory_routes_are_applied(self) -> None:
-        graph = build_layer_graphs(tiny_config("random_memory"), torch.device("cpu"))[0]
-        self.assertIsNotNone(graph.memory_routes)
-        hidden = torch.arange(1 * 16 * 2, dtype=torch.float32).reshape(1, 16, 2)
-        routed = apply_memory_routes(hidden, graph.memory_routes)
-        self.assertTrue(torch.equal(routed[:, 4, :], hidden[:, 0, :]))
-        self.assertTrue(torch.equal(routed[:, 15, :], hidden[:, 11, :]))
+    def test_memory_rollout_update_matches_formula(self) -> None:
+        memory = torch.tensor([[[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]]])
+        head_a = torch.tensor(
+            [
+                [1.0, 0.0, 0.0],
+                [0.25, 0.75, 0.0],
+                [0.0, 0.5, 0.5],
+            ]
+        )
+        head_b = torch.tensor(
+            [
+                [0.5, 0.5, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.25, 0.25, 0.5],
+            ]
+        )
+        transition = torch.stack([head_a, head_b], dim=0).unsqueeze(0)
+        config = MemoryRolloutConfig(
+            enabled=True,
+            alpha=0.5,
+            injection_scale=2.0,
+            head_merge="mean",
+            update="lazy",
+            initial_state="input",
+        )
+        expected = 0.5 * memory + 0.5 * torch.matmul((head_a + head_b).unsqueeze(0) / 2.0, memory)
+        self.assertTrue(torch.allclose(rollout_memory_update(memory, transition, config), expected))
+
+    def test_memory_rollout_runs_with_zigzag(self) -> None:
+        config = tiny_config("zigzag_logm")
+        config["memory_rollout"]["enabled"] = True
+        graphs = build_layer_graphs(config, torch.device("cpu"))
+        bundle = build_backend_bundle(graphs, 0.0)
+        model = SequenceTransformer(model_config_from_resolved(config))
+        tokens = torch.arange(32, dtype=torch.long).reshape(2, 16) % 16
+        pad_mask = torch.ones((2, 16), dtype=torch.bool)
+        token_logits, _, memory_state = model(tokens, pad_mask, bundle, return_memory=True)
+        self.assertEqual(tuple(token_logits.shape), (2, 16, 16))
+        self.assertIsNotNone(memory_state)
+        self.assertEqual(tuple(memory_state.shape), (2, 16, 16))
+        self.assertEqual(bundle.backends[0].kind, "zigzag_logm")
+
+    def test_rmsnorm_forward_path(self) -> None:
+        config = tiny_config("local")
+        config["model"]["norm_type"] = "rmsnorm"
+        graphs = build_layer_graphs(config, torch.device("cpu"))
+        bundle = build_backend_bundle(graphs, 0.0)
+        model = SequenceTransformer(model_config_from_resolved(config))
+        tokens = torch.arange(32, dtype=torch.long).reshape(2, 16) % 16
+        pad_mask = torch.ones((2, 16), dtype=torch.bool)
+        token_logits, _ = model(tokens, pad_mask, bundle)
+        self.assertEqual(tuple(token_logits.shape), (2, 16, 16))
 
     def test_missing_reused_artifact_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -178,4 +221,3 @@ class AttentionBackendTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

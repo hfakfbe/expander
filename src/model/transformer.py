@@ -5,9 +5,18 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 
-from src.model.attention import apply_memory_routes
 from src.model.backends import BackendBundle
 from src.model.rotary import RotaryEmbedding, apply_rotary_pos_emb
+
+
+@dataclass(frozen=True)
+class MemoryRolloutConfig:
+    enabled: bool
+    alpha: float
+    injection_scale: float
+    head_merge: str
+    update: str
+    initial_state: str
 
 
 @dataclass(frozen=True)
@@ -26,6 +35,7 @@ class ModelConfig:
     sequence_length: int
     use_rope: bool
     rope_theta: float
+    memory_rollout: MemoryRolloutConfig
     class_count: int | None = None
 
 
@@ -59,6 +69,20 @@ def make_activation(name: str) -> nn.Module:
     raise ValueError(f"unknown activation={name!r}")
 
 
+def rollout_memory_update(
+    memory_state: torch.Tensor,
+    head_transition: torch.Tensor,
+    config: MemoryRolloutConfig,
+) -> torch.Tensor:
+    if config.head_merge != "mean":
+        raise ValueError(f"unknown memory_rollout head_merge={config.head_merge!r}")
+    if config.update != "lazy":
+        raise ValueError(f"unknown memory_rollout update={config.update!r}")
+    transition = head_transition.mean(dim=1)
+    carried = torch.matmul(transition, memory_state)
+    return float(config.alpha) * memory_state + (1.0 - float(config.alpha)) * carried
+
+
 class TransformerBlock(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
@@ -80,7 +104,13 @@ class TransformerBlock(nn.Module):
         )
         self.rotary = RotaryEmbedding(self.head_dim, config.rope_theta) if config.use_rope else None
 
-    def forward(self, x: torch.Tensor, backend) -> torch.Tensor:
+    def forward(
+        self,
+        x: torch.Tensor,
+        backend,
+        memory_state: torch.Tensor | None,
+        memory_config: MemoryRolloutConfig,
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
         h = self.norm1(x)
         batch, seq_len, dim = h.shape
         qkv = self.qkv(h).view(batch, seq_len, 3, self.num_heads, self.head_dim)
@@ -91,11 +121,16 @@ class TransformerBlock(nn.Module):
         if self.rotary is not None:
             cos, sin = self.rotary(seq_len, q.device, q.dtype)
             q, k = apply_rotary_pos_emb(q, k, cos, sin)
-        attn = backend(q, k, v).transpose(1, 2).contiguous().view(batch, seq_len, dim)
+        transition = backend.transition(q, k)
+        attn = torch.matmul(backend.dropout(transition), v).transpose(1, 2).contiguous().view(batch, seq_len, dim)
         x = x + self.dropout(self.out(attn))
-        x = apply_memory_routes(x, backend.memory_routes)
-        x = x + self.ffn(self.norm2(x))
-        return x
+        hidden = x + self.ffn(self.norm2(x))
+        if memory_config.enabled:
+            if memory_state is None:
+                raise ValueError("memory_state is required when memory_rollout is enabled")
+            memory_state = rollout_memory_update(memory_state, transition, memory_config)
+            hidden = hidden + float(memory_config.injection_scale) * memory_state
+        return hidden, memory_state
 
 
 class SequenceTransformer(nn.Module):
@@ -112,15 +147,25 @@ class SequenceTransformer(nn.Module):
         self.token_head = nn.Linear(config.dim, config.output_size)
         self.class_head = nn.Linear(config.dim, config.class_count) if config.class_count is not None else None
 
-    def forward(self, tokens: torch.Tensor, pad_mask: torch.Tensor, backends: BackendBundle) -> tuple[torch.Tensor, torch.Tensor | None]:
+    def forward(
+        self,
+        tokens: torch.Tensor,
+        pad_mask: torch.Tensor,
+        backends: BackendBundle,
+        *,
+        return_memory: bool = False,
+    ) -> tuple[torch.Tensor, torch.Tensor | None] | tuple[torch.Tensor, torch.Tensor | None, torch.Tensor | None]:
         if len(backends) != len(self.blocks):
             raise ValueError("backend count must equal model layers")
         h = self.token(tokens)
         if self.position is not None:
             positions = torch.arange(tokens.shape[1], device=tokens.device)
             h = h + self.position(positions)[None, :, :]
+        if self.config.memory_rollout.enabled and self.config.memory_rollout.initial_state != "input":
+            raise ValueError(f"unknown memory_rollout initial_state={self.config.memory_rollout.initial_state!r}")
+        memory_state = h if self.config.memory_rollout.enabled else None
         for block, backend in zip(self.blocks, backends.backends):
-            h = block(h, backend)
+            h, memory_state = block(h, backend, memory_state, self.config.memory_rollout)
         h = self.norm(h)
         token_logits = self.token_head(h)
         class_logits = None
@@ -128,6 +173,8 @@ class SequenceTransformer(nn.Module):
             mask = pad_mask.to(dtype=h.dtype).unsqueeze(-1)
             pooled = (h * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
             class_logits = self.class_head(pooled)
+        if return_memory:
+            return token_logits, class_logits, memory_state
         return token_logits, class_logits
 
 
@@ -135,6 +182,7 @@ def model_config_from_resolved(config: dict) -> ModelConfig:
     model = config["model"]
     task = config["task"]
     rope = model.get("rope", {})
+    memory = config["memory_rollout"]
     class_count = int(task["output_size"]) if task.get("loss_type") == "classification" else None
     return ModelConfig(
         vocab_size=int(task["vocab_size"]),
@@ -151,6 +199,13 @@ def model_config_from_resolved(config: dict) -> ModelConfig:
         sequence_length=int(task["sequence_length"]),
         use_rope=bool(rope.get("enabled", False)) or str(model["positional_encoding"]) == "rope",
         rope_theta=float(rope.get("theta", 10000.0)),
+        memory_rollout=MemoryRolloutConfig(
+            enabled=bool(memory["enabled"]),
+            alpha=float(memory["alpha"]),
+            injection_scale=float(memory["injection_scale"]),
+            head_merge=str(memory["head_merge"]),
+            update=str(memory["update"]),
+            initial_state=str(memory["initial_state"]),
+        ),
         class_count=class_count,
     )
-

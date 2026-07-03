@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import shlex
 import time
@@ -52,21 +53,39 @@ def _command_string(argv: list[str] | None) -> str:
     return " ".join(shlex.quote(item) for item in argv)
 
 
-def _step_rows(dataset: JsonlDataset, config: dict[str, Any], micro_step: int) -> list[dict]:
+def _microbatches_per_epoch(example_count: int, minibatch_size: int) -> int:
+    if int(example_count) <= 0:
+        raise ValueError("train split is empty")
+    return max(1, math.ceil(int(example_count) / int(minibatch_size)))
+
+
+def _epoch_limited_steps(config: dict[str, Any], example_count: int) -> tuple[int, int | None]:
+    max_steps = int(config["training"]["max_steps"])
+    epochs = config["training"].get("epochs")
+    if epochs is None:
+        return max_steps, None
+    batch_size = int(config["training"]["batch_size"])
+    steps_per_epoch = max(1, math.ceil(int(example_count) / batch_size))
+    epoch_steps = max(1, math.ceil(float(epochs) * steps_per_epoch))
+    return min(max_steps, epoch_steps), epoch_steps
+
+
+def _step_rows(dataset: JsonlDataset, config: dict[str, Any], micro_step: int, *, train_count: int | None = None) -> list[dict]:
     batch_size = int(config["training"]["minibatch_size"])
     seed = int(config["training"]["seed"])
     buffer_size = int(config["training"].get("shuffle_buffer_size", 4096))
-    needed_start = int(micro_step) * batch_size
+    example_count = dataset.count() if train_count is None else int(train_count)
+    microbatches = _microbatches_per_epoch(example_count, batch_size)
+    epoch_index = int(micro_step) // microbatches
+    epoch_micro_step = int(micro_step) % microbatches
+    needed_start = epoch_micro_step * batch_size
     rows: list[dict] = []
     seen = 0
-    for batch in dataset.batches(batch_size, shuffle=True, seed=seed, buffer_size=buffer_size):
+    for batch in dataset.batches(batch_size, shuffle=True, seed=seed + epoch_index, buffer_size=buffer_size):
         if seen >= needed_start:
             rows = batch
             break
         seen += len(batch)
-    if not rows:
-        iterator = dataset.batches(batch_size, shuffle=True, seed=seed + micro_step + 1, buffer_size=buffer_size)
-        rows = next(iterator)
     return rows
 
 
@@ -156,6 +175,12 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
     spec = task_spec_from_config(config)
     train_data = load_split(spec, spec.train_split)
     eval_data = load_split(spec, spec.eval_split)
+    train_count = train_data.count()
+    max_steps, epoch_limited_steps = _epoch_limited_steps(config, train_count)
+    schedule_config = config
+    if max_steps != int(config["training"]["max_steps"]):
+        schedule_config = json.loads(json.dumps(config))
+        schedule_config["training"]["max_steps"] = max_steps
     model, backends, graphs = build_runtime(config, device)
     if str(config["training"]["optimizer"]) != "adamw":
         raise ValueError("only adamw optimizer is supported")
@@ -184,7 +209,6 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
     loss_fn = get_loss(spec.name)
     batcher = get_batcher(spec.name)
     started = time.perf_counter()
-    max_steps = int(config["training"]["max_steps"])
     grad_accum = int(config["training"]["gradient_accumulation_steps"])
     last_metrics: dict[str, Any] = {}
     for step in range(start_step + 1, max_steps + 1):
@@ -194,7 +218,7 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
         example_count = 0
         for accum_index in range(grad_accum):
             micro_step = (step - 1) * grad_accum + accum_index
-            rows = _step_rows(train_data, config, micro_step)
+            rows = _step_rows(train_data, config, micro_step, train_count=train_count)
             batch = batcher(rows, spec, device)
             token_logits, class_logits = model(batch.tokens, batch.pad_mask, backends)
             loss, metrics = loss_fn(token_logits, class_logits, batch, spec)
@@ -206,7 +230,7 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
         grad_clip = float(config["training"]["grad_clip_norm"])
         if grad_clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
-        lr = learning_rate(config, step)
+        lr = learning_rate(schedule_config, step)
         apply_learning_rate(optimizer, lr)
         optimizer.step()
         should_eval = step == 1 or step % int(config["training"]["eval_interval"]) == 0 or step == max_steps
@@ -251,9 +275,12 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
         "mode": "train",
         "status": "ok",
         "final_step": max_steps,
+        "requested_max_steps": int(config["training"]["max_steps"]),
         "train_elapsed_sec": time.perf_counter() - started,
         **final_metrics,
     }
+    if epoch_limited_steps is not None:
+        final["epoch_limited_steps"] = epoch_limited_steps
     write_final_metrics(output_dir / "final_metrics.json", final)
     manifest = build_run_manifest(
         config=config,

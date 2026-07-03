@@ -15,7 +15,6 @@ METHODS = {
     "dense",
     "local",
     "random_regular",
-    "random_memory",
     "zigzag_logm",
     "zigzag_boolean",
 }
@@ -23,10 +22,15 @@ METHODS = {
 SCHEDULERS = {"constant", "cosine"}
 OPTIMIZERS = {"adamw"}
 LOCAL_MODES = {"sliding_window"}
+NORM_TYPES = {"layernorm", "rmsnorm", "none"}
 
 ALLOWED_CLI_OVERRIDES = {
     "task.name",
     "attention.method",
+    "model.norm_type",
+    "memory_rollout.enabled",
+    "memory_rollout.alpha",
+    "memory_rollout.injection_scale",
     "training.max_steps",
     "training.epochs",
     "training.seed",
@@ -85,6 +89,12 @@ REQUIRED_FIELDS = (
     "attention.density",
     "attention.graph_artifact_root",
     "attention.graph_artifact_policy",
+    "memory_rollout.enabled",
+    "memory_rollout.alpha",
+    "memory_rollout.injection_scale",
+    "memory_rollout.head_merge",
+    "memory_rollout.update",
+    "memory_rollout.initial_state",
     "run.output_root",
     "run.run_id",
     "run.save_checkpoints",
@@ -113,20 +123,20 @@ SCHEMA_DEFAULTS: dict[str, Any] = {
             "degree": None,
             "density": None,
         },
-        "random_memory": {
-            "degree": None,
-            "density": None,
-            "route_stride": 1,
-            "route_multiplicity": 1,
-            "memory_mode": "memory_replace",
-            "memory_scale": 1.0,
-        },
         "zigzag_logm": {
             "use_multiplicity_logm": True,
         },
         "zigzag_boolean": {
             "use_multiplicity_logm": False,
         },
+    },
+    "memory_rollout": {
+        "enabled": False,
+        "alpha": 0.5,
+        "injection_scale": 2.0,
+        "head_merge": "mean",
+        "update": "lazy",
+        "initial_state": "input",
     },
     "run": {
         "manifest_path": None,
@@ -165,4 +175,3 @@ def deep_merge(base: dict[str, Any], update: dict[str, Any]) -> dict[str, Any]:
         else:
             out[key] = deepcopy(value)
     return out
-

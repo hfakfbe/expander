@@ -96,16 +96,16 @@ def tiny_config(tmp: Path, run_id: str, max_steps: int = 2) -> dict:
             "graph_artifact_root": str(tmp / "graphs" / run_id),
             "graph_artifact_policy": "regenerate",
             "random_regular": {"degree": 2, "density": None},
-            "random_memory": {
-                "degree": 2,
-                "density": None,
-                "route_stride": 4,
-                "route_multiplicity": 1,
-                "memory_mode": "memory_replace",
-                "memory_scale": 1.0,
-            },
             "zigzag_logm": {"use_multiplicity_logm": True},
             "zigzag_boolean": {"use_multiplicity_logm": False},
+        },
+        "memory_rollout": {
+            "enabled": False,
+            "alpha": 0.5,
+            "injection_scale": 2.0,
+            "head_merge": "mean",
+            "update": "lazy",
+            "initial_state": "input",
         },
         "run": {
             "output_root": str(tmp / "runs"),
@@ -152,6 +152,18 @@ class TrainingRuntimeTests(unittest.TestCase):
             for key in full_state:
                 self.assertTrue(torch.allclose(full_state[key], resumed_state[key]), key)
 
+    def test_epochs_limit_training_steps(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_name:
+            tmp = Path(tmp_name)
+            config = tiny_config(tmp, "epochs", max_steps=99)
+            config["training"]["epochs"] = 2
+            result = train(config, tmp / "runs" / "epochs", ["run_task"])
+            self.assertEqual(result["requested_max_steps"], 99)
+            self.assertEqual(result["epoch_limited_steps"], 8)
+            self.assertEqual(result["final_step"], 8)
+            self.assertTrue((tmp / "runs" / "epochs" / "checkpoints" / "step_000008.pt").exists())
+            self.assertFalse((tmp / "runs" / "epochs" / "checkpoints" / "step_000099.pt").exists())
+
     def test_config_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_name:
             tmp = Path(tmp_name)
@@ -165,8 +177,31 @@ class TrainingRuntimeTests(unittest.TestCase):
                 resolve_config(good_path, requested_task="selective_copy")
             with self.assertRaises(ConfigError):
                 apply_cli_overrides(tiny_config(tmp, "cfg", max_steps=1), ["model.dim=64"])
+            bad_method = tiny_config(tmp, "bad_method", max_steps=1)
+            bad_method["attention"]["method"] = "random_memory"
+            bad_method_path = tmp / "bad_method.json"
+            bad_method_path.write_text(json.dumps(bad_method), encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                resolve_config(bad_method_path, requested_task="copy")
+            bad_alpha = tiny_config(tmp, "bad_alpha", max_steps=1)
+            bad_alpha["memory_rollout"]["alpha"] = 1.5
+            bad_alpha_path = tmp / "bad_alpha.json"
+            bad_alpha_path.write_text(json.dumps(bad_alpha), encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                resolve_config(bad_alpha_path, requested_task="copy")
+            bad_epochs = tiny_config(tmp, "bad_epochs", max_steps=1)
+            bad_epochs["training"]["epochs"] = 0
+            bad_epochs_path = tmp / "bad_epochs.json"
+            bad_epochs_path.write_text(json.dumps(bad_epochs), encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                resolve_config(bad_epochs_path, requested_task="copy")
+            bad_norm = tiny_config(tmp, "bad_norm", max_steps=1)
+            bad_norm["model"]["norm_type"] = "batchnorm"
+            bad_norm_path = tmp / "bad_norm.json"
+            bad_norm_path.write_text(json.dumps(bad_norm), encoding="utf-8")
+            with self.assertRaises(ConfigError):
+                resolve_config(bad_norm_path, requested_task="copy")
 
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -72,14 +72,6 @@
       "degree": 8,
       "density": null
     },
-    "random_memory": {
-      "degree": 8,
-      "density": null,
-      "route_stride": 1,
-      "route_multiplicity": 1,
-      "memory_mode": "memory_replace",
-      "memory_scale": 1.0
-    },
     "zigzag_logm": {
       "use_multiplicity_logm": true
     },
@@ -98,6 +90,13 @@
     "config_sha256_required": null,
     "dataset_sha256_required": null,
     "resume_checkpoint": null
+  },
+  "memory_rollout": {
+    "enabled": false,
+    "alpha": 0.5,
+    "injection_scale": 2.0,
+    "head_merge": "mean",
+    "update": "lazy",
+    "initial_state": "input"
   }
 }
-

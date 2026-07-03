@@ -1,17 +1,17 @@
 {
   "task": {
-    "name": "copy",
-    "dataset_root": "datasets/copy",
+    "name": "induction_associative_recall",
+    "dataset_root": "datasets/induction_associative_recall",
     "train_split": "train",
     "eval_split": "test",
-    "vocab_size": 64,
-    "output_size": 64,
-    "sequence_length": 2048,
-    "target_length": 1024,
+    "vocab_size": 8192,
+    "output_size": 8192,
+    "sequence_length": 64,
+    "target_length": 16,
     "loss_type": "sequence",
     "pad_token_id": 0,
-    "marker_token_id": 63,
-    "source_length": 1024
+    "marker_token_id": null,
+    "source_length": null
   },
   "model": {
     "num_layers": 8,
@@ -21,7 +21,7 @@
     "activation": "gelu",
     "dropout": 0.0,
     "attention_dropout": 0.0,
-    "norm_type": "layernorm",
+    "norm_type": "rmsnorm",
     "positional_encoding": "rope",
     "rope": {
       "enabled": true,
@@ -35,11 +35,11 @@
     "min_learning_rate": 0.0,
     "weight_decay": 0.1,
     "optimizer": "adamw",
-    "max_steps": 1,
-    "epochs": null,
-    "batch_size": 8,
-    "minibatch_size": 1,
-    "gradient_accumulation_steps": 8,
+    "max_steps": 5000,
+    "epochs": 2,
+    "batch_size": 32,
+    "minibatch_size": 32,
+    "gradient_accumulation_steps": 1,
     "log_step": 10,
     "eval_interval": 10,
     "checkpoint_interval": 1,
@@ -51,7 +51,7 @@
     "resume_checkpoint": null,
     "shuffle_buffer_size": 64,
     "eval_batches": 1,
-    "final_eval_batches": 1
+    "final_eval_batches": 94
   },
   "attention": {
     "method": "dense",
@@ -62,11 +62,11 @@
     "per_layer_random": false,
     "graph_seed": 0,
     "per_layer_graph_seeds": null,
-    "q": 32,
-    "B": 64,
+    "q": 4,
+    "B": 16,
     "d": 4,
     "density": null,
-    "graph_artifact_root": "outputs/artifacts/copy_dense",
+    "graph_artifact_root": "outputs/artifacts/exp1/induction_associative_recall_dense",
     "graph_artifact_policy": "regenerate",
     "random_regular": {
       "degree": 8,
@@ -80,8 +80,8 @@
     }
   },
   "run": {
-    "output_root": "outputs/runs",
-    "run_id": "copy_dense",
+    "output_root": "outputs/runs/exp1",
+    "run_id": "induction_associative_recall_dense",
     "save_checkpoints": true,
     "save_graph_artifacts": false,
     "save_metrics": true,

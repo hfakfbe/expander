@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from src.config.schema import (
     LOCAL_MODES,
     METHODS,
+    NORM_TYPES,
     OPTIMIZERS,
     REQUIRED_FIELDS,
     SCHEDULERS,
@@ -42,19 +44,28 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ConfigError("scheduler must be constant or cosine")
     if str(config["training"]["optimizer"]) not in OPTIMIZERS:
         raise ConfigError("optimizer must be adamw")
+    if int(config["training"]["max_steps"]) <= 0:
+        raise ConfigError("training.max_steps must be positive")
+    epochs = config["training"].get("epochs")
+    if epochs is not None:
+        epoch_value = float(epochs)
+        if not math.isfinite(epoch_value) or epoch_value <= 0.0:
+            raise ConfigError("training.epochs must be positive or null")
     if int(config["model"]["dim"]) % int(config["model"]["num_heads"]) != 0:
         raise ConfigError("model.dim must be divisible by model.num_heads")
+    if str(config["model"]["norm_type"]) not in NORM_TYPES:
+        raise ConfigError("model.norm_type must be layernorm, rmsnorm, or none")
     if int(config["training"]["batch_size"]) != int(config["training"]["minibatch_size"]) * int(
         config["training"]["gradient_accumulation_steps"]
     ):
         raise ConfigError("batch_size must equal minibatch_size * gradient_accumulation_steps")
     if method == "local" and int(config["attention"]["local_window_size"]) <= 0:
         raise ConfigError("local_window_size must be positive")
-    if method in {"random_regular", "random_memory"}:
-        degree = config["attention"].get(method, {}).get("degree")
-        density = config["attention"].get(method, {}).get("density", config["attention"].get("density"))
+    if method == "random_regular":
+        degree = config["attention"].get("random_regular", {}).get("degree")
+        density = config["attention"].get("random_regular", {}).get("density", config["attention"].get("density"))
         if degree is None and density is None:
-            raise ConfigError(f"{method} requires degree or density")
+            raise ConfigError("random_regular requires degree or density")
     if method == "zigzag_logm" and not bool(config["attention"]["zigzag_logm"]["use_multiplicity_logm"]):
         raise ConfigError("zigzag_logm must use multiplicity/log-m")
     if method == "zigzag_boolean" and bool(config["attention"]["zigzag_boolean"].get("use_multiplicity_logm")):
@@ -65,6 +76,20 @@ def validate_config(config: dict[str, Any]) -> None:
     seeds = config["attention"]["per_layer_graph_seeds"]
     if seeds is not None and len(seeds) != int(config["model"]["num_layers"]):
         raise ConfigError("per_layer_graph_seeds length must equal num_layers")
+    memory = config["memory_rollout"]
+    if not isinstance(memory["enabled"], bool):
+        raise ConfigError("memory_rollout.enabled must be boolean")
+    alpha = float(memory["alpha"])
+    if alpha < 0.0 or alpha > 1.0:
+        raise ConfigError("memory_rollout.alpha must be in [0, 1]")
+    if not math.isfinite(float(memory["injection_scale"])):
+        raise ConfigError("memory_rollout.injection_scale must be finite")
+    if str(memory["head_merge"]) != "mean":
+        raise ConfigError("memory_rollout.head_merge must be mean")
+    if str(memory["update"]) != "lazy":
+        raise ConfigError("memory_rollout.update must be lazy")
+    if str(memory["initial_state"]) != "input":
+        raise ConfigError("memory_rollout.initial_state must be input")
     if int(config["task"]["sequence_length"]) <= 0:
         raise ConfigError("task.sequence_length must be positive")
     if int(config["task"]["vocab_size"]) <= 0 or int(config["task"]["output_size"]) <= 0:

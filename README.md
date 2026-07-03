@@ -14,9 +14,17 @@ Main attention methods:
 - `dense`
 - `local`
 - `random_regular`
-- `random_memory`
 - `zigzag_logm`
 - `zigzag_boolean`
+
+Memory rollout is an independent option configured through `memory_rollout`.
+For example, `configs/runs/copy_random_memory.json` uses
+`attention.method=random_regular` with `memory_rollout.enabled=true`, and
+`configs/runs/copy_zigzag_logm_memory.json` enables the same rollout on
+`zigzag_logm`.
+
+Model normalization is selected with `model.norm_type`: `layernorm`,
+`rmsnorm`, or `none`.
 
 Core code lives under `src/`. The `scripts/` directory only contains thin CLI wrappers.
 
@@ -78,4 +86,3 @@ Run static compilation:
 ```bash
 python -m compileall -q src scripts tests
 ```
-

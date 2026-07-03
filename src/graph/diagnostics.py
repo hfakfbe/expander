@@ -37,7 +37,6 @@ def graph_diagnostics(graph: LayerGraph, local_window_size: int, causal: bool) -
         "local_edge_count": int(local_count),
         "remote_edge_count": int(remote_count),
         "has_log_m": graph.log_m is not None,
-        "has_memory_routes": graph.memory_routes is not None,
         **_degree_stats(mask),
     }
     if graph.counts is not None:
@@ -62,4 +61,3 @@ def per_layer_identity(graphs: list[LayerGraph]) -> list[str]:
             rows.append(tuple(int(v) for v in dst))
         identities.append(str(hash(tuple(rows))))
     return identities
-
