@@ -1,22 +1,22 @@
 {
   "attention": {
-    "B": 5995,
+    "B": 55,
     "causal": false,
-    "d": 4,
-    "density": null,
+    "d": 24,
+    "density": 0.1,
     "graph_artifact_policy": "regenerate",
-    "graph_artifact_root": "outputs/artifacts/exp1/lra_listops_dense",
+    "graph_artifact_root": "outputs/artifacts/exp2/lra_listops_zigzag_logm",
     "graph_seed": 0,
-    "include_local_edges": true,
+    "include_local_edges": false,
     "local_mode": "sliding_window",
     "local_window_size": 8,
-    "method": "dense",
+    "method": "zigzag_logm",
     "per_layer_graph_seeds": null,
     "per_layer_random": false,
-    "q": 1,
+    "q": 109,
     "random_regular": {
-      "degree": 8,
-      "density": null
+      "degree": null,
+      "density": 0.1
     },
     "zigzag_boolean": {
       "use_multiplicity_logm": false
@@ -53,9 +53,9 @@
     "config_sha256_required": null,
     "dataset_sha256_required": null,
     "manifest_path": null,
-    "output_root": "outputs/runs/exp1",
+    "output_root": "outputs/runs/exp2",
     "resume_checkpoint": null,
-    "run_id": "lra_listops_dense",
+    "run_id": "lra_listops_zigzag_logm",
     "save_checkpoints": true,
     "save_graph_artifacts": false,
     "save_manifest": true,
