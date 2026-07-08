@@ -1,102 +1,106 @@
 {
-  "task": {
-    "name": "lra_listops",
-    "dataset_root": "datasets/lra_listops",
-    "train_split": "train",
-    "eval_split": "test",
-    "vocab_size": 18,
-    "output_size": 10,
-    "sequence_length": 5995,
-    "target_length": 1,
-    "loss_type": "classification",
-    "pad_token_id": 0,
-    "marker_token_id": null,
-    "source_length": null
+  "attention": {
+    "B": 5995,
+    "causal": true,
+    "d": 4,
+    "density": null,
+    "graph_artifact_policy": "regenerate",
+    "graph_artifact_root": "outputs/artifacts/exp1/lra96000train_scratch_rope_l4d256_mb4ga4_lr1em6_const_s69000_fulltrain",
+    "graph_seed": 0,
+    "include_local_edges": true,
+    "local_mode": "sliding_window",
+    "local_window_size": 8,
+    "method": "dense",
+    "per_layer_graph_seeds": null,
+    "per_layer_random": false,
+    "q": 1,
+    "random_regular": {
+      "degree": 8,
+      "density": null
+    },
+    "zigzag_boolean": {
+      "use_multiplicity_logm": false
+    },
+    "zigzag_logm": {
+      "use_multiplicity_logm": true
+    }
+  },
+  "memory_rollout": {
+    "alpha": 0.5,
+    "enabled": false,
+    "head_merge": "mean",
+    "initial_state": "input",
+    "injection_scale": 2.0,
+    "update": "lazy"
   },
   "model": {
-    "num_layers": 8,
-    "dim": 128,
-    "dim_ffn": 512,
-    "num_heads": 4,
     "activation": "gelu",
-    "dropout": 0.0,
     "attention_dropout": 0.0,
+    "class_pooling": "last",
+    "dim": 256,
+    "dim_ffn": 1024,
+    "dropout": 0.0,
     "norm_type": "rmsnorm",
+    "num_heads": 8,
+    "num_layers": 4,
     "positional_encoding": "rope",
     "rope": {
       "enabled": true,
       "theta": 10000.0
     }
   },
-  "training": {
-    "learning_rate": 0.0003,
-    "warmup_steps": 0,
-    "scheduler": "constant",
-    "min_learning_rate": 0.0,
-    "weight_decay": 0.1,
-    "optimizer": "adamw",
-    "max_steps": 5000,
-    "epochs": 2,
-    "batch_size": 32,
-    "minibatch_size": 32,
-    "gradient_accumulation_steps": 1,
-    "log_step": 10,
-    "eval_interval": 10,
-    "checkpoint_interval": 1,
-    "seed": 0,
-    "device": "gpu",
-    "dtype": "float32",
-    "amp": false,
-    "grad_clip_norm": 0.0,
-    "resume_checkpoint": null,
-    "shuffle_buffer_size": 64,
-    "eval_batches": 1,
-    "final_eval_batches": 63
-  },
-  "attention": {
-    "method": "dense",
-    "causal": false,
-    "local_mode": "sliding_window",
-    "local_window_size": 8,
-    "include_local_edges": true,
-    "per_layer_random": false,
-    "graph_seed": 0,
-    "per_layer_graph_seeds": null,
-    "q": 1,
-    "B": 5995,
-    "d": 4,
-    "density": null,
-    "graph_artifact_root": "outputs/artifacts/exp1/lra_listops_dense",
-    "graph_artifact_policy": "regenerate",
-    "random_regular": {
-      "degree": 8,
-      "density": null
-    },
-    "zigzag_logm": {
-      "use_multiplicity_logm": true
-    },
-    "zigzag_boolean": {
-      "use_multiplicity_logm": false
-    }
-  },
   "run": {
-    "output_root": "outputs/runs/exp1",
-    "run_id": "lra_listops_dense",
-    "save_checkpoints": true,
-    "save_graph_artifacts": false,
-    "save_metrics": true,
-    "save_manifest": true,
-    "manifest_path": null,
     "config_sha256_required": null,
     "dataset_sha256_required": null,
-    "resume_checkpoint": null
+    "manifest_path": null,
+    "output_root": "outputs/runs/exp1_tuning/no_oracle",
+    "resume_checkpoint": null,
+    "run_id": "lra96000train_scratch_rope_l4d256_mb4ga4_lr1em6_const_s69000_fulltrain",
+    "save_checkpoints": false,
+    "save_graph_artifacts": false,
+    "save_manifest": true,
+    "save_metrics": true
   },
-  "memory_rollout": {
-    "enabled": false,
-    "alpha": 0.5,
-    "injection_scale": 2.0,
-    "head_merge": "mean",
-    "update": "lazy",
-    "initial_state": "input"
+  "task": {
+    "dataset_root": "datasets/lra_listops",
+    "eval_split": "train",
+    "loss_type": "classification",
+    "marker_token_id": null,
+    "name": "lra_listops",
+    "output_size": 10,
+    "pad_token_id": 0,
+    "sequence_length": 5995,
+    "source_length": null,
+    "target_length": 1,
+    "train_split": "train",
+    "vocab_size": 18
+  },
+  "training": {
+    "amp": false,
+    "batch_size": 16,
+    "checkpoint_interval": 500,
+    "device": "gpu",
+    "dtype": "float32",
+    "epochs": null,
+    "eval_batch_size": 24,
+    "eval_batches": 128,
+    "eval_interval": 500,
+    "final_eval_batch_size": 24,
+    "final_eval_batches": 4000,
+    "final_eval_split": "train",
+    "grad_clip_norm": 1.0,
+    "gradient_accumulation_steps": 4,
+    "learning_rate": 1e-06,
+    "log_step": 100,
+    "max_steps": 69000,
+    "min_learning_rate": 0.0,
+    "minibatch_size": 4,
+    "optimizer": "adamw",
+    "resume_checkpoint": null,
+    "scheduler": "constant",
+    "seed": 0,
+    "shuffle_buffer_size": 96000,
+    "warmup_steps": 0,
+    "weight_decay": 0.0
   }
 }

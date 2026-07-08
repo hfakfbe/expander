@@ -131,6 +131,27 @@ class AttentionBackendTests(unittest.TestCase):
         self.assertGreater(int(noncausal.sum().item()), int(causal.sum().item()))
         self.assertEqual(torch.nonzero(causal[0], as_tuple=False).flatten().tolist(), [0])
 
+    def test_class_pooling_modes_run(self) -> None:
+        for pooling in ["mean", "last"]:
+            config = tiny_config("dense")
+            config["task"]["loss_type"] = "classification"
+            config["task"]["output_size"] = 7
+            config["model"]["class_pooling"] = pooling
+            graphs = build_layer_graphs(config, torch.device("cpu"))
+            bundle = build_backend_bundle(graphs, 0.0)
+            model = SequenceTransformer(model_config_from_resolved(config))
+            tokens = torch.arange(32, dtype=torch.long).reshape(2, 16) % 16
+            pad_mask = torch.ones((2, 16), dtype=torch.bool)
+            _, class_logits = model(tokens, pad_mask, bundle)
+            self.assertIsNotNone(class_logits)
+            self.assertEqual(tuple(class_logits.shape), (2, 7))
+
+        config = tiny_config("dense")
+        config["task"]["loss_type"] = "classification"
+        config["model"]["class_pooling"] = "bad"
+        with self.assertRaises(ValueError):
+            SequenceTransformer(model_config_from_resolved(config))
+
     def test_sliding_window_local_mask(self) -> None:
         graph = build_layer_graphs(tiny_config("local"), torch.device("cpu"))[0]
         self.assertEqual(torch.nonzero(graph.mask[5], as_tuple=False).flatten().tolist(), [3, 4, 5, 6, 7])

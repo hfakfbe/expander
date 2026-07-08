@@ -26,6 +26,5 @@ def load_checkpoint(path: Path, *, model, optimizer=None, map_location="cpu") ->
     if optimizer is not None and payload.get("optimizer_state") is not None:
         optimizer.load_state_dict(payload["optimizer_state"])
     if payload.get("torch_rng_state") is not None:
-        torch.random.set_rng_state(payload["torch_rng_state"])
+        torch.random.set_rng_state(payload["torch_rng_state"].cpu())
     return int(payload.get("step", 0))
-

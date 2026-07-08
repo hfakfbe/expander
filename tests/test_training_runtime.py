@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import json
 import tempfile
 import unittest
@@ -10,7 +9,22 @@ import torch
 
 from src.config.loading import apply_cli_overrides, resolve_config
 from src.config.validation import ConfigError
-from src.training.runner import run, train
+from src.training.runner import TrainingBatchSource, run, train
+
+
+class CountingDataset:
+    def __init__(self, rows: list[dict]):
+        self._rows = rows
+        self.batch_calls = 0
+
+    def count(self) -> int:
+        return len(self._rows)
+
+    def batches(self, batch_size: int, *, shuffle: bool, seed: int, buffer_size: int = 4096, limit: int | None = None):
+        self.batch_calls += 1
+        rows = self._rows[: limit or None]
+        for index in range(0, len(rows), int(batch_size)):
+            yield rows[index : index + int(batch_size)]
 
 
 def tiny_copy_rows(root: Path) -> None:
@@ -163,6 +177,18 @@ class TrainingRuntimeTests(unittest.TestCase):
             self.assertEqual(result["final_step"], 8)
             self.assertTrue((tmp / "runs" / "epochs" / "checkpoints" / "step_000008.pt").exists())
             self.assertFalse((tmp / "runs" / "epochs" / "checkpoints" / "step_000099.pt").exists())
+
+    def test_training_batch_source_caches_epoch_batches(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_name:
+            config = tiny_config(Path(tmp_name), "batch_source", max_steps=1)
+            rows = [{"id": str(index)} for index in range(8)]
+            dataset = CountingDataset(rows)
+            source = TrainingBatchSource(dataset, config)
+            self.assertEqual([row["id"] for row in source.rows_for_micro_step(0)], ["0", "1"])
+            self.assertEqual([row["id"] for row in source.rows_for_micro_step(3)], ["6", "7"])
+            self.assertEqual(dataset.batch_calls, 1)
+            self.assertEqual([row["id"] for row in source.rows_for_micro_step(4)], ["0", "1"])
+            self.assertEqual(dataset.batch_calls, 2)
 
     def test_config_errors(self) -> None:
         with tempfile.TemporaryDirectory() as tmp_name:

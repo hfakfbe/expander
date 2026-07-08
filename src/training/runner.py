@@ -70,23 +70,31 @@ def _epoch_limited_steps(config: dict[str, Any], example_count: int) -> tuple[in
     return min(max_steps, epoch_steps), epoch_steps
 
 
-def _step_rows(dataset: JsonlDataset, config: dict[str, Any], micro_step: int, *, train_count: int | None = None) -> list[dict]:
-    batch_size = int(config["training"]["minibatch_size"])
-    seed = int(config["training"]["seed"])
-    buffer_size = int(config["training"].get("shuffle_buffer_size", 4096))
-    example_count = dataset.count() if train_count is None else int(train_count)
-    microbatches = _microbatches_per_epoch(example_count, batch_size)
-    epoch_index = int(micro_step) // microbatches
-    epoch_micro_step = int(micro_step) % microbatches
-    needed_start = epoch_micro_step * batch_size
-    rows: list[dict] = []
-    seen = 0
-    for batch in dataset.batches(batch_size, shuffle=True, seed=seed + epoch_index, buffer_size=buffer_size):
-        if seen >= needed_start:
-            rows = batch
-            break
-        seen += len(batch)
-    return rows
+class TrainingBatchSource:
+    def __init__(self, dataset: JsonlDataset, config: dict[str, Any]):
+        self.dataset = dataset
+        self.minibatch_size = int(config["training"]["minibatch_size"])
+        self.seed = int(config["training"]["seed"])
+        self.buffer_size = int(config["training"].get("shuffle_buffer_size", 4096))
+        self.example_count = dataset.count()
+        self.microbatches_per_epoch = _microbatches_per_epoch(self.example_count, self.minibatch_size)
+        self._cached_epoch: int | None = None
+        self._cached_batches: list[list[dict]] = []
+
+    def rows_for_micro_step(self, micro_step: int) -> list[dict]:
+        epoch_index = int(micro_step) // self.microbatches_per_epoch
+        epoch_micro_step = int(micro_step) % self.microbatches_per_epoch
+        if self._cached_epoch != epoch_index:
+            self._cached_batches = list(
+                self.dataset.batches(
+                    self.minibatch_size,
+                    shuffle=True,
+                    seed=self.seed + epoch_index,
+                    buffer_size=self.buffer_size,
+                )
+            )
+            self._cached_epoch = epoch_index
+        return self._cached_batches[epoch_micro_step]
 
 
 def build_runtime(config: dict[str, Any], device: torch.device):
@@ -95,6 +103,18 @@ def build_runtime(config: dict[str, Any], device: torch.device):
     dtype = select_dtype(config)
     model = SequenceTransformer(model_config_from_resolved(config)).to(device=device, dtype=dtype)
     return model, backends, graphs
+
+
+def _eval_batch_size(config: dict[str, Any]) -> int:
+    return int(config["training"].get("eval_batch_size") or config["training"]["minibatch_size"])
+
+
+def _final_eval_batch_size(config: dict[str, Any]) -> int:
+    return int(config["training"].get("final_eval_batch_size") or _eval_batch_size(config))
+
+
+def _final_eval_split(config: dict[str, Any], spec: TaskSpec) -> str:
+    return str(config["training"].get("final_eval_split") or spec.eval_split)
 
 
 def run_check(config: dict[str, Any], output_dir: Path, argv: list[str] | None = None) -> dict:
@@ -133,7 +153,8 @@ def run_check(config: dict[str, Any], output_dir: Path, argv: list[str] | None =
 def run_final_eval(config: dict[str, Any], output_dir: Path, checkpoint: Path | None = None, argv: list[str] | None = None) -> dict:
     device = select_device(str(config["training"]["device"]))
     spec = task_spec_from_config(config)
-    eval_data = load_split(spec, spec.eval_split)
+    eval_split = _final_eval_split(config, spec)
+    eval_data = load_split(spec, eval_split)
     model, backends, graphs = build_runtime(config, device)
     if checkpoint is not None:
         load_checkpoint(checkpoint, model=model, map_location=device)
@@ -142,7 +163,7 @@ def run_final_eval(config: dict[str, Any], output_dir: Path, checkpoint: Path | 
         backends=backends,
         dataset=eval_data,
         spec=spec,
-        batch_size=int(config["training"]["minibatch_size"]),
+        batch_size=_final_eval_batch_size(config),
         device=device,
         max_batches=int(config["training"]["final_eval_batches"]),
     )
@@ -156,13 +177,13 @@ def run_final_eval(config: dict[str, Any], output_dir: Path, checkpoint: Path | 
         )
     output_dir.mkdir(parents=True, exist_ok=True)
     write_resolved_config(config, output_dir)
-    final = {"mode": "final_eval", **metrics}
+    final = {"mode": "final_eval", "eval_split": eval_split, **metrics}
     write_final_metrics(output_dir / "final_metrics.json", final)
     manifest = build_run_manifest(
         config=config,
         command=_command_string(argv),
         output_dir=output_dir,
-        dataset_paths={spec.eval_split: split_path(spec, spec.eval_split)},
+        dataset_paths={eval_split: split_path(spec, eval_split)},
         graph_artifacts=graph_records,
     )
     write_run_manifest(output_dir / "run_manifest.json", manifest)
@@ -175,7 +196,10 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
     spec = task_spec_from_config(config)
     train_data = load_split(spec, spec.train_split)
     eval_data = load_split(spec, spec.eval_split)
-    train_count = train_data.count()
+    final_eval_split = _final_eval_split(config, spec)
+    final_eval_data = train_data if final_eval_split == spec.train_split else eval_data
+    train_batches = TrainingBatchSource(train_data, config)
+    train_count = train_batches.example_count
     max_steps, epoch_limited_steps = _epoch_limited_steps(config, train_count)
     schedule_config = config
     if max_steps != int(config["training"]["max_steps"]):
@@ -218,7 +242,7 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
         example_count = 0
         for accum_index in range(grad_accum):
             micro_step = (step - 1) * grad_accum + accum_index
-            rows = _step_rows(train_data, config, micro_step, train_count=train_count)
+            rows = train_batches.rows_for_micro_step(micro_step)
             batch = batcher(rows, spec, device)
             token_logits, class_logits = model(batch.tokens, batch.pad_mask, backends)
             loss, metrics = loss_fn(token_logits, class_logits, batch, spec)
@@ -241,7 +265,7 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
                 backends=backends,
                 dataset=eval_data,
                 spec=spec,
-                batch_size=int(config["training"]["minibatch_size"]),
+                batch_size=_eval_batch_size(config),
                 device=device,
                 max_batches=int(config["training"]["eval_batches"]),
             )
@@ -265,9 +289,9 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
     final_metrics = evaluate(
         model=model,
         backends=backends,
-        dataset=eval_data,
+        dataset=final_eval_data,
         spec=spec,
-        batch_size=int(config["training"]["minibatch_size"]),
+        batch_size=_final_eval_batch_size(config),
         device=device,
         max_batches=int(config["training"]["final_eval_batches"]),
     )
@@ -276,6 +300,7 @@ def train(config: dict[str, Any], output_dir: Path, argv: list[str] | None = Non
         "status": "ok",
         "final_step": max_steps,
         "requested_max_steps": int(config["training"]["max_steps"]),
+        "eval_split": final_eval_split,
         "train_elapsed_sec": time.perf_counter() - started,
         **final_metrics,
     }

@@ -37,12 +37,12 @@
     "optimizer": "adamw",
     "max_steps": 5000,
     "epochs": 2,
-    "batch_size": 32,
-    "minibatch_size": 32,
+    "batch_size": 8,
+    "minibatch_size": 8,
     "gradient_accumulation_steps": 1,
     "log_step": 10,
     "eval_interval": 10,
-    "checkpoint_interval": 1,
+    "checkpoint_interval": 200,
     "seed": 0,
     "device": "gpu",
     "dtype": "float32",
@@ -51,7 +51,7 @@
     "resume_checkpoint": null,
     "shuffle_buffer_size": 64,
     "eval_batches": 1,
-    "final_eval_batches": 32
+    "final_eval_batches": 125
   },
   "attention": {
     "method": "dense",

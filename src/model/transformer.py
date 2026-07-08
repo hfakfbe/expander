@@ -37,6 +37,7 @@ class ModelConfig:
     rope_theta: float
     memory_rollout: MemoryRolloutConfig
     class_count: int | None = None
+    class_pooling: str = "mean"
 
 
 class RMSNorm(nn.Module):
@@ -121,13 +122,20 @@ class TransformerBlock(nn.Module):
         if self.rotary is not None:
             cos, sin = self.rotary(seq_len, q.device, q.dtype)
             q, k = apply_rotary_pos_emb(q, k, cos, sin)
-        transition = backend.transition(q, k)
-        attn = torch.matmul(backend.dropout(transition), v).transpose(1, 2).contiguous().view(batch, seq_len, dim)
+        transition = None
+        if memory_config.enabled:
+            transition = backend.transition(q, k)
+            attn = torch.matmul(backend.dropout(transition), v)
+        else:
+            attn = backend(q, k, v)
+        attn = attn.transpose(1, 2).contiguous().view(batch, seq_len, dim)
         x = x + self.dropout(self.out(attn))
         hidden = x + self.ffn(self.norm2(x))
         if memory_config.enabled:
             if memory_state is None:
                 raise ValueError("memory_state is required when memory_rollout is enabled")
+            if transition is None:
+                raise ValueError("transition is required when memory_rollout is enabled")
             memory_state = rollout_memory_update(memory_state, transition, memory_config)
             hidden = hidden + float(memory_config.injection_scale) * memory_state
         return hidden, memory_state
@@ -146,6 +154,8 @@ class SequenceTransformer(nn.Module):
         self.norm = make_norm(config.norm_type, config.dim)
         self.token_head = nn.Linear(config.dim, config.output_size)
         self.class_head = nn.Linear(config.dim, config.class_count) if config.class_count is not None else None
+        if config.class_pooling not in {"mean", "last"}:
+            raise ValueError(f"unknown class_pooling={config.class_pooling!r}")
 
     def forward(
         self,
@@ -170,8 +180,12 @@ class SequenceTransformer(nn.Module):
         token_logits = self.token_head(h)
         class_logits = None
         if self.class_head is not None:
-            mask = pad_mask.to(dtype=h.dtype).unsqueeze(-1)
-            pooled = (h * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+            if self.config.class_pooling == "mean":
+                mask = pad_mask.to(dtype=h.dtype).unsqueeze(-1)
+                pooled = (h * mask).sum(dim=1) / mask.sum(dim=1).clamp_min(1.0)
+            else:
+                last_indices = pad_mask.long().sum(dim=1).clamp_min(1) - 1
+                pooled = h[torch.arange(h.shape[0], device=h.device), last_indices]
             class_logits = self.class_head(pooled)
         if return_memory:
             return token_logits, class_logits, memory_state
@@ -208,4 +222,5 @@ def model_config_from_resolved(config: dict) -> ModelConfig:
             initial_state=str(memory["initial_state"]),
         ),
         class_count=class_count,
+        class_pooling=str(model.get("class_pooling", "mean")),
     )
