@@ -69,7 +69,7 @@ def tiny_config(method: str) -> dict:
             "method": method,
             "causal": False,
             "local_mode": "sliding_window",
-            "local_window_size": 2,
+            "local_window_size": 4,
             "include_local_edges": True,
             "per_layer_random": True,
             "graph_seed": 3,
@@ -153,12 +153,13 @@ class AttentionBackendTests(unittest.TestCase):
             SequenceTransformer(model_config_from_resolved(config))
 
     def test_sliding_window_local_mask(self) -> None:
-        graph = build_layer_graphs(tiny_config("local"), torch.device("cpu"))[0]
-        self.assertEqual(torch.nonzero(graph.mask[5], as_tuple=False).flatten().tolist(), [3, 4, 5, 6, 7])
         config = tiny_config("local")
+        config["attention"]["local_window_size"] = 5
+        graph = build_layer_graphs(config, torch.device("cpu"))[0]
+        self.assertEqual(torch.nonzero(graph.mask[5], as_tuple=False).flatten().tolist(), [3, 4, 5, 6, 7])
         config["attention"]["causal"] = True
         graph = build_layer_graphs(config, torch.device("cpu"))[0]
-        self.assertEqual(torch.nonzero(graph.mask[5], as_tuple=False).flatten().tolist(), [3, 4, 5])
+        self.assertEqual(torch.nonzero(graph.mask[5], as_tuple=False).flatten().tolist(), [1, 2, 3, 4, 5])
 
     def test_per_layer_random_reproducible_and_distinct(self) -> None:
         config = tiny_config("random_regular")
@@ -175,8 +176,21 @@ class AttentionBackendTests(unittest.TestCase):
         boolean = build_layer_graphs(tiny_config("zigzag_boolean"), torch.device("cpu"))[0]
         self.assertIsNotNone(logm.log_m)
         self.assertGreater(float(logm.log_m.max().item()), 0.0)
+        self.assertGreater(max(value for counts in logm.counts for value in counts.values()), 1)
         self.assertIsNone(boolean.log_m)
         self.assertEqual(max(value for counts in boolean.counts for value in counts.values()), 1)
+        self.assertTrue(torch.equal(logm.mask, boolean.mask))
+
+    def test_zigzag_uses_seeded_random_permutations(self) -> None:
+        for method in ["zigzag_logm", "zigzag_boolean"]:
+            config = tiny_config(method)
+            graphs_a = build_layer_graphs(config, torch.device("cpu"))
+            graphs_b = build_layer_graphs(config, torch.device("cpu"))
+            self.assertTrue(torch.equal(graphs_a[0].mask, graphs_b[0].mask))
+            self.assertFalse(torch.equal(graphs_a[0].mask, graphs_a[1].mask))
+            config["attention"]["per_layer_random"] = False
+            graphs = build_layer_graphs(config, torch.device("cpu"))
+            self.assertTrue(torch.equal(graphs[0].mask, graphs[1].mask))
 
     def test_memory_rollout_update_matches_formula(self) -> None:
         memory = torch.tensor([[[1.0, 0.0], [0.0, 1.0], [2.0, 2.0]]])

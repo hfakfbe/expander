@@ -31,22 +31,35 @@ def dense_mask(seq_len: int, device: torch.device, causal: bool) -> torch.Tensor
     return apply_causal(torch.ones((seq_len, seq_len), dtype=torch.bool, device=device), causal)
 
 
+def _local_window_bounds(seq_len: int, src: int, window_size: int, causal: bool) -> tuple[int, int]:
+    width = min(int(window_size), int(seq_len))
+    if width <= 0:
+        raise ValueError("window_size must be positive")
+    if causal:
+        hi = int(src) + 1
+        lo = max(0, hi - width)
+        return lo, hi
+    left = (width - 1) // 2
+    right = width - 1 - left
+    return max(0, int(src) - left), min(int(seq_len), int(src) + right + 1)
+
+
 def sliding_window_mask(seq_len: int, window_size: int, device: torch.device, causal: bool) -> torch.Tensor:
     if int(window_size) <= 0:
         raise ValueError("window_size must be positive")
-    idx = torch.arange(seq_len, device=device)
-    distance = (idx[:, None] - idx[None, :]).abs()
-    return apply_causal(distance <= int(window_size), causal)
+    mask = torch.zeros((seq_len, seq_len), dtype=torch.bool, device=device)
+    for src in range(seq_len):
+        lo, hi = _local_window_bounds(seq_len, src, int(window_size), causal)
+        mask[src, lo:hi] = True
+    return mask
 
 
 def local_edge_pairs(seq_len: int, window_size: int, causal: bool) -> set[tuple[int, int]]:
     out: set[tuple[int, int]] = set()
     for src in range(seq_len):
-        lo = max(0, src - int(window_size))
-        hi = min(seq_len, src + int(window_size) + 1)
+        lo, hi = _local_window_bounds(seq_len, src, int(window_size), causal)
         for dst in range(lo, hi):
-            if not causal or dst <= src:
-                out.add((src, dst))
+            out.add((src, dst))
     return out
 
 
@@ -82,38 +95,51 @@ def random_regular_counts(
     return rows
 
 
-def _h_neighbors(port: int, block_size: int, degree: int) -> list[int]:
-    offsets: list[int] = []
-    step = 1
-    while len(offsets) < degree:
-        offsets.append(step)
-        if len(offsets) < degree:
-            offsets.append(-step)
-        step += 1
-    return [int((port + off) % block_size) for off in offsets[:degree]]
+def _random_permutation(size: int, rng: random.Random, *, derangement: bool = False) -> list[int]:
+    if int(size) <= 0:
+        raise ValueError("permutation size must be positive")
+    values = list(range(int(size)))
+    if derangement and int(size) == 1:
+        raise ValueError("derangement requires size > 1")
+    if not derangement:
+        rng.shuffle(values)
+        return values
+    for _ in range(128):
+        candidate = values[:]
+        rng.shuffle(candidate)
+        if all(src != dst for src, dst in enumerate(candidate)):
+            return candidate
+    raise RuntimeError("failed to sample a zigzag derangement")
 
 
-def _rot_g(block: int, port: int, num_blocks: int) -> tuple[int, int]:
-    max_offset = max(1, num_blocks // 2)
-    offset = (port // 2) % max_offset + 1
-    if port % 2 == 0:
-        return (block + offset) % num_blocks, port ^ 1
-    return (block - offset) % num_blocks, port ^ 1
+def _zigzag_g_permutations(num_blocks: int, block_size: int, seed: int) -> list[list[int]]:
+    rng = random.Random(f"zigzag|G|{seed}|{num_blocks}|{block_size}")
+    return [_random_permutation(num_blocks, rng, derangement=True) for _ in range(block_size)]
 
 
-def zigzag_counts(seq_len: int, block_size: int, degree: int) -> list[Counter[int]]:
+def _zigzag_h_permutations(block_size: int, degree: int, seed: int) -> list[list[int]]:
+    rng = random.Random(f"zigzag|H|{seed}|{block_size}|{degree}")
+    return [_random_permutation(block_size, rng) for _ in range(degree)]
+
+
+def zigzag_counts(seq_len: int, block_size: int, degree: int, seed: int) -> list[Counter[int]]:
     if seq_len % block_size != 0:
         raise ValueError("zigzag requires sequence length divisible by B")
     if degree <= 0 or degree >= block_size:
         raise ValueError("zigzag requires 0 < d < B")
     num_blocks = seq_len // block_size
+    g_permutations = _zigzag_g_permutations(num_blocks, block_size, seed)
+    h_permutations = _zigzag_h_permutations(block_size, degree, seed)
     rows = [Counter() for _ in range(seq_len)]
     for block in range(num_blocks):
         for port in range(block_size):
             src = block * block_size + port
-            for mid_port in _h_neighbors(port, block_size, degree):
-                dst_block, dst_port = _rot_g(block, mid_port, num_blocks)
-                for final_port in _h_neighbors(dst_port, block_size, degree):
+            for h_first in h_permutations:
+                mid_port = int(h_first[port])
+                dst_block = int(g_permutations[mid_port][block])
+                dst_port = mid_port
+                for h_second in h_permutations:
+                    final_port = int(h_second[dst_port])
                     rows[src][dst_block * block_size + final_port] += 1
     return rows
 

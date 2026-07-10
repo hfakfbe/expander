@@ -1,19 +1,19 @@
 {
   "attention": {
-    "B": 5995,
+    "B": 55,
     "causal": false,
-    "d": 4,
+    "d": 24,
     "density": 0.1,
     "graph_artifact_policy": "regenerate",
     "graph_artifact_root": "outputs/artifacts/exp2/lra_listops_random_memory",
     "graph_seed": 0,
     "include_local_edges": false,
     "local_mode": "sliding_window",
-    "local_window_size": 8,
+    "local_window_size": 55,
     "method": "random_regular",
     "per_layer_graph_seeds": null,
     "per_layer_random": true,
-    "q": 1,
+    "q": 109,
     "random_regular": {
       "degree": null,
       "density": 0.1
@@ -81,7 +81,7 @@
     "checkpoint_interval": 500,
     "device": "gpu",
     "dtype": "float32",
-    "epochs": null,
+    "epochs": 1,
     "eval_batch_size": 24,
     "eval_batches": 128,
     "eval_interval": 500,

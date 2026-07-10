@@ -58,19 +58,19 @@
     "causal": false,
     "local_mode": "sliding_window",
     "local_window_size": 64,
-    "include_local_edges": true,
+    "include_local_edges": false,
     "per_layer_random": true,
     "graph_seed": 13,
     "per_layer_graph_seeds": null,
     "q": 32,
     "B": 64,
-    "d": 4,
-    "density": null,
+    "d": 14,
+    "density": 0.1,
     "graph_artifact_root": "outputs/artifacts/copy_random_regular",
     "graph_artifact_policy": "regenerate",
     "random_regular": {
-      "degree": 8,
-      "density": null
+      "degree": null,
+      "density": 0.1
     },
     "zigzag_logm": {
       "use_multiplicity_logm": true

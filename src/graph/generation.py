@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections import Counter
 
 import torch
@@ -66,13 +67,16 @@ def build_layer_graphs(config: dict, device: torch.device) -> list[LayerGraph]:
             degree = method_cfg.get("degree")
             if degree is None:
                 density = method_cfg.get("density", config["attention"]["density"])
-                degree = max(1, int(round(float(density) * seq_len)))
+                local_budget = local_window if bool(config["attention"]["include_local_edges"]) else 0
+                degree = max(1, int(math.floor(float(density) * seq_len - local_budget)))
             remote = random_regular_counts(seq_len, int(degree), int(seed), exclude_edges=exclude)
             counts = merge_counts(local_counts, remote, boolean=True)
             mask = counts_to_mask(counts, seq_len, device, causal)
         elif method in {"zigzag_logm", "zigzag_boolean"}:
+            if seed is None:
+                raise ValueError(f"{method} requires a graph seed")
             local_counts = _base_local_counts(seq_len, config, causal)
-            remote = zigzag_counts(seq_len, int(config["attention"]["B"]), int(config["attention"]["d"]))
+            remote = zigzag_counts(seq_len, int(config["attention"]["B"]), int(config["attention"]["d"]), int(seed))
             counts = merge_counts(local_counts, remote, boolean=method == "zigzag_boolean")
             mask = counts_to_mask(counts, seq_len, device, causal)
             if method == "zigzag_logm":

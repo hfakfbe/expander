@@ -59,8 +59,13 @@ def validate_config(config: dict[str, Any]) -> None:
         config["training"]["gradient_accumulation_steps"]
     ):
         raise ConfigError("batch_size must equal minibatch_size * gradient_accumulation_steps")
-    if method == "local" and int(config["attention"]["local_window_size"]) <= 0:
+    local_window_size = int(config["attention"]["local_window_size"])
+    if local_window_size <= 0:
         raise ConfigError("local_window_size must be positive")
+    if local_window_size > int(config["task"]["sequence_length"]):
+        raise ConfigError("local_window_size must not exceed task.sequence_length")
+    if bool(config["attention"]["include_local_edges"]) and local_window_size < int(config["attention"]["B"]):
+        raise ConfigError("local_window_size must be at least B when local edges are enabled")
     if method == "random_regular":
         degree = config["attention"].get("random_regular", {}).get("degree")
         density = config["attention"].get("random_regular", {}).get("density", config["attention"].get("density"))

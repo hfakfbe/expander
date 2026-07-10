@@ -98,7 +98,7 @@ def tiny_config(tmp: Path, run_id: str, max_steps: int = 2) -> dict:
             "method": "local",
             "causal": False,
             "local_mode": "sliding_window",
-            "local_window_size": 2,
+            "local_window_size": 4,
             "include_local_edges": True,
             "per_layer_random": False,
             "graph_seed": 0,
